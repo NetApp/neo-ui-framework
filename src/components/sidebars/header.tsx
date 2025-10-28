@@ -4,12 +4,18 @@ import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { ModeToggle } from "@/components/navs/theme-toggle"
-import { IconBrandGithub, IconKeyFilled } from "@tabler/icons-react"
+import { IconBrandGithub, IconKey, IconRefresh } from "@tabler/icons-react"
+import { ConnectDialog, type ConnectionCredentials } from "@/components/dialogs/connect-dialog"
 
-export function SiteHeader() {
+interface SiteHeaderProps {
+  onConnect: (credentials: ConnectionCredentials) => Promise<void>
+  isConnected: boolean
+}
+
+export function SiteHeader({ onConnect, isConnected }: SiteHeaderProps) {
   const location = useLocation()
 
-   let title = "Welcome"
+  let title = "Welcome"
   if (location.pathname.startsWith("/dashboard")) {
     title = "Dashboard"
   } else if (location.pathname.startsWith("/shares")) {
@@ -28,7 +34,7 @@ export function SiteHeader() {
     title = "Settings"
   } else if (location.pathname.startsWith("/help")) {
     title = "Help"
-  } 
+  }
 
   return (
     <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height)">
@@ -41,11 +47,12 @@ export function SiteHeader() {
         <h1 className="text-base font-medium">{title}</h1>
         <div className="ml-auto flex items-center gap-2">
           <ModeToggle />
-          <Button 
-            variant="outline" 
-            asChild 
-            size="icon" 
-            className="hidden sm:flex">
+          <Button
+            variant="outline"
+            asChild
+            size="icon"
+            className="hidden sm:flex"
+          >
             <a
               href="https://github.com/NetApp/Innovation-Labs"
               rel="noopener noreferrer"
@@ -55,14 +62,14 @@ export function SiteHeader() {
               <IconBrandGithub />
             </a>
           </Button>
-          <Button
-            variant="outline"
-            asChild
-            size="icon"
-            className="flex sm:hidden"
-          >
-            <IconKeyFilled />
-          </Button>
+          <ConnectDialog onConnect={onConnect} isConnected={isConnected}>
+            <Button variant="outline" size="icon" className="hidden sm:flex">
+              {isConnected ? <IconRefresh /> : <IconKey />}
+              <span className="sr-only">
+                {isConnected ? "Reconnect" : "Connect"}
+              </span>
+            </Button>
+          </ConnectDialog>
         </div>
       </div>
     </header>
