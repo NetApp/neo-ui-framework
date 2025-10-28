@@ -14,7 +14,11 @@ import {
 } from "@/components/ui/sidebar"
 
 import WelcomePage from "./components/pages/welcome"
-import Page from "./components/pages/dashboard"
+import Dashboard from "./components/pages/dashboard"
+import Shares from "./components/pages/shares"
+import Files from "./components/pages/files"
+import Operations from "./components/pages/operations"
+import Help from "./components/pages/help"
 
 function App() {
   return (
@@ -22,7 +26,7 @@ function App() {
       <SidebarProvider
         style={
           {
-            "--sidebar-width": "calc(var(--spacing) * 72)",
+            "--sidebar-width": "12rem",
             "--header-height": "calc(var(--spacing) * 12)",
           } as React.CSSProperties
         }
@@ -32,8 +36,12 @@ function App() {
           <SidebarInset>
             <SiteHeader />
                 <Routes>
-                  <Route path="/" element={<WelcomePage />} />
-                  <Route path="/dashboard" element={<Page />} />
+                  <Route path="/" element={<Help />} />
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/shares" element={<Shares />} />
+                  <Route path="/files" element={<Files />} />
+                  <Route path="/operations" element={<Operations />} />
+                  <Route path="/help" element={<Help />} />
                 </Routes>
           </SidebarInset>
         </HashRouter>

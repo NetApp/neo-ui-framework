@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { ModeToggle } from "@/components/navs/theme-toggle"
-import { IconBrandGithub } from "@tabler/icons-react"
+import { IconBrandGithub, IconKeyFilled } from "@tabler/icons-react"
 
 export function SiteHeader() {
   const location = useLocation()
@@ -36,12 +36,16 @@ export function SiteHeader() {
         <SidebarTrigger className="-ml-1" />
         <Separator
           orientation="vertical"
-          className="mx-2 data-[orientation=vertical]:h-4"
+          className="mx- data-[orientation=vertical]:h-4"
         />
         <h1 className="text-base font-medium">{title}</h1>
         <div className="ml-auto flex items-center gap-2">
           <ModeToggle />
-          <Button variant="outline" asChild size="icon" className="hidden sm:flex">
+          <Button 
+            variant="outline" 
+            asChild 
+            size="icon" 
+            className="hidden sm:flex">
             <a
               href="https://github.com/NetApp/Innovation-Labs"
               rel="noopener noreferrer"
@@ -50,6 +54,14 @@ export function SiteHeader() {
             >
               <IconBrandGithub />
             </a>
+          </Button>
+          <Button
+            variant="outline"
+            asChild
+            size="icon"
+            className="flex sm:hidden"
+          >
+            <IconKeyFilled />
           </Button>
         </div>
       </div>

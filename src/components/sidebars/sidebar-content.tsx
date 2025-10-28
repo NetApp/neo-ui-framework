@@ -3,12 +3,12 @@
 import {
   IconChartBar,
   IconDashboard,
-  IconDatabase,
+  // IconDatabase,
   IconFolder,
   IconHelp,
   IconListDetails,
   // IconSearch,
-  IconSettings,
+  // IconSettings,
   IconUsers,
 } from "@tabler/icons-react"
 
@@ -41,11 +41,11 @@ const data = {
       url: "#/operations",
       icon: IconFolder,
     },
-    {
-      name: "Datasets",
-      url: "#/datasets",
-      icon: IconDatabase,
-    },    
+    // {
+    //   name: "Datasets",
+    //   url: "#/datasets",
+    //   icon: IconDatabase,
+    // },    
   ],
   navSecondary: [
     {
@@ -53,13 +53,13 @@ const data = {
       url: "#/users",
       icon: IconUsers,
     },
+    // {
+    //   name: "Settings",
+    //   url: "#/settings",
+    //   icon: IconSettings,
+    // },
     {
-      name: "Settings",
-      url: "#/settings",
-      icon: IconSettings,
-    },
-    {
-      name: "Get Help",
+      name: "Help",
       url: "#/help",
       icon: IconHelp,
     },
