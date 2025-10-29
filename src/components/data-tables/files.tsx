@@ -38,13 +38,14 @@ export function FilesTable({ files }: FilesTableProps) {
           </TableHeader>
           <TableBody>
             {rows.length ? (
-              rows.map((share) => (
-                <TableRow key={share.id}>
-                  <TableCell>{share.share_path}</TableCell>
-                  <TableCell>{share.username}</TableCell>
-                  <TableCell>{share.status}</TableCell>
-                  <TableCell>{share.last_crawled ?? "Never"}</TableCell>
-                  <TableCell>{share.last_crawl_file_count ?? "N/A"}</TableCell>
+              rows.map((file) => (
+                <TableRow key={file.id}>
+                  <TableCell>{file.filename}</TableCell>
+                  <TableCell>{file.unc_path}</TableCell>
+                  <TableCell>{file.size}</TableCell>
+                  <TableCell>{file.type}</TableCell>
+                  <TableCell>{file.modified_time ?? "Never"}</TableCell>
+                  <TableCell>{file.indexed ? "Yes" : "No"}</TableCell>
                 </TableRow>
               ))
             ) : (
