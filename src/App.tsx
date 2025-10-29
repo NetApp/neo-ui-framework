@@ -21,7 +21,15 @@ import Operations from "./components/pages/operations"
 import Users from "./components/pages/users"
 import Help from "./components/pages/help"
 
-import { NeoApiService, type HealthResponse, type LicenseResponse, type UserResponse, type VersionResponse } from "./components/services/neo-api"
+import { 
+  NeoApiService, 
+  type HealthResponse, 
+  type LicenseResponse, 
+  type OperationResponse, 
+  type UserResponse, 
+  type VersionResponse,
+  type SharesResponse
+} from "./components/services/neo-api"
 import type { ConnectionCredentials } from "./components/dialogs/connect-dialog"
 
 function App() {
@@ -29,6 +37,8 @@ function App() {
   const [license, setLicense] = useState<LicenseResponse | null>(null)
   const [version, setVersion] = useState<VersionResponse | null>(null)
   const [users, setUsers] = useState<UserResponse[] | null>(null)
+  const [operations, setOperations] = useState<OperationResponse[] | null>(null)
+  const [shares, setShares] = useState<SharesResponse[] | null>(null)
 
   const handleConnect = useCallback(async (credentials: ConnectionCredentials) => {
     console.log('Connecting to NetApp Neo API endpoint')
@@ -50,6 +60,8 @@ function App() {
       setLicense(data.license)
       setVersion(data.version)
       setUsers(data.users)
+      setOperations(data.operations)
+      setShares(data.shares)
     } catch (error) {
       console.error('Connection error:', error)
       // Re-throw to let the dialog handle it
@@ -77,9 +89,9 @@ function App() {
                 path="/dashboard" 
                 element={<Dashboard health={health} license={license} version={version} />} 
               />
-              <Route path="/shares" element={<Shares />} />
+              <Route path="/shares" element={<Shares shares={shares} />} />
               <Route path="/files" element={<Files />} />
-              <Route path="/operations" element={<Operations />} />
+              <Route path="/operations" element={<Operations operations={operations}/>} />
               <Route path="/users" element={<Users users={users} />} />
               <Route path="/help" element={<Help />} />
             </Routes>

@@ -24,8 +24,9 @@ export function UsersTable({ users }: UsersTableProps) {
   return (
     <Tabs defaultValue="all-users" className="w-full flex-col justify-start gap-6">
       <TabsContent value="all-users">
+        <div className="overflow-hidden rounded-lg border">
         <Table>
-          <TableHeader>
+          <TableHeader className="bg-muted sticky top-0 z-10">
             <TableRow>
               <TableHead>Username</TableHead>
               <TableHead>Email</TableHead>
@@ -56,6 +57,7 @@ export function UsersTable({ users }: UsersTableProps) {
             )}
           </TableBody>
         </Table>
+        </div>
       </TabsContent>
     </Tabs>
   )

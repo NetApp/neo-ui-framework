@@ -38,6 +38,34 @@ export interface UserResponse {
   last_login: string
 }
 
+export interface OperationResponse {
+  id: number
+  operation_type: string
+  status: string
+  details: string
+  timestamp: string
+  username: string
+}
+
+export interface SharesResponse {
+  id: number
+  share_path: string
+  username: string
+  status: string
+  last_crawled: string
+  last_crawl_file_count: number
+}
+
+export interface FilesResponse {
+  id: number
+  filename: string
+  unc_path: string
+  size: number
+  type: string
+  modified_time: string
+  indexed: boolean
+}
+
 interface TokenResponse {
   access_token: string
   token_type: string
@@ -146,14 +174,29 @@ export class NeoApiService {
     return this.fetchWithToken<UserResponse[]>("/users/", token)
   }
 
+  async getOperations(token: string): Promise<OperationResponse[]> {
+    return this.fetchWithToken<OperationResponse[]>("/operations/", token)
+  }
+
+  async getShares(token: string): Promise<SharesResponse[]> {
+    return this.fetchWithToken<SharesResponse[]>("/shares", token)
+  }
+
+  async getFiles(token: string): Promise<FilesResponse[]> {
+    return this.fetchWithToken<FilesResponse[]>("/files", token)
+  }
+
   async fetchSystemData(token: string) {
-    const [health, license, version, users] = await Promise.all([
+    const [health, license, version, users, operations, shares, files] = await Promise.all([
       this.getHealth(token),
       this.getLicenseStatus(token),
       this.getVersion(token),
       this.getUsers(token),
+      this.getOperations(token),
+      this.getShares(token),
+      this.getFiles(token),
     ])
 
-    return { health, license, version, users }
+    return { health, license, version, users, operations, shares, files }
   }
 }
