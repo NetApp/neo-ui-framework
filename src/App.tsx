@@ -18,15 +18,17 @@ import Dashboard from "./components/pages/dashboard"
 import Shares from "./components/pages/shares"
 import Files from "./components/pages/files"
 import Operations from "./components/pages/operations"
+import Users from "./components/pages/users"
 import Help from "./components/pages/help"
 
-import { NeoApiService, type HealthResponse, type LicenseResponse, type VersionResponse } from "./components/services/neo-api"
+import { NeoApiService, type HealthResponse, type LicenseResponse, type UserResponse, type VersionResponse } from "./components/services/neo-api"
 import type { ConnectionCredentials } from "./components/dialogs/connect-dialog"
 
 function App() {
   const [health, setHealth] = useState<HealthResponse | null>(null)
   const [license, setLicense] = useState<LicenseResponse | null>(null)
   const [version, setVersion] = useState<VersionResponse | null>(null)
+  const [users, setUsers] = useState<UserResponse[] | null>(null)
 
   const handleConnect = useCallback(async (credentials: ConnectionCredentials) => {
     console.log('Connecting to NetApp Neo API endpoint')
@@ -47,6 +49,7 @@ function App() {
       setHealth(data.health)
       setLicense(data.license)
       setVersion(data.version)
+      setUsers(data.users)
     } catch (error) {
       console.error('Connection error:', error)
       // Re-throw to let the dialog handle it
@@ -77,6 +80,7 @@ function App() {
               <Route path="/shares" element={<Shares />} />
               <Route path="/files" element={<Files />} />
               <Route path="/operations" element={<Operations />} />
+              <Route path="/users" element={<Users users={users} />} />
               <Route path="/help" element={<Help />} />
             </Routes>
           </SidebarInset>

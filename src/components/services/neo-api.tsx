@@ -15,15 +15,27 @@ export interface HealthResponse {
 }
 
 export interface LicenseResponse {
-  status: string
-  expires_on?: string
-  license_type?: string
+  message: string
+  details: {
+    connection_id: string
+    days_remaining: number
+  }
 }
 
 export interface VersionResponse {
   version: string
-  build?: string
+  build_date?: string
   latest?: string
+}
+
+export interface UserResponse {
+  id: number
+  username: string
+  email: string
+  is_active: boolean
+  is_admin: boolean
+  created_at: string
+  last_login: string
 }
 
 interface TokenResponse {
@@ -34,26 +46,20 @@ interface TokenResponse {
 export class NeoApiService {
   private baseUrl: string
 
-  constructor(host?: string) {
-    // If host is provided and not empty, use it directly (for custom connections)
-    // Otherwise, use /api (proxied in both dev and production)
-    if (host && host.trim()) {
-      const trimmedHost = host.trim()
-      
-      if (trimmedHost.startsWith("http://") || trimmedHost.startsWith("https://")) {
-        this.baseUrl = trimmedHost
-      } else {
-        // Default to http:// for localhost, https:// for everything else
-        const protocol = trimmedHost.includes("localhost") || trimmedHost.startsWith("127.0.0.1") 
-          ? "http://" 
-          : "https://"
-        this.baseUrl = `${protocol}${trimmedHost}`
-      }
-    } else {
-      // Use proxy endpoint
-      this.baseUrl = '/api'
-    }
+  constructor() {
+    // const trimmedHost = host.trim()
+    this.baseUrl = '/api'
     
+    // Check if host already has a protocol
+    // if (trimmedHost.startsWith("http://") || trimmedHost.startsWith("https://")) {
+    //   this.baseUrl = trimmedHost
+    // } else {
+    //   // Default to http:// for localhost, https:// for everything else
+    //   const protocol = trimmedHost.includes("localhost") || trimmedHost.startsWith("127.0.0.1") 
+    //     ? "http://" 
+    //     : "https://"
+    //   this.baseUrl = `${protocol}${trimmedHost}`
+    // }
     console.log(`API base URL set to: ${this.baseUrl}`)
   }
 
@@ -92,7 +98,7 @@ export class NeoApiService {
       return data.access_token
     } catch (error) {
       if (error instanceof TypeError && error.message === 'Failed to fetch') {
-        throw new Error('Cannot connect to server. Check if the API is running and accessible.')
+        throw new Error('Cannot connect to server. Check if the API is running and CORS is enabled.')
       }
       throw error
     }
@@ -118,7 +124,7 @@ export class NeoApiService {
       return response.json() as Promise<T>
     } catch (error) {
       if (error instanceof TypeError && error.message === 'Failed to fetch') {
-        throw new Error(`Cannot connect to ${endpoint}. Check if the API is running and accessible.`)
+        throw new Error(`Cannot connect to ${endpoint}. Check if the API is running and CORS is enabled.`)
       }
       throw error
     }
@@ -136,13 +142,18 @@ export class NeoApiService {
     return this.fetchWithToken<VersionResponse>("/version", token)
   }
 
+  async getUsers(token: string): Promise<UserResponse[]> {
+    return this.fetchWithToken<UserResponse[]>("/users/", token)
+  }
+
   async fetchSystemData(token: string) {
-    const [health, license, version] = await Promise.all([
+    const [health, license, version, users] = await Promise.all([
       this.getHealth(token),
       this.getLicenseStatus(token),
       this.getVersion(token),
+      this.getUsers(token),
     ])
 
-    return { health, license, version }
+    return { health, license, version, users }
   }
 }
