@@ -34,19 +34,27 @@ interface TokenResponse {
 export class NeoApiService {
   private baseUrl: string
 
-  constructor(host: string) {
-    const trimmedHost = host.trim()
-    
-    // Check if host already has a protocol
-    if (trimmedHost.startsWith("http://") || trimmedHost.startsWith("https://")) {
-      this.baseUrl = trimmedHost
+  constructor(host?: string) {
+    // If host is provided and not empty, use it directly (for custom connections)
+    // Otherwise, use /api (proxied in both dev and production)
+    if (host && host.trim()) {
+      const trimmedHost = host.trim()
+      
+      if (trimmedHost.startsWith("http://") || trimmedHost.startsWith("https://")) {
+        this.baseUrl = trimmedHost
+      } else {
+        // Default to http:// for localhost, https:// for everything else
+        const protocol = trimmedHost.includes("localhost") || trimmedHost.startsWith("127.0.0.1") 
+          ? "http://" 
+          : "https://"
+        this.baseUrl = `${protocol}${trimmedHost}`
+      }
     } else {
-      // Default to http:// for localhost, https:// for everything else
-      const protocol = trimmedHost.includes("localhost") || trimmedHost.startsWith("127.0.0.1") 
-        ? "http://" 
-        : "https://"
-      this.baseUrl = `${protocol}${trimmedHost}`
+      // Use proxy endpoint
+      this.baseUrl = '/api'
     }
+    
+    console.log(`API base URL set to: ${this.baseUrl}`)
   }
 
   async authenticate(username: string, password: string): Promise<string> {
@@ -84,7 +92,7 @@ export class NeoApiService {
       return data.access_token
     } catch (error) {
       if (error instanceof TypeError && error.message === 'Failed to fetch') {
-        throw new Error('Cannot connect to server. Check if the API is running and CORS is enabled.')
+        throw new Error('Cannot connect to server. Check if the API is running and accessible.')
       }
       throw error
     }
@@ -110,7 +118,7 @@ export class NeoApiService {
       return response.json() as Promise<T>
     } catch (error) {
       if (error instanceof TypeError && error.message === 'Failed to fetch') {
-        throw new Error(`Cannot connect to ${endpoint}. Check if the API is running and CORS is enabled.`)
+        throw new Error(`Cannot connect to ${endpoint}. Check if the API is running and accessible.`)
       }
       throw error
     }

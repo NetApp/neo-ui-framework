@@ -1,8 +1,8 @@
 "use client"
 
-import { SectionCards } from "@/components/sections/cards"
+import { SectionCards } from "../sections/cards"
 import { DashboardChart } from "../data-tables/dashboard-chart"
-import type { HealthResponse, LicenseResponse, VersionResponse } from "@/components/services/neo-api"
+import type { HealthResponse, LicenseResponse, VersionResponse } from "../services/neo-api"
 
 interface DashboardProps {
   health: HealthResponse | null

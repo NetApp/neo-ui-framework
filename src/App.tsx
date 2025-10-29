@@ -7,12 +7,12 @@ import {
 
 import { ThemeProvider } from "./components/navs/theme-provider"
 
-import { AppSidebar } from "@/components/sidebars/sidebar"
-import { SiteHeader } from "@/components/sidebars/header"
+import { AppSidebar } from "./components/sidebars/sidebar"
+import { SiteHeader } from "./components/sidebars/header"
 import {
   SidebarInset,
   SidebarProvider,
-} from "@/components/ui/sidebar"
+} from "./components/ui/sidebar"
 
 import Dashboard from "./components/pages/dashboard"
 import Shares from "./components/pages/shares"
@@ -20,8 +20,8 @@ import Files from "./components/pages/files"
 import Operations from "./components/pages/operations"
 import Help from "./components/pages/help"
 
-import { NeoApiService, type HealthResponse, type LicenseResponse, type VersionResponse } from "@/components/services/neo-api"
-import type { ConnectionCredentials } from "@/components/dialogs/connect-dialog"
+import { NeoApiService, type HealthResponse, type LicenseResponse, type VersionResponse } from "./components/services/neo-api"
+import type { ConnectionCredentials } from "./components/dialogs/connect-dialog"
 
 function App() {
   const [health, setHealth] = useState<HealthResponse | null>(null)
@@ -29,10 +29,10 @@ function App() {
   const [version, setVersion] = useState<VersionResponse | null>(null)
 
   const handleConnect = useCallback(async (credentials: ConnectionCredentials) => {
-    console.log('Connecting to:', credentials.host)
+    console.log('Connecting to NetApp Neo API endpoint')
     
     try {
-      const api = new NeoApiService(credentials.host)
+      const api = new NeoApiService()
       
       // Authenticate and get token
       console.log('Authenticating...')

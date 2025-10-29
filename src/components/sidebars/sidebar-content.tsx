@@ -14,10 +14,10 @@ import {
 
 import {
   SidebarContent,
-} from "@/components/ui/sidebar"
+} from "../ui/sidebar"
 
 // internal components
-import { NavMain } from "@/components/navs/main"
+import { NavMain } from "../navs/main"
 
 const data = {
   navMain: [

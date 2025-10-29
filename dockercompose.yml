@@ -1,0 +1,52 @@
+version: 3.6
+services:
+
+  netapp-neo-ui:
+    image: localhost/netapp-neo-ui:latest
+    ports:
+      - "8080:80"
+    environment:
+      - NEO_API=http://netapp-neo:8080   # ← add this
+    networks:
+      - netapp-neo
+    restart: unless-stopped
+    depends_on:
+      - netapp-neo
+
+  netapp-neo:
+    image: ghcr.io/netapp/netapp-copilot-connector:2.2.6
+    user: "1000:1000"
+    cap_add:
+      - SYS_ADMIN
+      - DAC_READ_SEARCH
+      - DAC_OVERRIDE
+    security_opt:
+      - apparmor:unconfined
+    ports:
+      - "8081:8080"
+    networks:
+      - netapp-neo
+    env_file:
+      - .env
+    environment:
+      - UID=8000
+      - GID=8000
+      - PORT=8080
+      - PYTHONUNBUFFERED=1
+      - DB_PATH=data/database.db
+      - MS_GRAPH_CLIENT_ID=${MS_GRAPH_CLIENT_ID}
+      - MS_GRAPH_CLIENT_SECRET=${MS_GRAPH_CLIENT_SECRET}
+      - MS_GRAPH_TENANT_ID=${MS_GRAPH_TENANT_ID}
+      - MS_GRAPH_CONNECTOR_ID=${MS_GRAPH_CONNECTOR_ID:-netappcopilot}
+      - MS_GRAPH_CONNECTOR_NAME=${MS_GRAPH_CONNECTOR_NAME:-"NetApp Connector"}
+      - NETAPP_CONNECTOR_LICENSE=${NETAPP_CONNECTOR_LICENSE}
+    volumes:
+      - neo-226:/app/data
+    restart: unless-stopped
+volumes:
+  neo-226: # For persistent application data
+    driver: local
+
+networks:
+  netapp-neo:
+    driver: bridge

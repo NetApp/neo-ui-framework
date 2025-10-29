@@ -5,9 +5,9 @@ import * as React from "react"
 import {
   Sidebar,
   SidebarFooter,
-} from "@/components/ui/sidebar"
+} from "../ui/sidebar"
 
-import { NavUser } from "@/components/navs/users"
+import { NavUser } from "../navs/users"
 
 const data = {
   user: {

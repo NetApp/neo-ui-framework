@@ -2,13 +2,13 @@
 
 import {
   Sidebar,
-} from "@/components/ui/sidebar"
+} from "../ui/sidebar"
 
 // internal components
-import { AppSidebarHeader } from "@/components/sidebars/sidebarheader"
-import { AppSidebarContent } from "@/components/sidebars/sidebar-content"
+import { AppSidebarHeader } from "../sidebars/sidebarheader"
+import { AppSidebarContent } from "../sidebars/sidebar-content"
 // working on user integration with oauth2
-// import { AppSidebarFooter } from "@/components/sidebar/sidebarfooter"
+// import { AppSidebarFooter } from "../sidebar/sidebarfooter"
 
 
 export function AppSidebar() {
