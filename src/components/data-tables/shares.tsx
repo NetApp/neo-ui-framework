@@ -132,6 +132,7 @@ export function SharesTable({ shares, onDeleteShare, onStartCrawl, onFetchShareD
                     <Button
                       variant="outline"
                       size="icon"
+                      className="text-red-700"
                       onClick={() => openConfirm(share.id)}
                       aria-label="Delete share"
                       disabled={submitting && pendingId === share.id}
