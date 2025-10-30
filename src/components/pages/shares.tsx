@@ -75,6 +75,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onStartCrawl
         setAlertVariant("error")
         setAlertMessage("Crawl job failed to start!")
       }
+      return ok
     },
     [onStartCrawl]
   )
@@ -84,7 +85,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onStartCrawl
 
     const timer = window.setTimeout(() => {
       setAlertMessage(null)
-    }, 10_000)
+    }, 5_000)
 
     return () => window.clearTimeout(timer)
   }, [alertMessage])

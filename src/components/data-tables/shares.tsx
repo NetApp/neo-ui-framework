@@ -20,11 +20,12 @@ import {
   TableHeader,
   TableRow,
 } from "../ui/table"
+import { Spinner } from "../ui/spinner"
 
 interface SharesTableProps {
   shares: SharesResponse[] | null
   onDeleteShare: (shareId: number) => Promise<void>
-  onStartCrawl: (shareId: number) => Promise<void>
+  onStartCrawl: (shareId: number) => Promise<boolean>
 }
 
 export function SharesTable({ shares, onDeleteShare, onStartCrawl }: SharesTableProps) {
@@ -32,6 +33,7 @@ export function SharesTable({ shares, onDeleteShare, onStartCrawl }: SharesTable
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [pendingId, setPendingId] = useState<number | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [crawlingId, setCrawlingId] = useState<number | null>(null)
 
   const openConfirm = (shareId: number) => {
     setPendingId(shareId)
@@ -49,59 +51,78 @@ export function SharesTable({ shares, onDeleteShare, onStartCrawl }: SharesTable
     }
   }
 
+  const handleStartCrawlClick = async (shareId: number) => {
+    setCrawlingId(shareId)
+    try {
+      await onStartCrawl(shareId)
+    } finally {
+      setCrawlingId(null)
+    }
+  }
+
   return (
     <>
-     <div className="overflow-hidden rounded-lg border">
-      <Table>
-        <TableHeader className="bg-muted sticky top-0 z-10">
-          <TableRow>
-            <TableHead>Share Path</TableHead>
-            <TableHead>User</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Last Crawled</TableHead>
-            <TableHead>Files</TableHead>
-            <TableHead className="w-[80px] text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {rows.length ? (
-            rows.map((share) => (
-              <TableRow key={share.id}>
-                <TableCell>{share.share_path}</TableCell>
-                <TableCell>{share.username}</TableCell>
-                <TableCell>{share.status}</TableCell>
-                <TableCell>{share.last_crawled ? new Date(share.last_crawled).toLocaleString() : "—"}</TableCell>
-                <TableCell>{share.last_crawl_file_count}</TableCell>
-                <TableCell className="text-right space-x-2">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => onStartCrawl(share.id)}
-                    aria-label="Start crawl"
-                  >
-                    <IconDatabaseExport className="size-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => openConfirm(share.id)}
-                    aria-label="Delete share"
-                  >
-                    <IconTrash className="size-4" />
-                  </Button>
+      <div className="overflow-hidden rounded-lg border">
+        <Table>
+          <TableHeader className="sticky top-0 z-10 bg-muted">
+            <TableRow>
+              <TableHead>Share Path</TableHead>
+              <TableHead>User</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Last Crawled</TableHead>
+              <TableHead>Files</TableHead>
+              <TableHead className="w-[120px] text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.length ? (
+              rows.map((share) => (
+                <TableRow key={share.id}>
+                  <TableCell>{share.share_path}</TableCell>
+                  <TableCell>{share.username}</TableCell>
+                  <TableCell>{share.status}</TableCell>
+                  <TableCell>
+                    {share.last_crawled ? new Date(share.last_crawled).toLocaleString() : "—"}
+                  </TableCell>
+                  <TableCell>{share.last_crawl_file_count}</TableCell>
+                  <TableCell className="space-x-2 text-right">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => handleStartCrawlClick(share.id)}
+                      disabled={crawlingId === share.id}
+                      aria-label="Start crawl"
+                      aria-busy={crawlingId === share.id}
+                    >
+                      {crawlingId === share.id ? (
+                        <Spinner className="size-4" />
+                      ) : (
+                        <IconDatabaseExport className="size-4" />
+                      )}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => openConfirm(share.id)}
+                      aria-label="Delete share"
+                      disabled={submitting && pendingId === share.id}
+                    >
+                      <IconTrash className="size-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center text-sm text-muted-foreground">
+                  No shares available.
                 </TableCell>
               </TableRow>
-            ))
-          ) : (
-            <TableRow>
-              <TableCell colSpan={6} className="text-center text-sm text-muted-foreground">
-                No shares available.
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
+            )}
+          </TableBody>
+        </Table>
       </div>
+
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <DialogContent>
           <DialogHeader>
