@@ -182,7 +182,7 @@ export function SharesTable({ shares, onDeleteShare, onStartCrawl, onFetchShareD
           }
         }}
       >
-        <DialogContent className="sm:max-w-[1640px] overflow-x-auto max-h-[80vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-[90vw] lg:max-w-[vw] overflow-x-auto max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-center">Share details</DialogTitle>
           </DialogHeader>
