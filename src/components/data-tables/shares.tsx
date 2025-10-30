@@ -1,8 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { IconTrash, IconDatabaseExport } from "@tabler/icons-react"
-import type { SharesResponse } from "../services/neo-api"
+import { IconTrash, IconDatabaseExport, IconInfoCircle } from "@tabler/icons-react"
+import type { ShareDetailsResponse, SharesResponse } from "../services/neo-api"
 import {
   Dialog,
   DialogContent,
@@ -21,19 +21,25 @@ import {
   TableRow,
 } from "../ui/table"
 import { Spinner } from "../ui/spinner"
+import { Separator } from "@radix-ui/react-separator"
 
 interface SharesTableProps {
   shares: SharesResponse[] | null
   onDeleteShare: (shareId: number) => Promise<void>
   onStartCrawl: (shareId: number) => Promise<boolean>
+  onFetchShareDetails: (shareId: number) => Promise<ShareDetailsResponse>
 }
 
-export function SharesTable({ shares, onDeleteShare, onStartCrawl }: SharesTableProps) {
+export function SharesTable({ shares, onDeleteShare, onStartCrawl, onFetchShareDetails }: SharesTableProps) {
   const rows = shares ?? []
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [pendingId, setPendingId] = useState<number | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [crawlingId, setCrawlingId] = useState<number | null>(null)
+  const [detailsOpen, setDetailsOpen] = useState(false)
+  const [detailsLoading, setDetailsLoading] = useState(false)
+  const [detailsError, setDetailsError] = useState<string | null>(null)
+  const [detailsData, setDetailsData] = useState<ShareDetailsResponse | null>(null)
 
   const openConfirm = (shareId: number) => {
     setPendingId(shareId)
@@ -60,6 +66,21 @@ export function SharesTable({ shares, onDeleteShare, onStartCrawl }: SharesTable
     }
   }
 
+  const handleShowDetails = async (shareId: number) => {
+    setDetailsOpen(true)
+    setDetailsLoading(true)
+    setDetailsError(null)
+    setDetailsData(null)
+    try {
+      const data = await onFetchShareDetails(shareId)
+      setDetailsData(data)
+    } catch (error) {
+      setDetailsError(error instanceof Error ? error.message : "Unable to load share details.")
+    } finally {
+      setDetailsLoading(false)
+    }
+  }
+
   return (
     <>
       <div className="overflow-hidden rounded-lg border">
@@ -71,7 +92,7 @@ export function SharesTable({ shares, onDeleteShare, onStartCrawl }: SharesTable
               <TableHead>Status</TableHead>
               <TableHead>Last Crawled</TableHead>
               <TableHead>Files</TableHead>
-              <TableHead className="w-[120px] text-right">Actions</TableHead>
+              <TableHead className="w-[160px] text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -99,6 +120,14 @@ export function SharesTable({ shares, onDeleteShare, onStartCrawl }: SharesTable
                       ) : (
                         <IconDatabaseExport className="size-4" />
                       )}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => handleShowDetails(share.id)}
+                      aria-label="Share details"
+                    >
+                      <IconInfoCircle className="size-4" />
                     </Button>
                     <Button
                       variant="outline"
@@ -137,6 +166,113 @@ export function SharesTable({ shares, onDeleteShare, onStartCrawl }: SharesTable
             </Button>
             <Button variant="destructive" onClick={handleConfirm} disabled={submitting}>
               {submitting ? "Deleting…" : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={detailsOpen}
+        onOpenChange={(open) => {
+          setDetailsOpen(open)
+          if (!open) {
+            setDetailsData(null)
+            setDetailsError(null)
+            setDetailsLoading(false)
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-[1640px] overflow-x-auto max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-center">Share details</DialogTitle>
+          </DialogHeader>
+          <Separator className="" />
+
+          <div className="space-y-4">
+            {detailsLoading ? (
+              <div className="flex items-center justify-center py-6">
+                <Spinner className="size-6" />
+              </div>
+            ) : detailsError ? (
+              <p className="text-sm text-destructive">{detailsError}</p>
+            ) : detailsData ? (
+              <dl className="grid grid-cols-1 gap-y-3 text-sm text-muted-foreground sm:grid-cols-4 sm:gap-x-6">
+                <div>
+                  <dt className="font-medium text-foreground">Share path</dt>
+                  <dd className="p-1">{detailsData.share_path}</dd>
+                </div>
+                <div>
+                  <dt className="font-medium text-foreground">Username</dt>
+                  <dd className="p-1">{detailsData.username}</dd>
+                </div>
+                <div>
+                  <dt className="font-medium text-foreground">Status</dt>
+                  <dd className="p-1 font-bold">{detailsData.status}</dd>
+                </div>
+                <div>
+                  <dt className="font-medium text-foreground">Created</dt>
+                  <dd className="p-1">{new Date(detailsData.created_at).toLocaleString()}</dd>
+                </div>
+                <div>
+                  <dt className="font-medium text-foreground">Last crawled</dt>
+                  <dd className="p-1">
+                    {detailsData.last_crawled
+                      ? new Date(detailsData.last_crawled).toLocaleString()
+                      : "N/A"}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="font-medium text-foreground">Last crawl duration (ms)</dt>
+                  <dd className="p-1">{detailsData.last_crawl_duration_ms || "N/A"}</dd>
+                </div>
+                <div>
+                  <dt className="font-medium text-foreground">Last crawl file count</dt>
+                  <dd className="p-1">{detailsData.last_crawl_file_count || "N/A"}</dd>
+                </div>
+                <div>
+                  <dt className="font-medium text-foreground">Crawl schedule</dt>
+                  <dd className="p-1">{detailsData.crawl_schedule || "N/A"}</dd>
+                </div>
+                <div>
+                  <dt className="font-medium text-foreground">Last connection attempt</dt>
+                  <dd className="p-1">
+                    {detailsData.last_connection_attempt
+                      ? new Date(detailsData.last_connection_attempt).toLocaleString()
+                      : "N/A"}
+                  </dd>                  
+                </div>
+                <div>
+                  <dt className="font-medium text-foreground">Kerberos</dt>
+                  <dd className="p-1">{detailsData.use_kerberos || "N/A"}</dd>
+                </div>
+                <div>
+                  <dt className="font-medium text-foreground">Workgroup</dt>
+                  <dd className="p-1">{detailsData.workgroup || "N/A"}</dd>
+                </div>
+                <div>
+                  <dt className="font-medium text-foreground">Realm</dt>
+                  <dd className="p-1">{detailsData.realm || "N/A"}</dd>
+                </div>
+                <div className="sm:col-span-4">
+                  <dt className="font-medium text-foreground">Resolve order</dt>
+                  <dd className="p-1">{detailsData.resolve_order || "N/A"}</dd>
+                </div>
+                <div className="sm:col-span-4">
+                  <dt className="font-medium text-foreground">Rules</dt>
+                  <dd><pre className="mt-1 max-h-40 overflow-auto p-2">{JSON.stringify(detailsData.rules || "N/A", null, 2)}</pre></dd>
+                </div>
+                <div className="sm:col-span-4">
+                  <dt className="font-medium text-foreground">Error message</dt>
+                  <dd><pre className="mt-1 max-h-80 overflow-auto p-2">{detailsData.error_message || "N/A"}</pre></dd>
+                </div>
+              </dl>
+            ) : (
+              <p className="text-sm text-muted-foreground">No details available.</p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDetailsOpen(false)}>
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>

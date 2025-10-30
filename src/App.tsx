@@ -30,6 +30,7 @@ import {
   type VersionResponse,
   type SharesResponse,
   type FilesResponse,
+  type ShareDetailsResponse,
   AuthenticationError,
 } from "./components/services/neo-api"
 import type { ConnectionCredentials } from "./components/dialogs/connect-dialog"
@@ -181,6 +182,18 @@ function App() {
     [applySystemData, clearSystemData, token]
   )
 
+  const handleFetchShareDetails = useCallback(
+    async (shareId: number): Promise<ShareDetailsResponse> => {
+      if (!token) {
+        throw new AuthenticationError()
+      }
+
+      const api = apiRef.current
+      return api.getShareDetails(token, shareId)
+    },
+    [token]
+  )
+
   return (
     <ThemeProvider>
       <SidebarProvider
@@ -209,6 +222,7 @@ function App() {
                     onDeleteShare={handleDeleteShare}
                     onAddShare={handleAddShare}
                     onStartCrawl={handleStartCrawl}
+                    onFetchShareDetails={handleFetchShareDetails}
                   />
                 }
               />

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react"
 import { IconPlus } from "@tabler/icons-react"
 import { CheckCircle2Icon, AlertCircleIcon } from "lucide-react"
-import type { SharesResponse } from "../services/neo-api"
+import type { ShareDetailsResponse, SharesResponse } from "../services/neo-api"
 import { SharesTable } from "../data-tables/shares"
 import { Button } from "../ui/button"
 import {
@@ -23,9 +23,10 @@ interface SharesProps {
   onDeleteShare: (shareId: number) => Promise<void>
   onAddShare: (share: { share_path: string; username: string; password: string }) => Promise<void>
   onStartCrawl: (shareId: number) => Promise<boolean>
+  onFetchShareDetails: (shareId: number) => Promise<ShareDetailsResponse>
 }
 
-export default function Shares({ shares, onDeleteShare, onAddShare, onStartCrawl }: SharesProps) {
+export default function Shares({ shares, onDeleteShare, onAddShare, onStartCrawl, onFetchShareDetails }: SharesProps) {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [sharePath, setSharePath] = useState("")
   const [username, setUsername] = useState("")
@@ -115,6 +116,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onStartCrawl
               shares={shares}
               onDeleteShare={onDeleteShare}
               onStartCrawl={handleCrawl}
+              onFetchShareDetails={onFetchShareDetails}
             />
           </div>
         </div>

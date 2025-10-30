@@ -56,6 +56,25 @@ export interface SharesResponse {
   last_crawl_file_count: number
 }
 
+export interface ShareDetailsResponse {
+  id: string
+  share_path: string
+  username: string
+  created_at: string
+  last_crawled: string
+  last_crawl_duration_ms: number
+  last_crawl_file_count: number
+  crawl_schedule: string
+  rules: Record<string, unknown>
+  status: string
+  error_message: string
+  last_connection_attempt: string
+  realm: string
+  use_kerberos: string
+  workgroup: string
+  resolve_order: string
+}
+
 export interface FilesResponse {
   id: number
   filename: string
@@ -261,6 +280,10 @@ export class NeoApiService {
         `Share crawl failed (${response.status} ${response.statusText})`
       )
     }
+  }
+
+  async getShareDetails(token: string, shareId: number): Promise<ShareDetailsResponse> {
+    return this.fetchWithToken<ShareDetailsResponse>(`/shares/${shareId}`, token)
   }
 
   async getFiles(token: string): Promise<FilesResponse[]> {
