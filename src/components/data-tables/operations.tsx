@@ -9,10 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import {
-  Tabs,
-  TabsContent,
-} from "@/components/ui/tabs"
+
 
 interface OperationsTableProps {
   operations?: OperationResponse[] | null
@@ -22,8 +19,7 @@ export function OperationsTable({ operations }: OperationsTableProps) {
   const rows = operations ?? []
 
   return (
-    <Tabs defaultValue="all-operations" className="w-full flex-col justify-start gap-6">
-      <TabsContent value="all-operations">
+    <>
         <div className="overflow-hidden rounded-lg border">
         <Table>
           <TableHeader className="bg-muted sticky top-0 z-10">
@@ -56,7 +52,6 @@ export function OperationsTable({ operations }: OperationsTableProps) {
           </TableBody>
         </Table>
         </div>
-      </TabsContent>
-    </Tabs>
+    </>
   )
 }

@@ -9,10 +9,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import {
-  Tabs,
-  TabsContent,
-} from "@/components/ui/tabs"
 
 interface FilesTableProps {
   files?: FilesResponse[] | null
@@ -22,8 +18,7 @@ export function FilesTable({ files }: FilesTableProps) {
   const rows = files ?? []
 
   return (
-    <Tabs defaultValue="all-files" className="w-full flex-col justify-start gap-6">
-      <TabsContent value="all-files">
+    <>
         <div className="overflow-hidden rounded-lg border">
         <Table>
           <TableHeader className="bg-muted sticky top-0 z-10">
@@ -58,7 +53,6 @@ export function FilesTable({ files }: FilesTableProps) {
           </TableBody>
         </Table>
         </div>
-      </TabsContent>
-    </Tabs>
+    </>
   )
 }

@@ -9,10 +9,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import {
-  Tabs,
-  TabsContent,
-} from "@/components/ui/tabs"
 
 interface UsersTableProps {
   users?: UserResponse[] | null
@@ -22,8 +18,7 @@ export function UsersTable({ users }: UsersTableProps) {
   const rows = users ?? []
 
   return (
-    <Tabs defaultValue="all-users" className="w-full flex-col justify-start gap-6">
-      <TabsContent value="all-users">
+    <>
         <div className="overflow-hidden rounded-lg border">
         <Table>
           <TableHeader className="bg-muted sticky top-0 z-10">
@@ -58,7 +53,6 @@ export function UsersTable({ users }: UsersTableProps) {
           </TableBody>
         </Table>
         </div>
-      </TabsContent>
-    </Tabs>
+    </>
   )
 }

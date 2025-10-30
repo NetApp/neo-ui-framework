@@ -195,6 +195,53 @@ export class NeoApiService {
     return this.fetchWithToken<SharesResponse[]>("/shares", token)
   }
 
+  async deleteShare(token: string, shareId: number): Promise<void> {
+    const response = await fetch(`${this.baseUrl}/shares/${shareId}`, {
+      method: "DELETE",
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error(`DELETE /shares/${shareId} error:`, response.status, errorText)
+      if (response.status === 401 || response.status === 403) {
+        throw new AuthenticationError()
+      }
+      throw new Error(
+        `Share deletion failed (${response.status} ${response.statusText})`
+      )
+    }
+  }
+
+  async createShare(
+    token: string,
+    payload: { share_path: string; username: string; password: string }
+  ): Promise<void> {
+    const response = await fetch(`${this.baseUrl}/shares`, {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error("POST /shares error:", response.status, errorText)
+      if (response.status === 401 || response.status === 403) {
+        throw new AuthenticationError()
+      }
+      throw new Error(
+        `Share creation failed (${response.status} ${response.statusText})`
+      )
+    }
+  }
+
   async getFiles(token: string): Promise<FilesResponse[]> {
     return this.fetchWithToken<FilesResponse[]>("/files", token)
   }

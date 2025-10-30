@@ -1,10 +1,12 @@
 import {
   cloneElement,
-  isValidElement,
   useCallback,
   useState,
 } from "react"
-import type { ComponentProps, MouseEvent, ReactNode } from "react"
+import type { 
+  MouseEvent, 
+  ReactElement 
+} from "react"
 import { Button } from "../ui/button"
 import {
   Dialog,
@@ -18,11 +20,18 @@ import {
 import { Input } from "../ui/input"
 import { Label } from "../ui/label"
 
+type TriggerElementProps = {
+  onClick?: (event: MouseEvent<HTMLElement>) => void
+  disabled?: boolean
+  "aria-busy"?: boolean
+  [key: string]: unknown
+}
+
 interface ConnectDialogProps {
   onConnect: (credentials: ConnectionCredentials) => Promise<void>
   onRefresh?: () => Promise<void>
   isConnected: boolean
-  children?: ReactNode
+  children?: ReactElement<TriggerElementProps>
 }
 
 export interface ConnectionCredentials {
@@ -84,17 +93,14 @@ export function ConnectDialog({ onConnect, onRefresh, isConnected, children }: C
   )
 
   const triggerChild = (() => {
-    if (children && isValidElement(children)) {
+    if (children) {
       return cloneElement(children, {
         onClick: async (event: MouseEvent<HTMLElement>) => {
           await handleTriggerClick(event)
-          if (children.props.onClick) {
-            children.props.onClick(event)
-          }
+          children.props.onClick?.(event)
         },
-        disabled:
-          refreshing || loading || Boolean(children.props.disabled),
-        "aria-busy": refreshing || children.props["aria-busy"],
+        disabled: refreshing || loading || Boolean(children.props.disabled),
+        "aria-busy": refreshing || Boolean(children.props["aria-busy"]),
       })
     }
 

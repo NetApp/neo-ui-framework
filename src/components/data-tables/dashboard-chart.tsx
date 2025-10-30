@@ -20,9 +20,9 @@ export function DashboardChart() {
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Dashboard Chart</CardTitle>
+                <CardTitle>Metrics</CardTitle>
                 <CardDescription>
-                    Example of a dashboard chart component.
+                    Future improvements.
                 </CardDescription>
             </CardHeader>
             <CardContent>

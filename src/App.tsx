@@ -33,6 +33,7 @@ import {
   AuthenticationError,
 } from "./components/services/neo-api"
 import type { ConnectionCredentials } from "./components/dialogs/connect-dialog"
+import { toast } from "sonner"
 
 function App() {
   const [health, setHealth] = useState<HealthResponse | null>(null)
@@ -109,6 +110,53 @@ function App() {
     }
   }, [applySystemData, clearSystemData, token])
 
+  const handleDeleteShare = useCallback(async (shareId: number) => {
+    if (!token) {
+      throw new AuthenticationError()
+    }
+
+    const api = apiRef.current
+
+    try {
+      await api.deleteShare(token, shareId)
+      const data = await api.fetchSystemData(token)
+      applySystemData(data)
+      toast.success("Share deleted!")
+    } catch (error) {
+      if (error instanceof AuthenticationError) {
+        clearSystemData()
+        setToken(null)
+      }
+      toast.error("Share deletion failed!")
+      throw error
+    }
+  }, [applySystemData, clearSystemData, token])
+
+  const handleAddShare = useCallback(
+    async (share: { share_path: string; username: string; password: string }) => {
+      if (!token) {
+        throw new AuthenticationError()
+      }
+
+      const api = apiRef.current
+
+      try {
+        await api.createShare(token, share)
+        const data = await api.fetchSystemData(token)
+        applySystemData(data)
+        toast.success("Share added!")
+      } catch (error) {
+        if (error instanceof AuthenticationError) {
+          clearSystemData()
+          setToken(null)
+        }
+        toast.error("Share creation failed!")
+        throw error
+      }
+    },
+    [applySystemData, clearSystemData, token]
+  )
+
   return (
     <ThemeProvider>
       <SidebarProvider
@@ -129,7 +177,16 @@ function App() {
                 path="/dashboard" 
                 element={<Dashboard health={health} license={license} version={version} />} 
               />
-              <Route path="/shares" element={<Shares shares={shares} />} />
+              <Route 
+                path="/shares"
+                element={
+                  <Shares
+                    shares={shares}
+                    onDeleteShare={handleDeleteShare}
+                    onAddShare={handleAddShare}
+                  />
+                }
+              />
               <Route path="/files" element={<Files files={files}/>} />
               <Route path="/operations" element={<Operations operations={operations}/>} />
               <Route path="/users" element={<Users users={users} />} />
