@@ -44,9 +44,9 @@ services:
       - neo-226:/app/data
     restart: unless-stopped
 volumes:
-  neo-226: # For persistent application data
+  neo-226:
     driver: local
 
 networks:
   netapp-neo:
-    driver: bridge
+    driver: local
