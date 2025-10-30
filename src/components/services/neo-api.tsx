@@ -242,6 +242,27 @@ export class NeoApiService {
     }
   }
 
+  async startShareCrawl(token: string, shareId: number): Promise<void> {
+    const response = await fetch(`${this.baseUrl}/shares/${shareId}/crawl`, {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error(`POST /shares/${shareId}/crawl error:`, response.status, errorText)
+      if (response.status === 401 || response.status === 403) {
+        throw new AuthenticationError()
+      }
+      throw new Error(
+        `Share crawl failed (${response.status} ${response.statusText})`
+      )
+    }
+  }
+
   async getFiles(token: string): Promise<FilesResponse[]> {
     return this.fetchWithToken<FilesResponse[]>("/files", token)
   }

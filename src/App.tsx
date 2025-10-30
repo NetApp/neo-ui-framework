@@ -157,6 +157,30 @@ function App() {
     [applySystemData, clearSystemData, token]
   )
 
+  const handleStartCrawl = useCallback(
+    async (shareId: number) => {
+      if (!token) {
+        throw new AuthenticationError()
+      }
+
+      const api = apiRef.current
+
+      try {
+        await api.startShareCrawl(token, shareId)
+        const data = await api.fetchSystemData(token)
+        applySystemData(data)
+        return true
+      } catch (error) {
+        if (error instanceof AuthenticationError) {
+          clearSystemData()
+          setToken(null)
+        }
+        return false
+      }
+    },
+    [applySystemData, clearSystemData, token]
+  )
+
   return (
     <ThemeProvider>
       <SidebarProvider
@@ -184,6 +208,7 @@ function App() {
                     shares={shares}
                     onDeleteShare={handleDeleteShare}
                     onAddShare={handleAddShare}
+                    onStartCrawl={handleStartCrawl}
                   />
                 }
               />

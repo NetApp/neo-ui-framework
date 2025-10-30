@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { IconTrash } from "@tabler/icons-react"
+import { IconTrash, IconDatabaseExport } from "@tabler/icons-react"
 import type { SharesResponse } from "../services/neo-api"
 import {
   Dialog,
@@ -24,9 +24,10 @@ import {
 interface SharesTableProps {
   shares: SharesResponse[] | null
   onDeleteShare: (shareId: number) => Promise<void>
+  onStartCrawl: (shareId: number) => Promise<void>
 }
 
-export function SharesTable({ shares, onDeleteShare }: SharesTableProps) {
+export function SharesTable({ shares, onDeleteShare, onStartCrawl }: SharesTableProps) {
   const rows = shares ?? []
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [pendingId, setPendingId] = useState<number | null>(null)
@@ -71,7 +72,15 @@ export function SharesTable({ shares, onDeleteShare }: SharesTableProps) {
                 <TableCell>{share.status}</TableCell>
                 <TableCell>{share.last_crawled ? new Date(share.last_crawled).toLocaleString() : "—"}</TableCell>
                 <TableCell>{share.last_crawl_file_count}</TableCell>
-                <TableCell className="text-right">
+                <TableCell className="text-right space-x-2">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => onStartCrawl(share.id)}
+                    aria-label="Start crawl"
+                  >
+                    <IconDatabaseExport className="size-4" />
+                  </Button>
                   <Button
                     variant="ghost"
                     size="icon"

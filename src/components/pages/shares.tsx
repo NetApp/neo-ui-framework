@@ -1,7 +1,8 @@
 "use client"
 
-import { useCallback, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { IconPlus } from "@tabler/icons-react"
+import { CheckCircle2Icon, AlertCircleIcon } from "lucide-react"
 import type { SharesResponse } from "../services/neo-api"
 import { SharesTable } from "../data-tables/shares"
 import { Button } from "../ui/button"
@@ -15,20 +16,24 @@ import {
 } from "../ui/dialog"
 import { Input } from "../ui/input"
 import { Label } from "../ui/label"
+import { Alert, AlertDescription, AlertTitle } from "../ui/alert"
 
 interface SharesProps {
   shares: SharesResponse[] | null
   onDeleteShare: (shareId: number) => Promise<void>
   onAddShare: (share: { share_path: string; username: string; password: string }) => Promise<void>
+  onStartCrawl: (shareId: number) => Promise<boolean>
 }
 
-export default function Shares({ shares, onDeleteShare, onAddShare }: SharesProps) {
+export default function Shares({ shares, onDeleteShare, onAddShare, onStartCrawl }: SharesProps) {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [sharePath, setSharePath] = useState("")
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [alertMessage, setAlertMessage] = useState<string | null>(null)
+  const [alertVariant, setAlertVariant] = useState<"success" | "error">("success")
 
   const resetForm = useCallback(() => {
     setSharePath("")
@@ -60,6 +65,30 @@ export default function Shares({ shares, onDeleteShare, onAddShare }: SharesProp
     [onAddShare, password, resetForm, sharePath, username]
   )
 
+  const handleCrawl = useCallback(
+    async (shareId: number) => {
+      const ok = await onStartCrawl(shareId)
+      if (ok) {
+        setAlertVariant("success")
+        setAlertMessage("Crawl job started!")
+      } else {
+        setAlertVariant("error")
+        setAlertMessage("Crawl job failed to start!")
+      }
+    },
+    [onStartCrawl]
+  )
+
+  useEffect(() => {
+    if (!alertMessage) return
+
+    const timer = window.setTimeout(() => {
+      setAlertMessage(null)
+    }, 10_000)
+
+    return () => window.clearTimeout(timer)
+  }, [alertMessage])
+
   return (
     <div className="flex flex-1 flex-col">
       <div className="@container/main flex flex-1 flex-col gap-2">
@@ -71,7 +100,21 @@ export default function Shares({ shares, onDeleteShare, onAddShare }: SharesProp
                 Add share
               </Button>
             </div>
-            <SharesTable shares={shares} onDeleteShare={onDeleteShare} />
+            {alertMessage ? (
+              <Alert
+                variant={alertVariant === "success" ? "default" : "destructive"}
+                className="mb-4"
+              >
+                {alertVariant === "success" ? <CheckCircle2Icon /> : <AlertCircleIcon />}
+                <AlertTitle>{alertMessage}</AlertTitle>
+                <AlertDescription />
+              </Alert>
+            ) : null}
+            <SharesTable
+              shares={shares}
+              onDeleteShare={onDeleteShare}
+              onStartCrawl={handleCrawl}
+            />
           </div>
         </div>
       </div>
