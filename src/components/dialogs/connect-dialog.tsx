@@ -1,4 +1,10 @@
-import { useCallback, useState } from "react"
+import {
+  cloneElement,
+  isValidElement,
+  useCallback,
+  useState,
+} from "react"
+import type { ComponentProps, MouseEvent, ReactNode } from "react"
 import { Button } from "../ui/button"
 import {
   Dialog,
@@ -14,8 +20,9 @@ import { Label } from "../ui/label"
 
 interface ConnectDialogProps {
   onConnect: (credentials: ConnectionCredentials) => Promise<void>
+  onRefresh?: () => Promise<void>
   isConnected: boolean
-  children?: React.ReactNode
+  children?: ReactNode
 }
 
 export interface ConnectionCredentials {
@@ -23,12 +30,37 @@ export interface ConnectionCredentials {
   password: string
 }
 
-export function ConnectDialog({ onConnect, isConnected, children }: ConnectDialogProps) {
+export function ConnectDialog({ onConnect, onRefresh, isConnected, children }: ConnectDialogProps) {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [refreshing, setRefreshing] = useState(false)
+
+  const handleTriggerClick = useCallback(
+    async (event: MouseEvent<HTMLElement>) => {
+      if (!isConnected || !onRefresh) {
+        return
+      }
+
+      event.preventDefault()
+      setError(null)
+      setRefreshing(true)
+
+      try {
+        await onRefresh()
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : "Unable to refresh data."
+        setError(message)
+        setDialogOpen(true)
+      } finally {
+        setRefreshing(false)
+      }
+    },
+    [isConnected, onRefresh]
+  )
 
   const handleSubmit = useCallback(
     async (event: React.FormEvent<HTMLFormElement>) => {
@@ -40,8 +72,8 @@ export function ConnectDialog({ onConnect, isConnected, children }: ConnectDialo
       try {
         await onConnect({ username, password })
         setDialogOpen(false)
-        // Clear password for security
         setPassword("")
+        setError(null)
       } catch (err) {
         setError(err instanceof Error ? err.message : "Connection failed")
       } finally {
@@ -51,15 +83,45 @@ export function ConnectDialog({ onConnect, isConnected, children }: ConnectDialo
     [username, password, onConnect]
   )
 
+  const triggerChild = (() => {
+    if (children && isValidElement(children)) {
+      return cloneElement(children, {
+        onClick: async (event: MouseEvent<HTMLElement>) => {
+          await handleTriggerClick(event)
+          if (children.props.onClick) {
+            children.props.onClick(event)
+          }
+        },
+        disabled:
+          refreshing || loading || Boolean(children.props.disabled),
+        "aria-busy": refreshing || children.props["aria-busy"],
+      })
+    }
+
+    return (
+      <Button
+        variant="outline"
+        onClick={handleTriggerClick}
+        disabled={refreshing || loading}
+        aria-busy={refreshing}
+      >
+        {isConnected ? "Refresh" : "Connect"}
+      </Button>
+    )
+  })()
+
   return (
-    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-      <DialogTrigger asChild>
-        {children ?? (
-          <Button variant="outline">
-            {isConnected ? "Reconnect" : "Connect"}
-          </Button>
-        )}
-      </DialogTrigger>
+    <Dialog
+      open={dialogOpen}
+      onOpenChange={(open) => {
+        setDialogOpen(open)
+        if (!open) {
+          setError(null)
+          setLoading(false)
+        }
+      }}
+    >
+      <DialogTrigger asChild>{triggerChild}</DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Connect to Neo</DialogTitle>

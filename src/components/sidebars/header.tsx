@@ -9,10 +9,11 @@ import { ConnectDialog, type ConnectionCredentials } from "../dialogs/connect-di
 
 interface SiteHeaderProps {
   onConnect: (credentials: ConnectionCredentials) => Promise<void>
+  onRefresh: () => Promise<void>
   isConnected: boolean
 }
 
-export function SiteHeader({ onConnect, isConnected }: SiteHeaderProps) {
+export function SiteHeader({ onConnect, onRefresh, isConnected }: SiteHeaderProps) {
   const location = useLocation()
 
   let title = "Welcome"
@@ -62,11 +63,11 @@ export function SiteHeader({ onConnect, isConnected }: SiteHeaderProps) {
               <IconBrandGithub />
             </a>
           </Button>
-          <ConnectDialog onConnect={onConnect} isConnected={isConnected}>
+          <ConnectDialog onConnect={onConnect} onRefresh={onRefresh} isConnected={isConnected}>
             <Button variant="outline" size="icon" className="hidden sm:flex">
               {isConnected ? <IconRefresh /> : <IconKey />}
               <span className="sr-only">
-                {isConnected ? "Reconnect" : "Connect"}
+                {isConnected ? "Refresh data" : "Connect"}
               </span>
             </Button>
           </ConnectDialog>

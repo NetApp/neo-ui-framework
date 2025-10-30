@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react"
+import { useCallback, useRef, useState } from "react"
 import { 
   HashRouter,
   Routes,
@@ -29,7 +29,8 @@ import {
   type UserResponse, 
   type VersionResponse,
   type SharesResponse,
-  type FilesResponse
+  type FilesResponse,
+  AuthenticationError,
 } from "./components/services/neo-api"
 import type { ConnectionCredentials } from "./components/dialogs/connect-dialog"
 
@@ -41,36 +42,72 @@ function App() {
   const [operations, setOperations] = useState<OperationResponse[] | null>(null)
   const [shares, setShares] = useState<SharesResponse[] | null>(null)
   const [files, setFiles] = useState<FilesResponse[] | null>(null)
+  const [token, setToken] = useState<string | null>(null)
+  const apiRef = useRef(new NeoApiService())
+
+  const applySystemData = useCallback((data: {
+    health: HealthResponse
+    license: LicenseResponse
+    version: VersionResponse
+    users: UserResponse[]
+    operations: OperationResponse[]
+    shares: SharesResponse[]
+    files: FilesResponse[]
+  }) => {
+    setHealth(data.health)
+    setLicense(data.license)
+    setVersion(data.version)
+    setUsers(data.users)
+    setOperations(data.operations)
+    setShares(data.shares)
+    setFiles(data.files)
+  }, [])
+
+  const clearSystemData = useCallback(() => {
+    setHealth(null)
+    setLicense(null)
+    setVersion(null)
+    setUsers(null)
+    setOperations(null)
+    setShares(null)
+    setFiles(null)
+  }, [])
 
   const handleConnect = useCallback(async (credentials: ConnectionCredentials) => {
-    console.log('Connecting to NetApp Neo API endpoint')
-    
+    console.log("Connecting to NetApp Neo API endpoint")
+
     try {
-      const api = new NeoApiService()
-      
-      // Authenticate and get token
-      console.log('Authenticating...')
+      const api = apiRef.current
       const token = await api.authenticate(credentials.username, credentials.password)
-      console.log('Token received:', token.substring(0, 20) + '...')
-      
-      // Fetch all system data
-      console.log('Fetching system data...')
       const data = await api.fetchSystemData(token)
-      console.log('System data received:', data)
-      
-      setHealth(data.health)
-      setLicense(data.license)
-      setVersion(data.version)
-      setUsers(data.users)
-      setOperations(data.operations)
-      setShares(data.shares)
-      setFiles(data.files)
+
+      applySystemData(data)
+      setToken(token)
     } catch (error) {
-      console.error('Connection error:', error)
-      // Re-throw to let the dialog handle it
+      clearSystemData()
+      setToken(null)
       throw error
     }
-  }, [])
+  }, [applySystemData, clearSystemData])
+
+  const handleRefresh = useCallback(async () => {
+    if (!token) {
+      throw new AuthenticationError()
+    }
+
+    const api = apiRef.current
+
+    try {
+      const data = await api.fetchSystemData(token)
+      applySystemData(data)
+    } catch (error) {
+      if (error instanceof AuthenticationError) {
+        clearSystemData()
+        setToken(null)
+      }
+      throw error
+    }
+  }, [applySystemData, clearSystemData, token])
 
   return (
     <ThemeProvider>
@@ -85,7 +122,7 @@ function App() {
         <HashRouter>
           <AppSidebar />
           <SidebarInset>
-            <SiteHeader onConnect={handleConnect} isConnected={!!health} />
+            <SiteHeader onConnect={handleConnect} onRefresh={handleRefresh} isConnected={!!token} />
             <Routes>
               <Route path="/" element={<Help />} />
               <Route 

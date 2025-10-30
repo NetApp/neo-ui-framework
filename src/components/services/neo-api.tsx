@@ -71,6 +71,13 @@ interface TokenResponse {
   token_type: string
 }
 
+export class AuthenticationError extends Error {
+  constructor(message = "Session expired. Please reconnect.") {
+    super(message)
+    this.name = "AuthenticationError"
+  }
+}
+
 export class NeoApiService {
   private baseUrl: string
 
@@ -111,7 +118,10 @@ export class NeoApiService {
 
       if (!response.ok) {
         const errorText = await response.text()
-        console.error('Auth response error:', response.status, errorText)
+        console.error("Auth response error:", response.status, errorText)
+        if (response.status === 401 || response.status === 403) {
+          throw new AuthenticationError("Invalid username or password.")
+        }
         throw new Error(
           `Authentication failed (${response.status} ${response.statusText})`
         )
@@ -144,6 +154,9 @@ export class NeoApiService {
       if (!response.ok) {
         const errorText = await response.text()
         console.error(`${endpoint} error:`, response.status, errorText)
+        if (response.status === 401 || response.status === 403) {
+          throw new AuthenticationError()
+        }
         throw new Error(
           `${endpoint} failed (${response.status} ${response.statusText})`
         )
