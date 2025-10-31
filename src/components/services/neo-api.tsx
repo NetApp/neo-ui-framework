@@ -304,6 +304,37 @@ export class NeoApiService {
     return this.fetchWithToken<FilesResponse[]>("/files", token)
   }
 
+  async createUser(
+    token: string,
+    payload: {
+      id: number
+      username: string
+      password: string
+      email?: string
+      is_active: boolean
+      is_admin: boolean
+    }
+  ): Promise<void> {
+    const response = await fetch(`${this.baseUrl}/users/`, {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error("POST /users/ error:", response.status, errorText)
+      if (response.status === 401 || response.status === 403) {
+        throw new AuthenticationError()
+      }
+      throw new Error(`User creation failed (${response.status} ${response.statusText})`)
+    }
+  }
+
   async fetchSystemData(token: string) {
     const [health, license, version, users, me, operations, shares, files] = await Promise.all([
       this.getHealth(token),

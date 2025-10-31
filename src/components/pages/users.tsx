@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useState } from "react"
+import { IconPlus } from "@tabler/icons-react"
 import type { MeResponse, UserResponse } from "../services/neo-api"
 import { UsersTable } from "../data-tables/users"
 import { Button } from "../ui/button"
@@ -18,49 +19,101 @@ import { Label } from "../ui/label"
 interface UsersProps {
   users: UserResponse[] | null
   me: MeResponse | null
+  onAddUser: (user: {
+    id: number
+    username: string
+    password: string
+    email?: string
+    is_active: boolean
+    is_admin: boolean
+  }) => Promise<void>
   onChangePassword: (payload: { current_password: string; new_password: string }) => Promise<void>
 }
 
-export default function Users({ users, me, onChangePassword }: UsersProps) {
-  const [dialogOpen, setDialogOpen] = useState(false)
+export default function Users({ users, me, onAddUser, onChangePassword }: UsersProps) {
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false)
   const [currentPassword, setCurrentPassword] = useState("")
   const [newPassword, setNewPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
-  const [error, setError] = useState<string | null>(null)
-  const [submitting, setSubmitting] = useState(false)
+  const [passwordError, setPasswordError] = useState<string | null>(null)
+  const [passwordSubmitting, setPasswordSubmitting] = useState(false)
 
-  const openDialog = useCallback(() => {
-    setDialogOpen(true)
-    setError(null)
+  const [addDialogOpen, setAddDialogOpen] = useState(false)
+  const [newUsername, setNewUsername] = useState("")
+  const [newUserPassword, setNewUserPassword] = useState("")
+  const [newEmail, setNewEmail] = useState("")
+  const [newIsActive, setNewIsActive] = useState(true)
+  const [newIsAdmin, setNewIsAdmin] = useState(false)
+  const [addError, setAddError] = useState<string | null>(null)
+  const [addSubmitting, setAddSubmitting] = useState(false)
+
+  const openPasswordDialog = useCallback(() => {
+    setPasswordDialogOpen(true)
+    setPasswordError(null)
     setCurrentPassword("")
     setNewPassword("")
     setConfirmPassword("")
   }, [])
 
-  const handleSubmit = useCallback(
+  const handlePasswordSubmit = useCallback(
     async (event: React.FormEvent<HTMLFormElement>) => {
       event.preventDefault()
       if (newPassword !== confirmPassword) {
-        setError("Passwords do not match.")
+        setPasswordError("Passwords do not match.")
         return
       }
 
-      setSubmitting(true)
-      setError(null)
+      setPasswordSubmitting(true)
+      setPasswordError(null)
 
       try {
         await onChangePassword({
           current_password: currentPassword,
           new_password: newPassword,
         })
-        setDialogOpen(false)
+        setPasswordDialogOpen(false)
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Password update failed.")
+        setPasswordError(err instanceof Error ? err.message : "Password update failed.")
       } finally {
-        setSubmitting(false)
+        setPasswordSubmitting(false)
       }
     },
     [confirmPassword, currentPassword, newPassword, onChangePassword]
+  )
+
+  const resetAddForm = useCallback(() => {
+    setNewUsername("")
+    setNewUserPassword("")
+    setNewEmail("")
+    setNewIsActive(true)
+    setNewIsAdmin(false)
+    setAddError(null)
+  }, [])
+
+  const handleAddSubmit = useCallback(
+    async (event: React.FormEvent<HTMLFormElement>) => {
+      event.preventDefault()
+      setAddSubmitting(true)
+      setAddError(null)
+
+      try {
+        await onAddUser({
+          id: 0,
+          username: newUsername,
+          password: newUserPassword,
+          email: newEmail || "",
+          is_active: newIsActive,
+          is_admin: newIsAdmin,
+        })
+        setAddDialogOpen(false)
+        resetAddForm()
+      } catch (err) {
+        setAddError(err instanceof Error ? err.message : "User creation failed.")
+      } finally {
+        setAddSubmitting(false)
+      }
+    },
+    [newEmail, newIsActive, newIsAdmin, newUserPassword, newUsername, onAddUser, resetAddForm]
   )
 
   return (
@@ -68,20 +121,24 @@ export default function Users({ users, me, onChangePassword }: UsersProps) {
       <div className="@container/main flex flex-1 flex-col gap-2">
         <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
           <div className="px-4 lg:px-6">
-            <UsersTable users={users} me={me} onRequestPasswordChange={openDialog} />
+            <div className="mb-4 flex justify-end">
+              <Button onClick={() => setAddDialogOpen(true)}>
+                <IconPlus className="mr-2 size-4" />
+                Add user
+              </Button>
+            </div>
+            <UsersTable users={users} me={me} onRequestPasswordChange={openPasswordDialog} />
           </div>
         </div>
       </div>
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      <Dialog open={passwordDialogOpen} onOpenChange={setPasswordDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Update password</DialogTitle>
-            <DialogDescription>
-              Provide your current password and choose a new one.
-            </DialogDescription>
+            <DialogDescription>Provide your current password and choose a new one.</DialogDescription>
           </DialogHeader>
-          <form className="space-y-4" onSubmit={handleSubmit}>
+          <form className="space-y-4" onSubmit={handlePasswordSubmit}>
             <div className="space-y-2">
               <Label htmlFor="current-password">Current password</Label>
               <Input
@@ -112,13 +169,92 @@ export default function Users({ users, me, onChangePassword }: UsersProps) {
                 required
               />
             </div>
-            {error ? <p className="text-sm text-destructive">{error}</p> : null}
+            {passwordError ? <p className="text-sm text-destructive">{passwordError}</p> : null}
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} disabled={submitting}>
+              <Button type="button" variant="outline" onClick={() => setPasswordDialogOpen(false)} disabled={passwordSubmitting}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={submitting}>
-                {submitting ? "Updating…" : "Update password"}
+              <Button type="submit" disabled={passwordSubmitting}>
+                {passwordSubmitting ? "Updating…" : "Update password"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={addDialogOpen}
+        onOpenChange={(open) => {
+          setAddDialogOpen(open)
+          if (!open) {
+            resetAddForm()
+            setAddSubmitting(false)
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add a user</DialogTitle>
+            <DialogDescription>Create a new user account for NetApp Neo.</DialogDescription>
+          </DialogHeader>
+          <form className="space-y-4" onSubmit={handleAddSubmit}>
+            <div className="space-y-2">
+              <Label htmlFor="new-username">Username</Label>
+              <Input
+                id="new-username"
+                value={newUsername}
+                onChange={(event) => setNewUsername(event.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="new-user-password">Password</Label>
+              <Input
+                id="new-user-password"
+                type="password"
+                value={newUserPassword}
+                onChange={(event) => setNewUserPassword(event.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="new-email">E-mail (optional)</Label>
+              <Input
+                id="new-email"
+                type="email"
+                value={newEmail}
+                onChange={(event) => setNewEmail(event.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-3">
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  id="new-active"
+                  type="checkbox"
+                  className="size-4 accent-primary"
+                  checked={newIsActive}
+                  onChange={(event) => setNewIsActive(event.target.checked)}
+                />
+                Active
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  id="new-admin"
+                  type="checkbox"
+                  className="size-4 accent-primary"
+                  checked={newIsAdmin}
+                  onChange={(event) => setNewIsAdmin(event.target.checked)}
+                />
+                Admin
+              </label>
+            </div>
+            {addError ? <p className="text-sm text-destructive">{addError}</p> : null}
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setAddDialogOpen(false)} disabled={addSubmitting}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={addSubmitting}>
+                {addSubmitting ? "Creating…" : "Create user"}
               </Button>
             </DialogFooter>
           </form>

@@ -199,6 +199,38 @@ function App() {
     [token]
   )
 
+  const handleAddUser = useCallback(
+    async (user: {
+      id: number
+      username: string
+      password: string
+      email?: string
+      is_active: boolean
+      is_admin: boolean
+    }) => {
+      if (!token) {
+        throw new AuthenticationError()
+      }
+
+      const api = apiRef.current
+
+      try {
+        await api.createUser(token, user)
+        const data = await api.fetchSystemData(token)
+        applySystemData(data)
+        toast.success("User created!")
+      } catch (error) {
+        if (error instanceof AuthenticationError) {
+          clearSystemData()
+          setToken(null)
+        }
+        toast.error("User creation failed!")
+        throw error
+      }
+    },
+    [applySystemData, clearSystemData, token]
+  )
+
   const handleChangePassword = useCallback(
     async (payload: { current_password: string; new_password: string }) => {
       if (!token) {
@@ -256,7 +288,17 @@ function App() {
               />
               <Route path="/files" element={<Files files={files}/>} />
               <Route path="/operations" element={<Operations operations={operations}/>} />
-              <Route path="/users" element={<Users users={users} me={me} onChangePassword={handleChangePassword} />} />
+              <Route
+                path="/users"
+                element={
+                  <Users
+                    users={users}
+                    me={me}
+                    onAddUser={handleAddUser}
+                    onChangePassword={handleChangePassword}
+                  />
+                }
+              />
               <Route path="/help" element={<Help />} />
             </Routes>
           </SidebarInset>
