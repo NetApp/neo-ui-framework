@@ -1,4 +1,4 @@
-# Neo Client
+# UI Framework for NetApp Neo 
 
 The NetApp Neo UI is the standalone web UI for the NetApp Neo.
 
