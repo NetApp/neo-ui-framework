@@ -69,3 +69,4 @@ To build a redistributable package:
 - modify the ```dockercompose.yaml``` to include your personal build image as ```image: localhost/netapp-neo-ui:feature-xyz```
 - run docker/podman compose command like ```podman compose -f docker-compose.yml up```
 - open the page ```http://localhost:8080``` in your browser
+

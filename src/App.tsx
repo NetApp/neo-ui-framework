@@ -26,7 +26,8 @@ import {
   type HealthResponse, 
   type LicenseResponse, 
   type OperationResponse, 
-  type UserResponse, 
+  type UserResponse,
+  type MeResponse,
   type VersionResponse,
   type SharesResponse,
   type FilesResponse,
@@ -41,6 +42,7 @@ function App() {
   const [license, setLicense] = useState<LicenseResponse | null>(null)
   const [version, setVersion] = useState<VersionResponse | null>(null)
   const [users, setUsers] = useState<UserResponse[] | null>(null)
+  const [me, setMe] = useState<MeResponse | null>(null)
   const [operations, setOperations] = useState<OperationResponse[] | null>(null)
   const [shares, setShares] = useState<SharesResponse[] | null>(null)
   const [files, setFiles] = useState<FilesResponse[] | null>(null)
@@ -52,6 +54,7 @@ function App() {
     license: LicenseResponse
     version: VersionResponse
     users: UserResponse[]
+    me: MeResponse
     operations: OperationResponse[]
     shares: SharesResponse[]
     files: FilesResponse[]
@@ -60,6 +63,7 @@ function App() {
     setLicense(data.license)
     setVersion(data.version)
     setUsers(data.users)
+    setMe(data.me)
     setOperations(data.operations)
     setShares(data.shares)
     setFiles(data.files)
@@ -70,6 +74,7 @@ function App() {
     setLicense(null)
     setVersion(null)
     setUsers(null)
+    setMe(null)
     setOperations(null)
     setShares(null)
     setFiles(null)
@@ -228,7 +233,7 @@ function App() {
               />
               <Route path="/files" element={<Files files={files}/>} />
               <Route path="/operations" element={<Operations operations={operations}/>} />
-              <Route path="/users" element={<Users users={users} />} />
+              <Route path="/users" element={<Users users={users} me={me} />} />
               <Route path="/help" element={<Help />} />
             </Routes>
           </SidebarInset>

@@ -38,6 +38,16 @@ export interface UserResponse {
   last_login: string
 }
 
+export interface MeResponse {
+  id: number
+  username: string
+  email: string
+  is_active: boolean
+  is_admin: boolean
+  created_at: string
+  last_login: string
+}
+
 export interface OperationResponse {
   id: number
   operation_type: string
@@ -206,6 +216,10 @@ export class NeoApiService {
     return this.fetchWithToken<UserResponse[]>("/users/", token)
   }
 
+  async getMeUsers(token: string): Promise<MeResponse> {
+    return this.fetchWithToken<MeResponse>("/users/me", token)
+  }
+
   async getOperations(token: string): Promise<OperationResponse[]> {
     return this.fetchWithToken<OperationResponse[]>("/operations/", token)
   }
@@ -291,16 +305,17 @@ export class NeoApiService {
   }
 
   async fetchSystemData(token: string) {
-    const [health, license, version, users, operations, shares, files] = await Promise.all([
+    const [health, license, version, users, me, operations, shares, files] = await Promise.all([
       this.getHealth(token),
       this.getLicenseStatus(token),
       this.getVersion(token),
       this.getUsers(token),
+      this.getMeUsers(token),
       this.getOperations(token),
       this.getShares(token),
       this.getFiles(token),
     ])
 
-    return { health, license, version, users, operations, shares, files }
+    return { health, license, version, users, me, operations, shares, files }
   }
 }
