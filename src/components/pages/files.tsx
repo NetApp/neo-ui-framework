@@ -170,7 +170,10 @@ export default function Files({ files, shares, onSelectShare }: FilesProps) {
 
             {files?.path ? (
               <p className="mb-2 text-sm text-muted-foreground">
-                Showing files for: <span className="font-medium">{files.path}</span>
+                Showing files for:{" "}
+                <span className="font-medium">
+                  {files.share_id}
+                </span>
               </p>
             ) : null}
 
