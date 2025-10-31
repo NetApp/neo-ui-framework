@@ -85,14 +85,31 @@ export interface ShareDetailsResponse {
   resolve_order: string
 }
 
-export interface FilesResponse {
-  id: number
-  filename: string
+export interface FileEntry {
+  id: string
+  file_path: string
   unc_path: string
+  filename: string
   size: number
-  type: string
+  created_at: string
   modified_time: string
-  indexed: boolean
+  accessed_at: string
+  is_directory: boolean
+  file_type: string
+  indexed_at: string
+}
+
+export interface FilesResponse {
+  share_id: string
+  path: string
+  files: FileEntry[]
+  total_count: number
+  total_size: number
+  page: number
+  page_size: number
+  total_pages: number
+  has_next: boolean
+  has_previous: boolean
 }
 
 interface TokenResponse {
@@ -353,8 +370,8 @@ export class NeoApiService {
     return this.fetchWithToken<ShareDetailsResponse>(`/shares/${shareId}`, token)
   }
 
-  async getFiles(token: string): Promise<FilesResponse[]> {
-    return this.fetchWithToken<FilesResponse[]>("/files", token)
+  async getFiles(token: string, shareId: number): Promise<FilesResponse> {
+    return this.fetchWithToken<FilesResponse>(`/shares/${shareId}/files`, token)
   }
 
   async createUser(
@@ -389,7 +406,7 @@ export class NeoApiService {
   }
 
   async fetchSystemData(token: string) {
-    const [health, license, version, users, me, operations, shares, files] = await Promise.all([
+    const [health, license, version, users, me, operations, shares] = await Promise.all([
       this.getHealth(token),
       this.getLicenseStatus(token),
       this.getVersion(token),
@@ -397,8 +414,10 @@ export class NeoApiService {
       this.getMeUsers(token),
       this.getOperations(token),
       this.getShares(token),
-      this.getFiles(token),
     ])
+
+    const primaryShareId = shares[0]?.id
+    const files = primaryShareId != null ? await this.getFiles(token, primaryShareId) : null
 
     return { health, license, version, users, me, operations, shares, files }
   }

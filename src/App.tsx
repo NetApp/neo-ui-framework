@@ -45,7 +45,7 @@ function App() {
   const [me, setMe] = useState<MeResponse | null>(null)
   const [operations, setOperations] = useState<OperationResponse[] | null>(null)
   const [shares, setShares] = useState<SharesResponse[] | null>(null)
-  const [files, setFiles] = useState<FilesResponse[] | null>(null)
+  const [files, setFiles] = useState<FilesResponse | null>(null)
   const [token, setToken] = useState<string | null>(null)
   const apiRef = useRef(new NeoApiService())
 
@@ -57,7 +57,7 @@ function App() {
     me: MeResponse
     operations: OperationResponse[]
     shares: SharesResponse[]
-    files: FilesResponse[]
+    files: FilesResponse | null
   }) => {
     setHealth(data.health)
     setLicense(data.license)
@@ -341,7 +341,7 @@ function App() {
                   />
                 }
               />
-              <Route path="/files" element={<Files files={files}/>} />
+              <Route path="/files" element={<Files files={files} />} />
               <Route path="/operations" element={<Operations operations={operations}/>} />
               <Route
                 path="/users"

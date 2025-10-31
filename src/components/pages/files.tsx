@@ -4,7 +4,7 @@ import type { FilesResponse } from "../services/neo-api"
 import { FilesTable } from "../data-tables/files"
 
 interface FilesProps {
-  files: FilesResponse[] | null
+  files: FilesResponse | null
 }
 
 export default function Files({ files }: FilesProps) {
