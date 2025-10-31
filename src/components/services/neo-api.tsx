@@ -416,10 +416,7 @@ export class NeoApiService {
       this.getShares(token),
     ])
 
-    const primaryShareId = shares[0]?.id
-    const files = primaryShareId != null ? await this.getFiles(token, primaryShareId) : null
-
-    return { health, license, version, users, me, operations, shares, files }
+    return { health, license, version, users, me, operations, shares, files: null }
   }
 
   async changeMyPassword(

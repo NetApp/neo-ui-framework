@@ -308,6 +308,65 @@ function App() {
     [clearSystemData, token]
   )
 
+  const handleSelectFilesShare = useCallback(
+    async (shareKey: number | "all" | null) => {
+      if (!token) {
+        toast.error("Connect first to load files.")
+        return
+      }
+
+      const api = apiRef.current
+
+      if (shareKey === null) {
+        setFiles(null)
+        return
+      }
+
+      setFiles(null)
+
+      try {
+        if (shareKey === "all") {
+          if (!shares?.length) {
+            setFiles(null)
+            return
+          }
+
+          const responses = await Promise.all(
+            shares.map((share) => api.getFiles(token, share.id))
+          )
+
+          const aggregatedFiles = responses.flatMap((response) => response.files)
+
+          const aggregated: FilesResponse = {
+            share_id: "all",
+            path: "All shares",
+            files: aggregatedFiles,
+            total_count: responses.reduce((total, response) => total + response.total_count, 0),
+            total_size: responses.reduce((total, response) => total + response.total_size, 0),
+            page: 0,
+            page_size: aggregatedFiles.length,
+            total_pages: aggregatedFiles.length ? 1 : 0,
+            has_next: false,
+            has_previous: false,
+          }
+
+          setFiles(aggregated)
+        } else {
+          const response = await api.getFiles(token, shareKey)
+          setFiles(response)
+        }
+      } catch (error) {
+        if (error instanceof AuthenticationError) {
+          clearSystemData()
+          setToken(null)
+        }
+        console.error("Failed to load files", error)
+        toast.error("Failed to load files.")
+      }
+    },
+    [token, shares, clearSystemData]
+  )
+
   return (
     <ThemeProvider>
       <SidebarProvider
@@ -341,7 +400,16 @@ function App() {
                   />
                 }
               />
-              <Route path="/files" element={<Files files={files} />} />
+              <Route
+                path="/files"
+                element={
+                  <Files
+                    files={files}
+                    shares={shares}
+                    onSelectShare={handleSelectFilesShare}
+                  />
+                }
+              />
               <Route path="/operations" element={<Operations operations={operations}/>} />
               <Route
                 path="/users"
