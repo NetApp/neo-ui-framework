@@ -291,6 +291,43 @@ export class NeoApiService {
     }
   }
 
+  async updateShare(
+    token: string,
+    shareId: number,
+    payload: {
+      share_path: string
+      username: string
+      password: string
+      crawl_schedule: string
+      rules: Record<string, unknown>
+      realm: string
+      use_kerberos: string
+      workgroup: string
+      resolve_order: string
+    }
+  ): Promise<void> {
+    const response = await fetch(`${this.baseUrl}/shares/${shareId}`, {
+      method: "PATCH",
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error(`PATCH /shares/${shareId} error:`, response.status, errorText)
+      if (response.status === 401 || response.status === 403) {
+        throw new AuthenticationError()
+      }
+      throw new Error(
+        `Share update failed (${response.status} ${response.statusText})`
+      )
+    }
+  }
+
   async startShareCrawl(token: string, shareId: number): Promise<void> {
     const response = await fetch(`${this.baseUrl}/shares/${shareId}/crawl`, {
       method: "POST",

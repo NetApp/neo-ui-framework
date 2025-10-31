@@ -179,6 +179,44 @@ function App() {
     [applySystemData, clearSystemData, token]
   )
 
+  const handleUpdateShare = useCallback(
+    async (
+      shareId: number,
+      share: {
+        share_path: string
+        username: string
+        password: string
+        crawl_schedule: string
+        rules: Record<string, unknown>
+        realm: string
+        use_kerberos: string
+        workgroup: string
+        resolve_order: string
+      }
+    ) => {
+      if (!token) {
+        throw new AuthenticationError()
+      }
+
+      const api = apiRef.current
+
+      try {
+        await api.updateShare(token, shareId, share)
+        const data = await api.fetchSystemData(token)
+        applySystemData(data)
+        toast.success("Share updated!")
+      } catch (error) {
+        if (error instanceof AuthenticationError) {
+          clearSystemData()
+          setToken(null)
+        }
+        toast.error("Share update failed!")
+        throw error
+      }
+    },
+    [applySystemData, clearSystemData, token]
+  )
+
   const handleStartCrawl = useCallback(
     async (shareId: number) => {
       if (!token) {
@@ -297,6 +335,7 @@ function App() {
                     shares={shares}
                     onDeleteShare={handleDeleteShare}
                     onAddShare={handleAddShare}
+                    onUpdateShare={handleUpdateShare}
                     onStartCrawl={handleStartCrawl}
                     onFetchShareDetails={handleFetchShareDetails}
                   />

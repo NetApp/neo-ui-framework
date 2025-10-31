@@ -41,11 +41,25 @@ interface SharesProps {
   shares: SharesResponse[] | null
   onDeleteShare: (shareId: number) => Promise<void>
   onAddShare: (share: ShareFormValues) => Promise<void>
+  onUpdateShare: (
+    shareId: number,
+    share: {
+      share_path: string
+      username: string
+      password: string
+      crawl_schedule: string
+      rules: Record<string, unknown>
+      realm: string
+      use_kerberos: string
+      workgroup: string
+      resolve_order: string
+    }
+  ) => Promise<void>
   onStartCrawl: (shareId: number) => Promise<boolean>
   onFetchShareDetails: (shareId: number) => Promise<ShareDetailsResponse>
 }
 
-export default function Shares({ shares, onDeleteShare, onAddShare, onStartCrawl, onFetchShareDetails }: SharesProps) {
+export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShare, onStartCrawl, onFetchShareDetails }: SharesProps) {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [sharePath, setSharePath] = useState("")
   const [username, setUsername] = useState("")
@@ -65,6 +79,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onStartCrawl
   const [workgroup, setWorkgroup] = useState("")
   const [resolveOrder, setResolveOrder] = useState("host")
   const [showAdvanced, setShowAdvanced] = useState(false)
+  const [editingShareId, setEditingShareId] = useState<number | null>(null)
 
   const resetForm = useCallback(() => {
     setSharePath("")
@@ -80,6 +95,8 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onStartCrawl
     setUseKerberos("required")
     setWorkgroup("")
     setResolveOrder("host")
+    setShowAdvanced(false)
+    setEditingShareId(null)
     setError(null)
   }, [])
 
@@ -90,29 +107,55 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onStartCrawl
       setError(null)
 
       try {
-        await onAddShare({
-          share_path: sharePath,
-          username,
-          password,
-          crawl_schedule: crawlSchedule,
-          rules: {
-            exclude_patterns: excludePatterns
-              .split(",")
-              .map((item) => item.trim())
-              .filter(Boolean),
-            include_patterns: includePatterns
-              .split(",")
-              .map((item) => item.trim())
-              .filter(Boolean),
-            max_file_size: Number.parseInt(maxFileSize, 10) || 0,
-            min_file_size: Number.parseInt(minFileSize, 10) || 0,
-            persist_file_content: persistFileContent,
-          },
-          realm,
-          use_kerberos: useKerberos,
-          workgroup,
-          resolve_order: resolveOrder,
-        })
+        if (editingShareId != null) {
+          await onUpdateShare(editingShareId, {
+            share_path: sharePath,
+            username,
+            password,
+            crawl_schedule: crawlSchedule,
+            rules: {
+              exclude_patterns: excludePatterns
+                .split(",")
+                .map((item) => item.trim())
+                .filter(Boolean),
+              include_patterns: includePatterns
+                .split(",")
+                .map((item) => item.trim())
+                .filter(Boolean),
+              max_file_size: Number.parseInt(maxFileSize, 10) || 0,
+              min_file_size: Number.parseInt(minFileSize, 10) || 0,
+              persist_file_content: persistFileContent,
+            },
+            realm,
+            use_kerberos: useKerberos,
+            workgroup,
+            resolve_order: resolveOrder,
+          })
+        } else {
+          await onAddShare({
+            share_path: sharePath,
+            username,
+            password,
+            crawl_schedule: crawlSchedule,
+            rules: {
+              exclude_patterns: excludePatterns
+                .split(",")
+                .map((item) => item.trim())
+                .filter(Boolean),
+              include_patterns: includePatterns
+                .split(",")
+                .map((item) => item.trim())
+                .filter(Boolean),
+              max_file_size: Number.parseInt(maxFileSize, 10) || 0,
+              min_file_size: Number.parseInt(minFileSize, 10) || 0,
+              persist_file_content: persistFileContent,
+            },
+            realm,
+            use_kerberos: useKerberos,
+            workgroup,
+            resolve_order: resolveOrder,
+          })
+        }
         setDialogOpen(false)
         resetForm()
       } catch (err) {
@@ -121,7 +164,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onStartCrawl
         setSubmitting(false)
       }
     },
-    [onAddShare, password, resetForm, sharePath, username, crawlSchedule, excludePatterns, includePatterns, maxFileSize, minFileSize, persistFileContent, realm, useKerberos, workgroup, resolveOrder]
+    [onAddShare, onUpdateShare, password, resetForm, sharePath, username, crawlSchedule, excludePatterns, includePatterns, maxFileSize, minFileSize, persistFileContent, realm, useKerberos, workgroup, resolveOrder, editingShareId]
   )
 
   const handleCrawl = useCallback(
@@ -149,6 +192,45 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onStartCrawl
     return () => window.clearTimeout(timer)
   }, [alertMessage])
 
+  const populateForm = useCallback((details: ShareDetailsResponse) => {
+    setSharePath(details.share_path ?? "")
+    setUsername(details.username ?? "")
+    setPassword("")
+    setCrawlSchedule(details.crawl_schedule ?? "0 0 * * *")
+    const rules = (details.rules ?? {}) as Record<string, unknown>
+    setExcludePatterns(Array.isArray(rules.exclude_patterns) ? rules.exclude_patterns.join(", ") : "")
+    setIncludePatterns(Array.isArray(rules.include_patterns) ? rules.include_patterns.join(", ") : "")
+    setMaxFileSize(
+      typeof rules.max_file_size === "number" ? String(rules.max_file_size) : "1000000000"
+    )
+    setMinFileSize(
+      typeof rules.min_file_size === "number" ? String(rules.min_file_size) : "0"
+    )
+    setPersistFileContent(
+      typeof rules.persist_file_content === "boolean" ? rules.persist_file_content : true
+    )
+    setRealm(details.realm ?? "")
+    setUseKerberos(details.use_kerberos ?? "required")
+    setWorkgroup(details.workgroup ?? "")
+    setResolveOrder(details.resolve_order ?? "host")
+    setShowAdvanced(true)
+  }, [])
+
+  const handleEditShare = useCallback(
+    async (shareId: number) => {
+      try {
+        const details = await onFetchShareDetails(shareId)
+        populateForm(details)
+        setEditingShareId(shareId)
+        setDialogOpen(true)
+      } catch (err) {
+        setAlertVariant("error")
+        setAlertMessage(err instanceof Error ? err.message : "Unable to load share details.")
+      }
+    },
+    [onFetchShareDetails, populateForm]
+  )
+
   return (
     <div className="flex flex-1 flex-col">
       <div className="@container/main flex flex-1 flex-col gap-2">
@@ -175,6 +257,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onStartCrawl
               onDeleteShare={onDeleteShare}
               onStartCrawl={handleCrawl}
               onFetchShareDetails={onFetchShareDetails}
+              onEditShare={handleEditShare}
             />
           </div>
         </div>
@@ -192,7 +275,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onStartCrawl
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add a share</DialogTitle>
+            <DialogTitle>{editingShareId != null ? "Edit share" : "Add a share"}</DialogTitle>
             <DialogDescription>
               Provide the SMB share path and credentials. The share will be scheduled for indexing.
             </DialogDescription>
@@ -339,7 +422,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onStartCrawl
                 Cancel
               </Button>
               <Button type="submit" disabled={submitting}>
-                {submitting ? "Creating…" : "Create share"}
+                {submitting ? (editingShareId != null ? "Saving…" : "Creating…") : editingShareId != null ? "Save changes" : "Create share"}
               </Button>
             </DialogFooter>
           </form>

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { IconTrash, IconDatabaseExport, IconInfoCircle } from "@tabler/icons-react"
+import { IconTrash, IconDatabaseExport, IconInfoCircle, IconEdit } from "@tabler/icons-react"
 import type { ShareDetailsResponse, SharesResponse } from "../services/neo-api"
 import {
   Dialog,
@@ -28,9 +28,10 @@ interface SharesTableProps {
   onDeleteShare: (shareId: number) => Promise<void>
   onStartCrawl: (shareId: number) => Promise<boolean>
   onFetchShareDetails: (shareId: number) => Promise<ShareDetailsResponse>
+  onEditShare: (shareId: number) => void
 }
 
-export function SharesTable({ shares, onDeleteShare, onStartCrawl, onFetchShareDetails }: SharesTableProps) {
+export function SharesTable({ shares, onDeleteShare, onStartCrawl, onFetchShareDetails, onEditShare }: SharesTableProps) {
   const rows = shares ?? []
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [pendingId, setPendingId] = useState<number | null>(null)
@@ -107,6 +108,14 @@ export function SharesTable({ shares, onDeleteShare, onStartCrawl, onFetchShareD
                   </TableCell>
                   <TableCell>{share.last_crawl_file_count}</TableCell>
                   <TableCell className="space-x-2 text-right">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => onEditShare(share.id)}
+                      aria-label="Edit share"
+                    >
+                      <IconEdit className="size-4" />
+                    </Button>
                     <Button
                       variant="outline"
                       size="icon"
