@@ -25,30 +25,30 @@ import { Separator } from "@radix-ui/react-separator"
 
 interface SharesTableProps {
   shares: SharesResponse[] | null
-  onDeleteShare: (shareId: number) => Promise<void>
-  onStartCrawl: (shareId: number) => Promise<boolean>
-  onFetchShareDetails: (shareId: number) => Promise<ShareDetailsResponse>
-  onEditShare: (shareId: number) => void
+  onDeleteShare: (shareId: string) => Promise<void>
+  onStartCrawl: (shareId: string) => Promise<boolean>
+  onFetchShareDetails: (shareId: string) => Promise<ShareDetailsResponse>
+  onEditShare: (shareId: string) => void
 }
 
 export function SharesTable({ shares, onDeleteShare, onStartCrawl, onFetchShareDetails, onEditShare }: SharesTableProps) {
   const rows = shares ?? []
   const [confirmOpen, setConfirmOpen] = useState(false)
-  const [pendingId, setPendingId] = useState<number | null>(null)
+  const [pendingId, setPendingId] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
-  const [crawlingId, setCrawlingId] = useState<number | null>(null)
+  const [crawlingId, setCrawlingId] = useState<string | null>(null)
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [detailsLoading, setDetailsLoading] = useState(false)
   const [detailsError, setDetailsError] = useState<string | null>(null)
   const [detailsData, setDetailsData] = useState<ShareDetailsResponse | null>(null)
 
-  const openConfirm = (shareId: number) => {
+  const openConfirm = (shareId: string) => {
     setPendingId(shareId)
     setConfirmOpen(true)
   }
 
   const handleConfirm = async () => {
-    if (pendingId == null) return
+    if (!pendingId) return
     setSubmitting(true)
     try {
       await onDeleteShare(pendingId)
@@ -58,7 +58,7 @@ export function SharesTable({ shares, onDeleteShare, onStartCrawl, onFetchShareD
     }
   }
 
-  const handleStartCrawlClick = async (shareId: number) => {
+  const handleStartCrawlClick = async (shareId: string) => {
     setCrawlingId(shareId)
     try {
       await onStartCrawl(shareId)
@@ -67,7 +67,7 @@ export function SharesTable({ shares, onDeleteShare, onStartCrawl, onFetchShareD
     }
   }
 
-  const handleShowDetails = async (shareId: number) => {
+  const handleShowDetails = async (shareId: string) => {
     setDetailsOpen(true)
     setDetailsLoading(true)
     setDetailsError(null)

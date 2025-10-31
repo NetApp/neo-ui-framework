@@ -39,10 +39,10 @@ interface ShareFormValues {
 
 interface SharesProps {
   shares: SharesResponse[] | null
-  onDeleteShare: (shareId: number) => Promise<void>
+  onDeleteShare: (shareId: string) => Promise<void>
   onAddShare: (share: ShareFormValues) => Promise<void>
   onUpdateShare: (
-    shareId: number,
+    shareId: string,
     share: {
       share_path: string
       username: string
@@ -55,8 +55,8 @@ interface SharesProps {
       resolve_order: string
     }
   ) => Promise<void>
-  onStartCrawl: (shareId: number) => Promise<boolean>
-  onFetchShareDetails: (shareId: number) => Promise<ShareDetailsResponse>
+  onStartCrawl: (shareId: string) => Promise<boolean>
+  onFetchShareDetails: (shareId: string) => Promise<ShareDetailsResponse>
 }
 
 export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShare, onStartCrawl, onFetchShareDetails }: SharesProps) {
@@ -79,7 +79,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
   const [workgroup, setWorkgroup] = useState("")
   const [resolveOrder, setResolveOrder] = useState("host")
   const [showAdvanced, setShowAdvanced] = useState(false)
-  const [editingShareId, setEditingShareId] = useState<number | null>(null)
+  const [editingShareId, setEditingShareId] = useState<string | null>(null)
 
   const resetForm = useCallback(() => {
     setSharePath("")
@@ -168,7 +168,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
   )
 
   const handleCrawl = useCallback(
-    async (shareId: number) => {
+    async (shareId: string) => {
       const ok = await onStartCrawl(shareId)
       if (ok) {
         setAlertVariant("success")
@@ -217,7 +217,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
   }, [])
 
   const handleEditShare = useCallback(
-    async (shareId: number) => {
+    async (shareId: string) => {
       try {
         const details = await onFetchShareDetails(shareId)
         populateForm(details)

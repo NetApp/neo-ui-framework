@@ -20,7 +20,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover"
 interface FilesProps {
   files: FilesResponse | null
   shares: SharesResponse[] | null
-  onSelectShare: (shareId: number | "all" | null) => Promise<void>
+  onSelectShare: (shareId: string | "all" | null) => Promise<void>
 }
 
 const NONE_VALUE = "__none__"
@@ -85,7 +85,7 @@ export default function Files({ files, shares, onSelectShare }: FilesProps) {
       } else if (resolved === ALL_VALUE) {
         await onSelectShare("all")
       } else {
-        await onSelectShare(Number.parseInt(resolved, 10))
+        await onSelectShare(resolved)
       }
     } finally {
       if (shouldLoad) {

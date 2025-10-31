@@ -58,7 +58,7 @@ export interface OperationResponse {
 }
 
 export interface SharesResponse {
-  id: number
+  id: string
   share_path: string
   username: string
   status: string
@@ -245,7 +245,7 @@ export class NeoApiService {
     return this.fetchWithToken<SharesResponse[]>("/shares", token)
   }
 
-  async deleteShare(token: string, shareId: number): Promise<void> {
+  async deleteShare(token: string, shareId: string): Promise<void> {
     const response = await fetch(`${this.baseUrl}/shares/${shareId}`, {
       method: "DELETE",
       headers: {
@@ -310,7 +310,7 @@ export class NeoApiService {
 
   async updateShare(
     token: string,
-    shareId: number,
+    shareId: string,
     payload: {
       share_path: string
       username: string
@@ -345,7 +345,7 @@ export class NeoApiService {
     }
   }
 
-  async startShareCrawl(token: string, shareId: number): Promise<void> {
+  async startShareCrawl(token: string, shareId: string): Promise<void> {
     const response = await fetch(`${this.baseUrl}/shares/${shareId}/crawl`, {
       method: "POST",
       headers: {
@@ -366,11 +366,11 @@ export class NeoApiService {
     }
   }
 
-  async getShareDetails(token: string, shareId: number): Promise<ShareDetailsResponse> {
+  async getShareDetails(token: string, shareId: string): Promise<ShareDetailsResponse> {
     return this.fetchWithToken<ShareDetailsResponse>(`/shares/${shareId}`, token)
   }
 
-  async getFiles(token: string, shareId: number): Promise<FilesResponse> {
+  async getFiles(token: string, shareId: string): Promise<FilesResponse> {
     return this.fetchWithToken<FilesResponse>(`/shares/${shareId}/files`, token)
   }
 

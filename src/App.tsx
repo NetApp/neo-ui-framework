@@ -116,7 +116,7 @@ function App() {
     }
   }, [applySystemData, clearSystemData, token])
 
-  const handleDeleteShare = useCallback(async (shareId: number) => {
+  const handleDeleteShare = useCallback(async (shareId: string) => {
     if (!token) {
       throw new AuthenticationError()
     }
@@ -181,7 +181,7 @@ function App() {
 
   const handleUpdateShare = useCallback(
     async (
-      shareId: number,
+      shareId: string,
       share: {
         share_path: string
         username: string
@@ -218,7 +218,7 @@ function App() {
   )
 
   const handleStartCrawl = useCallback(
-    async (shareId: number) => {
+    async (shareId: string) => {
       if (!token) {
         throw new AuthenticationError()
       }
@@ -242,7 +242,7 @@ function App() {
   )
 
   const handleFetchShareDetails = useCallback(
-    async (shareId: number): Promise<ShareDetailsResponse> => {
+    async (shareId: string): Promise<ShareDetailsResponse> => {
       if (!token) {
         throw new AuthenticationError()
       }
@@ -309,7 +309,7 @@ function App() {
   )
 
   const handleSelectFilesShare = useCallback(
-    async (shareKey: number | "all" | null) => {
+    async (shareKey: string | "all" | null) => {
       if (!token) {
         toast.error("Connect first to load files.")
         return
