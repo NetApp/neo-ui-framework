@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { Check, ChevronsUpDown, Loader2 } from "lucide-react"
 
-import type { FilesResponse, SharesResponse } from "../services/neo-api"
+import type { FileMetadataResponse, FilesResponse, SharesResponse } from "../services/neo-api"
 import { FilesTable } from "../data-tables/files"
 import { cn } from "@/lib/utils"
 import { Button } from "../ui/button"
@@ -21,12 +21,13 @@ interface FilesProps {
   files: FilesResponse | null
   shares: SharesResponse[] | null
   onSelectShare: (shareId: string | "all" | null) => Promise<void>
+  onFetchFileMetadata: (shareId: string, fileId: string) => Promise<FileMetadataResponse>
 }
 
 const NONE_VALUE = "__none__"
 const ALL_VALUE = "__all__"
 
-export default function Files({ files, shares, onSelectShare }: FilesProps) {
+export default function Files({ files, shares, onSelectShare, onFetchFileMetadata }: FilesProps) {
   const [open, setOpen] = useState(false)
   const [value, setValue] = useState<string>(NONE_VALUE)
   const [loading, setLoading] = useState(false)
@@ -172,12 +173,18 @@ export default function Files({ files, shares, onSelectShare }: FilesProps) {
               <p className="mb-2 text-sm text-muted-foreground">
                 Showing files for:{" "}
                 <span className="font-medium">
-                  {files.share_id}
+                  {files.path} ({files.share_id})
                 </span>
               </p>
             ) : null}
 
-            <FilesTable files={files} loading={loading} emptyMessage={emptyMessage} />
+            <FilesTable
+              files={files}
+              loading={loading}
+              emptyMessage={emptyMessage}
+              onFetchFileMetadata={value === ALL_VALUE || value === NONE_VALUE ? undefined : onFetchFileMetadata}
+              shareId={value === ALL_VALUE || value === NONE_VALUE ? undefined : value}
+            />
           </div>
         </div>
       </div>

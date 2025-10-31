@@ -162,7 +162,10 @@ export function SharesTable({ shares, onDeleteShare, onStartCrawl, onFetchShareD
         </Table>
       </div>
 
-      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+      <Dialog 
+        open={confirmOpen} 
+        onOpenChange={setConfirmOpen}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete share?</DialogTitle>

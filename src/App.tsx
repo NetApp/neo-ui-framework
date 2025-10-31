@@ -32,6 +32,7 @@ import {
   type SharesResponse,
   type FilesResponse,
   type ShareDetailsResponse,
+  type FileMetadataResponse,
   AuthenticationError,
 } from "./components/services/neo-api"
 import type { ConnectionCredentials } from "./components/dialogs/connect-dialog"
@@ -308,6 +309,18 @@ function App() {
     [clearSystemData, token]
   )
 
+  const handleFetchFileMetadata = useCallback(
+    async (shareId: string, fileId: string): Promise<FileMetadataResponse> => {
+      if (!token) {
+        throw new AuthenticationError()
+      }
+
+      const api = apiRef.current
+      return api.getFileMetadata(token, shareId, fileId)
+    },
+    [token]
+  )
+
   const handleSelectFilesShare = useCallback(
     async (shareKey: string | "all" | null) => {
       if (!token) {
@@ -407,6 +420,7 @@ function App() {
                     files={files}
                     shares={shares}
                     onSelectShare={handleSelectFilesShare}
+                    onFetchFileMetadata={handleFetchFileMetadata}
                   />
                 }
               />

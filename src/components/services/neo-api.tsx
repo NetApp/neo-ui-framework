@@ -112,6 +112,26 @@ export interface FilesResponse {
   has_previous: boolean
 }
 
+export interface FileMetadataResponse {
+  id: string
+  file_path: string
+  unc_path: string
+  filename: string
+  size: number
+  created_at: string
+  modified_time: string
+  accessed_at: string
+  is_directory: boolean
+  file_type: string
+  content: string
+  content_chunks: string[]
+  conversion_duration_ms: number
+  extractor_used: string
+  indexed_at: string
+  acl_principals: string[]
+  resolved_principals: Record<string, unknown>[]
+}
+
 interface TokenResponse {
   access_token: string
   token_type: string
@@ -372,6 +392,13 @@ export class NeoApiService {
 
   async getFiles(token: string, shareId: string): Promise<FilesResponse> {
     return this.fetchWithToken<FilesResponse>(`/shares/${shareId}/files`, token)
+  }
+
+  async getFileMetadata(token: string, shareId: string, fileId: string): Promise<FileMetadataResponse> {
+    return this.fetchWithToken<FileMetadataResponse>(
+      `/shares/${shareId}/files/metadata?file_id=${encodeURIComponent(fileId)}`,
+      token
+    )
   }
 
   async createUser(
