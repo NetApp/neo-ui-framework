@@ -12,6 +12,8 @@ import {
   type FilesResponse,
   type ShareDetailsResponse,
   type FileMetadataResponse,
+  type FileSearchParams,
+  type FileSearchResponse,
   AuthenticationError,
 } from "../components/services/neo-api"
 import type { ConnectionCredentials } from "../components/dialogs/connect-dialog"
@@ -308,6 +310,18 @@ export function useNeoApi() {
     [token]
   )
 
+  const handleSearchFiles = useCallback(
+    async (params: FileSearchParams): Promise<FileSearchResponse> => {
+      if (!token) {
+        throw new AuthenticationError()
+      }
+
+      const api = apiRef.current
+      return api.searchFiles(token, params)
+    },
+    [token]
+  )
+
   const handleSelectFilesShare = useCallback(
     async (shareKey: string | "all" | null) => {
       if (!token) {
@@ -389,6 +403,7 @@ export function useNeoApi() {
       handleChangePassword,
       handleFetchFileMetadata,
       handleSelectFilesShare,
+      handleSearchFiles,
     },
   }
 }

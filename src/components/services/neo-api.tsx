@@ -9,6 +9,9 @@ import type {
   ShareDetailsResponse,
   FilesResponse,
   FileMetadataResponse,
+  FileEntry,
+  FileSearchParams,
+  FileSearchResponse,
   TokenResponse,
 } from "./models"
 
@@ -23,6 +26,9 @@ export type {
   ShareDetailsResponse,
   FilesResponse,
   FileMetadataResponse,
+  FileEntry,
+  FileSearchParams,
+  FileSearchResponse,
 }
 
 export class AuthenticationError extends Error {
@@ -276,6 +282,24 @@ export class NeoApiService {
       `/shares/${shareId}/files/metadata?file_id=${encodeURIComponent(fileId)}`,
       token
     )
+  }
+
+  async searchFiles(token: string, params: FileSearchParams): Promise<FileSearchResponse> {
+    const searchParams = new URLSearchParams()
+
+    Object.entries(params).forEach(([key, value]) => {
+      if (value === undefined || value === null || value === "") {
+        return
+      }
+      if (typeof value === "number") {
+        searchParams.append(key, value.toString())
+        return
+      }
+      searchParams.append(key, value)
+    })
+
+    const query = searchParams.toString()
+    return this.fetchWithToken<FileSearchResponse>(`/files${query ? `?${query}` : ""}`, token)
   }
 
   async createUser(

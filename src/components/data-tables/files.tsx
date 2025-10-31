@@ -2,7 +2,11 @@
 
 import { useState } from "react"
 import { IconInfoCircle } from "@tabler/icons-react"
-import type { FileMetadataResponse, FilesResponse } from "@/components/services/neo-api"
+import type {
+  FileEntry,
+  FileMetadataResponse,
+  FilesResponse,
+} from "@/components/services/neo-api"
 import {
   Table,
   TableBody,
@@ -34,16 +38,20 @@ interface FilesTableProps {
 export function FilesTable({ files, loading = false, emptyMessage, onFetchFileMetadata, shareId }: FilesTableProps) {
   const rows = files?.files ?? []
   const message = emptyMessage ?? (loading ? "Loading files…" : "No files available.")
+  const showShareColumn = rows.some((file) => file.share_name || file.share_path)
+  const columnCount = 6 + (showShareColumn ? 1 : 0)
 
   const [metadataOpen, setMetadataOpen] = useState(false)
   const [metadataLoading, setMetadataLoading] = useState(false)
   const [metadataError, setMetadataError] = useState<string | null>(null)
   const [metadata, setMetadata] = useState<FileMetadataResponse | null>(null)
 
-  const handleShowMetadata = async (fileId: string) => {
-    if (!onFetchFileMetadata || !shareId) {
+  const handleShowMetadata = async (file: FileEntry) => {
+    const effectiveShareId = shareId ?? file.share_id
+
+    if (!onFetchFileMetadata || !effectiveShareId) {
       setMetadataOpen(true)
-      setMetadataError("Cannot fetch metadata: share not selected.")
+      setMetadataError("Cannot fetch metadata: share not available.")
       setMetadata(null)
       return
     }
@@ -54,7 +62,7 @@ export function FilesTable({ files, loading = false, emptyMessage, onFetchFileMe
     setMetadata(null)
 
     try {
-      const data = await onFetchFileMetadata(shareId, fileId)
+      const data = await onFetchFileMetadata(effectiveShareId, file.id)
       setMetadata(data)
     } catch (error) {
       setMetadataError(error instanceof Error ? error.message : "Failed to load file metadata.")
@@ -74,13 +82,14 @@ export function FilesTable({ files, loading = false, emptyMessage, onFetchFileMe
               <TableHead>Indexed</TableHead>
               <TableHead>Size</TableHead>
               <TableHead>Type</TableHead>
+              {showShareColumn ? <TableHead>Share</TableHead> : null}
               <TableHead className="w-[80px] text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={6} className="py-6 text-center text-sm text-muted-foreground">
+                <TableCell colSpan={columnCount} className="py-6 text-center text-sm text-muted-foreground">
                   {message}
                 </TableCell>
               </TableRow>
@@ -94,12 +103,15 @@ export function FilesTable({ files, loading = false, emptyMessage, onFetchFileMe
                   </TableCell>
                   <TableCell>{file.size}</TableCell>
                   <TableCell>{file.file_type}</TableCell>
+                  {showShareColumn ? (
+                    <TableCell>{file.share_name ?? file.share_path ?? "—"}</TableCell>
+                  ) : null}
                   <TableCell className="text-right">
-                    {onFetchFileMetadata && shareId ? (
+                    {onFetchFileMetadata ? (
                       <Button
                         variant="outline"
                         size="icon"
-                        onClick={() => handleShowMetadata(file.id)}
+                        onClick={() => handleShowMetadata(file)}
                         aria-label="File details"
                       >
                         <IconInfoCircle className="size-4" />
@@ -110,7 +122,7 @@ export function FilesTable({ files, loading = false, emptyMessage, onFetchFileMe
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={6} className="py-6 text-center text-sm text-muted-foreground">
+                <TableCell colSpan={columnCount} className="py-6 text-center text-sm text-muted-foreground">
                   {message}
                 </TableCell>
               </TableRow>
@@ -139,7 +151,9 @@ export function FilesTable({ files, loading = false, emptyMessage, onFetchFileMe
         <DialogContent className="sm:max-w-[90vw] lg:max-w-[vw] overflow-x-auto max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-center">File details</DialogTitle>
-            <DialogDescription className="text-center mb-4" />
+            <DialogDescription className="text-center mb-4">
+              Detailed metadata retrieved from the selected share.
+            </DialogDescription>
           </DialogHeader>
           <Separator className="" />
 
@@ -209,7 +223,7 @@ export function FilesTable({ files, loading = false, emptyMessage, onFetchFileMe
                 <dt className="font-medium text-foreground">Resolved principals</dt>
                 <dd>
                   {metadata.resolved_principals?.length ? (
-                    <pre className="mt-1 max-h-40 overflow-auto rounded bg-muted p- text-xs">
+                    <pre className="mt-1 max-h-40 overflow-auto rounded bg-muted p-2 text-xs">
                       {JSON.stringify(metadata.resolved_principals, null, 2)}
                     </pre>
                   ) : (

@@ -64,6 +64,7 @@ function App() {
                     shares={state.shares}
                     onSelectShare={handlers.handleSelectFilesShare}
                     onFetchFileMetadata={handlers.handleFetchFileMetadata}
+                    onSearchFiles={handlers.handleSearchFiles}
                   />
                 }
               />

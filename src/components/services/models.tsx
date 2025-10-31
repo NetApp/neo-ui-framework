@@ -97,11 +97,43 @@ export interface FileEntry {
   is_directory: boolean
   file_type: string
   indexed_at: string
+  share_id?: string
+  share_name?: string
+  share_path?: string
 }
 
 export interface FilesResponse {
   share_id: string
   path: string
+  files: FileEntry[]
+  total_count: number
+  total_size: number
+  page: number
+  page_size: number
+  total_pages: number
+  has_next: boolean
+  has_previous: boolean
+}
+
+export interface FileSearchParams {
+  path?: string
+  filename?: string
+  file_type?: string
+  accessed_at_after?: string
+  accessed_at_before?: string
+  modified_time_after?: string
+  modified_time_before?: string
+  created_at_after?: string
+  created_at_before?: string
+  size_min?: number
+  size_max?: number
+  sort_by?: "modified_time" | "created_at" | "accessed_at" | "filename" | "size" | "share_name"
+  sort_order?: "asc" | "desc"
+  page?: number
+  page_size?: number
+}
+
+export interface FileSearchResponse {
   files: FileEntry[]
   total_count: number
   total_size: number
