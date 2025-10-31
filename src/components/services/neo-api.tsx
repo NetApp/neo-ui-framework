@@ -318,4 +318,30 @@ export class NeoApiService {
 
     return { health, license, version, users, me, operations, shares, files }
   }
+
+  async changeMyPassword(
+    token: string,
+    payload: { current_password: string; new_password: string }
+  ): Promise<void> {
+    const response = await fetch(`${this.baseUrl}/users/me/password`, {
+      method: "PATCH",
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error("PATCH /users/me/password error:", response.status, errorText)
+      if (response.status === 401 || response.status === 403) {
+        throw new AuthenticationError()
+      }
+      throw new Error(
+        `Password change failed (${response.status} ${response.statusText})`
+      )
+    }
+  }
 }

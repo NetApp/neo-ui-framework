@@ -199,6 +199,29 @@ function App() {
     [token]
   )
 
+  const handleChangePassword = useCallback(
+    async (payload: { current_password: string; new_password: string }) => {
+      if (!token) {
+        throw new AuthenticationError()
+      }
+
+      const api = apiRef.current
+
+      try {
+        await api.changeMyPassword(token, payload)
+        toast.success("Password updated!")
+      } catch (error) {
+        if (error instanceof AuthenticationError) {
+          clearSystemData()
+          setToken(null)
+        }
+        toast.error("Password update failed!")
+        throw error
+      }
+    },
+    [clearSystemData, token]
+  )
+
   return (
     <ThemeProvider>
       <SidebarProvider
@@ -233,7 +256,7 @@ function App() {
               />
               <Route path="/files" element={<Files files={files}/>} />
               <Route path="/operations" element={<Operations operations={operations}/>} />
-              <Route path="/users" element={<Users users={users} me={me} />} />
+              <Route path="/users" element={<Users users={users} me={me} onChangePassword={handleChangePassword} />} />
               <Route path="/help" element={<Help />} />
             </Routes>
           </SidebarInset>

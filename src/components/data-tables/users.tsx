@@ -1,6 +1,8 @@
 "use client"
 
-import type { UserResponse, MeResponse } from "@/components/services/neo-api"
+import { IconPasswordUser } from "@tabler/icons-react"
+import type { MeResponse, UserResponse } from "@/components/services/neo-api"
+import { Button } from "@/components/ui/button"
 import {
   Table,
   TableBody,
@@ -13,9 +15,10 @@ import {
 interface UsersTableProps {
   users?: UserResponse[] | null
   me?: MeResponse | null
+  onRequestPasswordChange?: () => void
 }
 
-export function UsersTable({ users, me }: UsersTableProps) {
+export function UsersTable({ users, me, onRequestPasswordChange }: UsersTableProps) {
   const rows = users ?? []
 
   return (
@@ -29,6 +32,7 @@ export function UsersTable({ users, me }: UsersTableProps) {
             <TableHead>Admin</TableHead>
             <TableHead>Created</TableHead>
             <TableHead>Last Login</TableHead>
+            <TableHead className="w-[140px] text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -46,12 +50,24 @@ export function UsersTable({ users, me }: UsersTableProps) {
                   <TableCell>{user.is_admin ? "Yes" : "No"}</TableCell>
                   <TableCell>{new Date(user.created_at).toLocaleString()}</TableCell>
                   <TableCell>{new Date(user.last_login).toLocaleString()}</TableCell>
+                  <TableCell className="text-right">
+                    {isCurrent && onRequestPasswordChange ? (
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={onRequestPasswordChange}
+                        aria-label="Change password"
+                      >
+                        <IconPasswordUser className="size-4" />
+                      </Button>
+                    ) : null}
+                  </TableCell>
                 </TableRow>
               )
             })
           ) : (
             <TableRow>
-              <TableCell colSpan={6} className="text-center text-sm text-muted-foreground">
+              <TableCell colSpan={7} className="text-center text-sm text-muted-foreground">
                 No users available.
               </TableCell>
             </TableRow>
