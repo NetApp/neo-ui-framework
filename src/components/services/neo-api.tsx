@@ -36,19 +36,8 @@ export class NeoApiService {
   private baseUrl: string
 
   constructor() {
-    // const trimmedHost = host.trim()
-    this.baseUrl = '/api'
     
-    // Check if host already has a protocol
-    // if (trimmedHost.startsWith("http://") || trimmedHost.startsWith("https://")) {
-    //   this.baseUrl = trimmedHost
-    // } else {
-    //   // Default to http:// for localhost, https:// for everything else
-    //   const protocol = trimmedHost.includes("localhost") || trimmedHost.startsWith("127.0.0.1") 
-    //     ? "http://" 
-    //     : "https://"
-    //   this.baseUrl = `${protocol}${trimmedHost}`
-    // }
+    this.baseUrl = '/api'
     console.log(`API base URL set to: ${this.baseUrl}`)
   }
 
