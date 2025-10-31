@@ -139,7 +139,23 @@ function App() {
   }, [applySystemData, clearSystemData, token])
 
   const handleAddShare = useCallback(
-    async (share: { share_path: string; username: string; password: string }) => {
+    async (share: {
+      share_path: string
+      username: string
+      password: string
+      crawl_schedule: string
+      rules: {
+        exclude_patterns: string[]
+        include_patterns: string[]
+        max_file_size: number
+        min_file_size: number
+        persist_file_content: boolean
+      }
+      realm: string
+      use_kerberos: string
+      workgroup: string
+      resolve_order: string
+    }) => {
       if (!token) {
         throw new AuthenticationError()
       }
