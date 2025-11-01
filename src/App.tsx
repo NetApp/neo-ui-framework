@@ -11,8 +11,10 @@ import Files from "./components/pages/files"
 import Operations from "./components/pages/operations"
 import Users from "./components/pages/users"
 import Help from "./components/pages/help"
+import Logs from "./components/pages/logs"
 
-import { useNeoApi } from "./hooks/useNeoApi"
+import { useNeoApi } from "@/hooks/useNeoApi"
+import { appLogger } from "@/services/app-logger"
 
 function App() {
   const { state, handlers } = useNeoApi()
@@ -68,18 +70,12 @@ function App() {
                   />
                 }
               />
-              <Route path="/operations" element={<Operations operations={state.operations} />} />
               <Route
-                path="/users"
-                element={
-                  <Users
-                    users={state.users}
-                    me={state.me}
-                    onAddUser={handlers.handleAddUser}
-                    onChangePassword={handlers.handleChangePassword}
-                  />
-                }
+                path="/operations"
+                element={<Operations operations={state.operations} />}
               />
+              <Route path="/logs" element={<Logs />} />
+              <Route path="/users" element={<Users />} />
               <Route path="/help" element={<Help />} />
             </Routes>
           </SidebarInset>

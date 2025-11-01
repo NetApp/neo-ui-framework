@@ -3,12 +3,10 @@
 import {
   IconChartBar,
   IconDashboard,
-  // IconDatabase,
+  IconFileText,
   IconFolder,
   IconHelp,
   IconListDetails,
-  // IconSearch,
-  // IconSettings,
   IconUsers,
 } from "@tabler/icons-react"
 
@@ -41,11 +39,6 @@ const data = {
       url: "#/operations",
       icon: IconFolder,
     },
-    // {
-    //   name: "Datasets",
-    //   url: "#/datasets",
-    //   icon: IconDatabase,
-    // },    
   ],
   navSecondary: [
     {
@@ -53,17 +46,17 @@ const data = {
       url: "#/users",
       icon: IconUsers,
     },
-    // {
-    //   name: "Settings",
-    //   url: "#/settings",
-    //   icon: IconSettings,
-    // },
+    {
+      name: "Logs",
+      url: "#/logs",
+      icon: IconFileText,
+    },
     {
       name: "Help",
       url: "#/help",
       icon: IconHelp,
     },
-  ],  
+  ],
 }
 
 export function AppSidebarContent({...props}: React.ComponentProps<typeof SidebarContent>) {

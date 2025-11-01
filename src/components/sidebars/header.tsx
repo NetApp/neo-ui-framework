@@ -23,6 +23,8 @@ export function SiteHeader({ onConnect, onRefresh, isConnected }: SiteHeaderProp
     title = "Shares"
   } else if (location.pathname.startsWith("/files")) {
     title = "Files"
+  } else if (location.pathname.startsWith("/logs")) {
+    title = "App Logs"
   } else if (location.pathname.startsWith("/operations")) {
     title = "Operations"
   } else if (location.pathname.startsWith("/users")) {
