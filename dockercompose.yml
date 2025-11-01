@@ -1,17 +1,21 @@
-version: 3.6
+version: 3.8
 services:
 
-  netapp-neo-ui:
-    image: localhost/netapp-neo-ui:latest
-    ports:
-      - "8080:80"
+  neo-smb:
+    image: dockurr/samba
     environment:
-      - NEO_API=http://netapp-neo:8080   # ← add this
+      NAME: "data"
+      USER: "smb"
+      PASS: "smb"
+      UID: 1000
+      GID: 1000
+    ports:
+      - 445:445
     networks:
       - netapp-neo
+    volumes:
+      - neo-smb:/storage
     restart: unless-stopped
-    depends_on:
-      - netapp-neo
 
   netapp-neo:
     image: ghcr.io/netapp/netapp-copilot-connector:2.2.6
@@ -43,10 +47,27 @@ services:
     volumes:
       - neo-226:/app/data
     restart: unless-stopped
+    depends_on:
+      - neo-smb
+
+  netapp-neo-ui:
+    image: ghcr.io/netapp/neo-ui-framework:2.2.6
+    ports:
+      - "8080:80"
+    environment:
+      - NEO_API=http://netapp-neo:8080   # ← add this
+    networks:
+      - netapp-neo
+    restart: unless-stopped
+    depends_on:
+      - netapp-neo
+
 volumes:
+  neo-smb:
+    driver: local
   neo-226:
     driver: local
 
 networks:
   netapp-neo:
-    driver: local
+    driver: bridge
