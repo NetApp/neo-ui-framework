@@ -152,7 +152,7 @@ export function FilesTable({ files, loading = false, emptyMessage, onFetchFileMe
           <DialogHeader>
             <DialogTitle className="text-center">File details</DialogTitle>
             <DialogDescription className="text-center mb-4">
-              Detailed metadata retrieved from the selected share.
+              Detailed information about the selected file
             </DialogDescription>
           </DialogHeader>
           <Separator className="" />
@@ -168,62 +168,65 @@ export function FilesTable({ files, loading = false, emptyMessage, onFetchFileMe
             <dl className="grid grid-cols-1 gap-y-3 text-sm sm:grid-cols-3 sm:gap-x-6">
               <div>
                 <dt className="font-medium text-foreground">Filename</dt>
-                <dd>{metadata.filename}</dd>
+                <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{metadata.filename}</pre></dd>
               </div>
               <div>
                 <dt className="font-medium text-foreground">File type</dt>
-                <dd>{metadata.file_type || "—"}</dd>
+                <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{metadata.file_type || "—"}</pre></dd>
               </div>
               <div className="sm:col-span-1">
                 <dt className="font-medium text-foreground">File path</dt>
-                <dd className="break-words">{metadata.file_path}</dd>
+                <dd className="break-words p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{metadata.file_path}</pre></dd>
               </div>
               <div className="sm:col-span-1">
                 <dt className="font-medium text-foreground">UNC path</dt>
-                <dd className="break-words">{metadata.unc_path}</dd>
+                <dd className="break-words p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{metadata.unc_path}</pre></dd>
               </div>
               <div>
                 <dt className="font-medium text-foreground">Size</dt>
-                <dd>{metadata.size.toLocaleString()} bytes</dd>
+                <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{metadata.size.toLocaleString()} bytes</pre></dd>
               </div>
               <div>
                 <dt className="font-medium text-foreground">Directory</dt>
-                <dd>{metadata.is_directory ? "Yes" : "No"}</dd>
+                <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{metadata.is_directory ? "Yes" : "No"}</pre></dd>
               </div>
               <div>
                 <dt className="font-medium text-foreground">Created</dt>
-                <dd>{new Date(metadata.created_at).toLocaleString()}</dd>
+                <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{new Date(metadata.created_at).toLocaleString()}</pre></dd>
               </div>
               <div>
                 <dt className="font-medium text-foreground">Modified</dt>
-                <dd>{new Date(metadata.modified_time).toLocaleString()}</dd>
+                <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{new Date(metadata.modified_time).toLocaleString()}</pre></dd>
               </div>
               <div>
                 <dt className="font-medium text-foreground">Accessed</dt>
-                <dd>{new Date(metadata.accessed_at).toLocaleString()}</dd>
+                <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{new Date(metadata.accessed_at).toLocaleString()}</pre></dd>
               </div>
               <div>
                 <dt className="font-medium text-foreground">Indexed</dt>
-                <dd>{metadata.indexed_at ? new Date(metadata.indexed_at).toLocaleString() : "—"}</dd>
+                <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{metadata.indexed_at ? new Date(metadata.indexed_at).toLocaleString() : "—"}</pre></dd>
               </div>
               <div>
                 <dt className="font-medium text-foreground">Conversion (ms)</dt>
-                <dd>{metadata.conversion_duration_ms}</dd>
+                <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{metadata.conversion_duration_ms}</pre></dd>
               </div>
               <div>
                 <dt className="font-medium text-foreground">Extractor</dt>
-                <dd>{metadata.extractor_used || "—"}</dd>
+                <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{metadata.extractor_used || "—"}</pre></dd>
               </div>
               <div className="sm:col-span-3">
                 <dt className="font-medium text-foreground">ACL principals</dt>
-                <dd>
-                  {metadata.acl_principals?.length ? metadata.acl_principals.join(", ") : "N/A"}</dd>
+                <dd className="p-1">
+                  <pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">
+                  {metadata.acl_principals?.length ? metadata.acl_principals.join(", ") : "N/A"}
+                  </pre>
+                </dd>
               </div>
               <div className="sm:col-span-3">
                 <dt className="font-medium text-foreground">Resolved principals</dt>
-                <dd>
+                <dd className="p-1">
                   {metadata.resolved_principals?.length ? (
-                    <pre className="mt-1 max-h-40 overflow-auto rounded bg-muted p-2 text-xs">
+                    <pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">
                       {JSON.stringify(metadata.resolved_principals, null, 2)}
                     </pre>
                   ) : (
@@ -233,9 +236,9 @@ export function FilesTable({ files, loading = false, emptyMessage, onFetchFileMe
               </div>
               <div className="sm:col-span-3">
                 <dt className="font-medium text-foreground">Content</dt>
-                <dd>
+                <dd className="p-1">
                   {metadata.content ? (
-                    <pre className="mt-1 max-h-240 overflow-auto rounded bg-muted p-2 text-xs">
+                    <pre className="mt-1 max-h-200 overflow-auto rounded bg-muted p-2 text-xs">
                       {metadata.content}
                     </pre>
                   ) : (

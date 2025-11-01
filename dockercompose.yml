@@ -2,7 +2,7 @@ version: 3.8
 services:
 
   neo-smb:
-    image: dockurr/samba
+    image: docker.io/dockurr/samba:latest
     environment:
       NAME: "data"
       USER: "smb"
@@ -47,8 +47,6 @@ services:
     volumes:
       - neo-226:/app/data
     restart: unless-stopped
-    depends_on:
-      - neo-smb
 
   netapp-neo-ui:
     image: ghcr.io/netapp/neo-ui-framework:2.2.6
@@ -59,8 +57,6 @@ services:
     networks:
       - netapp-neo
     restart: unless-stopped
-    depends_on:
-      - netapp-neo
 
 volumes:
   neo-smb:

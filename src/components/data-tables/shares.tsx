@@ -169,8 +169,10 @@ export function SharesTable({ shares, onDeleteShare, onStartCrawl, onFetchShareD
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete share?</DialogTitle>
-            <DialogDescription>
-              This action cannot be undone. The selected share will be removed from NetApp Neo.
+            <DialogDescription className="text-destructive mb-4">
+              <br />
+              <p>This action cannot be undone. </p>
+              <p>The selected share will be removed from NetApp Neo and the data from Microsoft GraphQL.</p>
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">
@@ -198,6 +200,9 @@ export function SharesTable({ shares, onDeleteShare, onStartCrawl, onFetchShareD
         <DialogContent className="sm:max-w-[90vw] lg:max-w-[vw] overflow-x-auto max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-center">Share details</DialogTitle>
+            <DialogDescription className="text-center mb-4">
+              Detailed information about the selected share
+            </DialogDescription>
           </DialogHeader>
           <Separator className="" />
 
@@ -212,71 +217,71 @@ export function SharesTable({ shares, onDeleteShare, onStartCrawl, onFetchShareD
               <dl className="grid grid-cols-1 gap-y-3 text-sm text-muted-foreground sm:grid-cols-4 sm:gap-x-6">
                 <div>
                   <dt className="font-medium text-foreground">Share path</dt>
-                  <dd className="p-1">{detailsData.share_path}</dd>
+                  <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{detailsData.share_path}</pre></dd>
                 </div>
                 <div>
                   <dt className="font-medium text-foreground">Username</dt>
-                  <dd className="p-1">{detailsData.username}</dd>
+                  <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{detailsData.username}</pre></dd>
                 </div>
                 <div>
                   <dt className="font-medium text-foreground">Status</dt>
-                  <dd className="p-1 font-bold">{detailsData.status}</dd>
+                  <dd className="p-1 font-bold"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{detailsData.status}</pre></dd>
                 </div>
                 <div>
                   <dt className="font-medium text-foreground">Created</dt>
-                  <dd className="p-1">{new Date(detailsData.created_at).toLocaleString()}</dd>
+                  <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{new Date(detailsData.created_at).toLocaleString()}</pre></dd>
                 </div>
                 <div>
                   <dt className="font-medium text-foreground">Last crawled</dt>
-                  <dd className="p-1">
+                  <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">
                     {detailsData.last_crawled
                       ? new Date(detailsData.last_crawled).toLocaleString()
                       : "N/A"}
-                  </dd>
+                  </pre></dd>
                 </div>
                 <div>
                   <dt className="font-medium text-foreground">Last crawl duration (ms)</dt>
-                  <dd className="p-1">{detailsData.last_crawl_duration_ms || "N/A"}</dd>
+                  <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{detailsData.last_crawl_duration_ms || "N/A"}</pre></dd>
                 </div>
                 <div>
                   <dt className="font-medium text-foreground">Last crawl file count</dt>
-                  <dd className="p-1">{detailsData.last_crawl_file_count || "N/A"}</dd>
+                  <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{detailsData.last_crawl_file_count || "N/A"}</pre></dd>
                 </div>
                 <div>
                   <dt className="font-medium text-foreground">Crawl schedule</dt>
-                  <dd className="p-1">{detailsData.crawl_schedule || "N/A"}</dd>
+                  <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{detailsData.crawl_schedule || "N/A"}</pre></dd>
                 </div>
                 <div>
                   <dt className="font-medium text-foreground">Last connection attempt</dt>
-                  <dd className="p-1">
+                  <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">
                     {detailsData.last_connection_attempt
                       ? new Date(detailsData.last_connection_attempt).toLocaleString()
                       : "N/A"}
-                  </dd>                  
+                  </pre></dd>
                 </div>
                 <div>
                   <dt className="font-medium text-foreground">Kerberos</dt>
-                  <dd className="p-1">{detailsData.use_kerberos || "N/A"}</dd>
+                  <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{detailsData.use_kerberos || "N/A"}</pre></dd>
                 </div>
                 <div>
                   <dt className="font-medium text-foreground">Workgroup</dt>
-                  <dd className="p-1">{detailsData.workgroup || "N/A"}</dd>
+                  <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{detailsData.workgroup || "N/A"}</pre></dd>
                 </div>
                 <div>
                   <dt className="font-medium text-foreground">Realm</dt>
-                  <dd className="p-1">{detailsData.realm || "N/A"}</dd>
+                  <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{detailsData.realm || "N/A"}</pre></dd>
                 </div>
                 <div className="sm:col-span-4">
                   <dt className="font-medium text-foreground">Resolve order</dt>
-                  <dd className="p-1">{detailsData.resolve_order || "N/A"}</dd>
+                  <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{detailsData.resolve_order || "N/A"}</pre></dd>
                 </div>
                 <div className="sm:col-span-4">
                   <dt className="font-medium text-foreground">Rules</dt>
-                  <dd><pre className="mt-1 max-h-40 overflow-auto p-2">{JSON.stringify(detailsData.rules || "N/A", null, 2)}</pre></dd>
+                  <dd><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{JSON.stringify(detailsData.rules || "N/A", null, 2)}</pre></dd>
                 </div>
                 <div className="sm:col-span-4">
                   <dt className="font-medium text-foreground">Error message</dt>
-                  <dd><pre className="mt-1 max-h-80 overflow-auto p-2">{detailsData.error_message || "N/A"}</pre></dd>
+                  <dd><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{detailsData.error_message || "N/A"}</pre></dd>
                 </div>
               </dl>
             ) : (

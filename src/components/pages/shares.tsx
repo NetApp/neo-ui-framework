@@ -273,11 +273,11 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
           }
         }}
       >
-        <DialogContent>
+        <DialogContent className="sm:max-w-[90vw] lg:max-w-[vw] overflow-x-auto max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editingShareId != null ? "Edit share" : "Add a share"}</DialogTitle>
-            <DialogDescription>
-              Provide the SMB share path and credentials. The share will be scheduled for indexing.
+            <DialogTitle className="text-center">{editingShareId != null ? "Edit share" : "Add a share"}</DialogTitle>
+            <DialogDescription className="text-center mb-4">
+              Configure a SMB share path
             </DialogDescription>
           </DialogHeader>
           <form className="space-y-4" onSubmit={handleSubmit}>

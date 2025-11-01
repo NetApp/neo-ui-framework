@@ -12,6 +12,9 @@ import {
   AccordionTrigger,
 } from "../ui/accordion"
 
+import { IconKey, IconRefresh } from "@tabler/icons-react"
+import { Button } from "../ui/button"
+
 export default function Help() {
   
   return (
@@ -33,10 +36,14 @@ export default function Help() {
             <AccordionItem value="item-1">
               <AccordionTrigger className="text-xl">Neo UI</AccordionTrigger>
               <AccordionContent>
-                <p>The Neo UI provides a basic stateless user-friendly interface for managing your Neo by simply 
-                  entering the admin credentials provided during deployment. The UI allows you to easily configure 
-                  shares, schedule crawls, search files, monitor status, and view logs.</p><br/>
-                <p>Simply click the button "Connect" in the top right corner and enter Neo's URL with the admin credentials to get started.</p>
+                <p>The Neo UI provides a basic stateless user-friendly interface for managing a Neo instance to help you easily 
+                  configure shares, schedule crawls, search files, monitor status, and view logs.</p>
+                <br /><p>To start using Neo UI:</p>
+                <ul className="my-6 ml-6 list-disc [&>li]:mt-2">
+                  <li>Simply click the icon <Button variant="outline" size="icon" className="hidden sm:inline-flex"><IconKey /></Button> in the top right corner and enter Neo's URL with the admin credentials to get started.</li>
+                  <li>Once you've entered the credentials, pages can easily be refreshed by clicking <Button variant="outline" size="icon" className="hidden sm:inline-flex"><IconRefresh /></Button> in the top right corner.</li>
+                  <li>If the token expires, the icon <Button variant="outline" size="icon" className="hidden sm:inline-flex"><IconKey /></Button> will be displayed, and you will need to re-enter the admin credentials to continue using the UI.</li>
+                </ul>
               </AccordionContent>
             </AccordionItem>
 
