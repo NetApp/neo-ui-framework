@@ -35,6 +35,7 @@ interface ConnectDialogProps {
 }
 
 export interface ConnectionCredentials {
+  endpoint?: string
   username: string
   password: string
 }

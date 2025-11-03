@@ -170,3 +170,9 @@ export interface TokenResponse {
   access_token: string
   token_type: string
 }
+
+export interface ConnectionCredentials {
+  endpoint?: string
+  username: string
+  password: string
+}

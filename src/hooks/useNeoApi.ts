@@ -16,8 +16,9 @@ import {
   type FileSearchParams,
   type FileSearchResponse,
   AuthenticationError,
-} from "../services/neo-api"
-import type { ConnectionCredentials } from "../components/dialogs/connect-dialog"
+} from "@/services/neo-api"
+// import type { ConnectionCredentials } from "@/components/dialogs/connect-dialog"
+import type { ConnectionCredentials } from "@/services/models"
 
 export function useNeoApi() {
   const [health, setHealth] = useState<HealthResponse | null>(null)
