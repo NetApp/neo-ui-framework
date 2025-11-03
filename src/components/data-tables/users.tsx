@@ -1,8 +1,18 @@
 "use client"
 
-import { IconPasswordUser } from "@tabler/icons-react"
-import type { MeResponse, UserResponse } from "@/services/neo-api"
-import { Button } from "@/components/ui/button"
+import { 
+  IconPasswordUser 
+} from "@tabler/icons-react"
+
+import type { 
+  MeResponse, 
+  UserResponse 
+} from "@/services/neo-api"
+
+import { 
+  Button 
+} from "@/components/ui/button"
+
 import {
   Table,
   TableBody,

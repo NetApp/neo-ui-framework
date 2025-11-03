@@ -1,6 +1,6 @@
 "use client"
 
-import { Badge } from "../ui/badge"
+import { Badge } from "@/components/ui/badge"
 import {
   Table,
   TableBody,
@@ -8,7 +8,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "../ui/table"
+} from "@/components/ui/table"
 import type { AppLogEntry } from "@/services/app-logger"
 
 interface LogsTableProps {

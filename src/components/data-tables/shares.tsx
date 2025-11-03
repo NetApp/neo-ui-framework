@@ -1,8 +1,21 @@
 "use client"
 
-import { useState } from "react"
-import { IconTrash, IconDatabaseExport, IconInfoCircle, IconEdit } from "@tabler/icons-react"
-import type { ShareDetailsResponse, SharesResponse } from "../services/neo-api"
+import { 
+  useState 
+} from "react"
+
+import { 
+  IconTrash, 
+  IconDatabaseExport, 
+  IconInfoCircle, 
+  IconEdit 
+} from "@tabler/icons-react"
+
+import type { 
+  ShareDetailsResponse, 
+  SharesResponse 
+} from "@/services/neo-api"
+
 import {
   Dialog,
   DialogContent,
@@ -10,8 +23,12 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "../ui/dialog"
-import { Button } from "../ui/button"
+} from "@/components/ui/dialog"
+
+import { 
+  Button 
+} from "@/components/ui/button"
+
 import {
   Table,
   TableBody,
@@ -19,9 +36,14 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "../ui/table"
-import { Spinner } from "../ui/spinner"
-import { Separator } from "@radix-ui/react-separator"
+} from "@/components/ui/table"
+
+import { 
+  Spinner 
+} from "@/components/ui/spinner"
+import { 
+  Separator 
+} from "@radix-ui/react-separator"
 
 interface SharesTableProps {
   shares: SharesResponse[] | null

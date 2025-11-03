@@ -1,6 +1,6 @@
 "use client"
 
-import type { OperationResponse } from "@/components/services/neo-api"
+import type { OperationResponse } from "@/services/neo-api"
 import {
   Table,
   TableBody,

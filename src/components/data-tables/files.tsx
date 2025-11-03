@@ -6,7 +6,7 @@ import type {
   FileEntry,
   FileMetadataResponse,
   FilesResponse,
-} from "@/components/services/neo-api"
+} from "@/services/neo-api"
 import {
   Table,
   TableBody,
