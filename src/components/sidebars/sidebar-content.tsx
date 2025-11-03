@@ -12,10 +12,12 @@ import {
 
 import {
   SidebarContent,
-} from "../ui/sidebar"
+} from "@/components/ui/sidebar"
 
 // internal components
-import { NavMain } from "../navs/main"
+import { 
+  NavMain 
+} from "@/components/navs/main"
 
 const data = {
   navMain: [

@@ -1,18 +1,37 @@
 "use client"
 
-import { useState } from "react"
-import { IconRefresh, IconTrash } from "@tabler/icons-react"
-import { useAppLogs } from "@/hooks/useAppLogs"
-import { LogsTable } from "../data-tables/logs"
-import { Button } from "../ui/button"
+import { 
+  useState 
+} from "react"
+
+import { 
+  IconRefresh, 
+  IconTrash 
+} from "@tabler/icons-react"
+
+import { 
+  useAppLogs 
+} from "@/hooks/useAppLogs"
+
+import { 
+  LogsTable
+ } from "@/components/data-tables/logs"
+
+ import { 
+  Button 
+} from "@/components/ui/button"
+
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "../ui/select"
-import type { LogLevel } from "@/services/app-logger"
+} from "@/components/ui/select"
+
+import type { 
+  LogLevel 
+} from "@/services/app-logger"
 
 const LEVEL_OPTIONS = ["all", "ERROR", "WARN", "INFO", "DEBUG"] as const
 

@@ -1,9 +1,24 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
-import { Check, ChevronsUpDown, Loader2 } from "lucide-react"
-import { IconFileSearch } from "@tabler/icons-react"
-import { toast } from "sonner"
+import { 
+  useEffect, 
+  useMemo, 
+  useState 
+} from "react"
+
+import { 
+  Check, 
+  ChevronsUpDown, 
+  Loader2 
+} from "lucide-react"
+
+import { 
+  IconFileSearch 
+} from "@tabler/icons-react"
+
+import { 
+  toast 
+} from "sonner"
 
 import type {
   FileMetadataResponse,
@@ -11,11 +26,24 @@ import type {
   SharesResponse,
   FileSearchParams,
   FileSearchResponse,
-} from "../services/neo-api"
-import { FilesTable } from "../data-tables/files"
-import { SearchFilesDialog } from "../dialogs/search-files-dialog"
-import { cn } from "@/lib/utils"
-import { Button } from "../ui/button"
+} from "@/services/neo-api"
+
+import { 
+  FilesTable 
+} from "@/components/data-tables/files"
+
+import { 
+  SearchFilesDialog 
+} from "@/components/dialogs/search-files-dialog"
+
+import { 
+  cn 
+} from "@/lib/utils"
+
+import { 
+  Button 
+} from "@/components/ui/button"
+
 import {
   Command,
   CommandEmpty,
@@ -23,8 +51,13 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "../ui/command"
-import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover"
+} from "@/components/ui/command"
+
+import { 
+  Popover, 
+  PopoverContent, 
+  PopoverTrigger 
+} from "@/components/ui/popover"
 
 interface FilesProps {
   files: FilesResponse | null

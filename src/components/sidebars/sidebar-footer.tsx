@@ -5,9 +5,11 @@ import * as React from "react"
 import {
   Sidebar,
   SidebarFooter,
-} from "../ui/sidebar"
+} from "@/components/ui/sidebar"
 
-import { NavUser } from "../navs/users"
+import { 
+  NavUser 
+} from "@/components/navs/users"
 
 const data = {
   user: {

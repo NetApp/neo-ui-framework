@@ -1,11 +1,38 @@
-import { useLocation } from "react-router-dom"
+import { 
+  useLocation 
+} from "react-router-dom"
 
-import { Button } from "../ui/button"
-import { Separator } from "../ui/separator"
-import { SidebarTrigger } from "../ui/sidebar"
-import { ModeToggle } from "../navs/theme-toggle"
-import { IconBrandGithub, IconKey, IconRefresh } from "@tabler/icons-react"
-import { ConnectDialog, type ConnectionCredentials } from "../dialogs/connect-dialog"
+import { 
+  Button 
+} from "@/components/ui/button"
+
+import { 
+  Separator 
+} from "@/components/ui/separator"
+
+import { 
+  SidebarTrigger
+} from "@/components/ui/sidebar"
+
+import { 
+  ModeToggle 
+} from "@/components/navs/theme-toggle"
+
+import { 
+  IconBrandGithub, 
+  IconKey, 
+  IconRefresh 
+} from "@tabler/icons-react"
+
+import type { 
+  ConnectionCredentials
+} from "@/services/models"
+
+import { 
+  ConnectDialog
+} from "@/components/dialogs/connect-dialog"
+
+
 
 interface SiteHeaderProps {
   onConnect: (credentials: ConnectionCredentials) => Promise<void>

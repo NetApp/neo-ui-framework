@@ -39,9 +39,11 @@ class AppLogger {
     this.listeners.forEach((listener) => listener(log))
 
     // Also log to browser console
-    const consoleMethod = level.toLowerCase() as keyof typeof console
-    if (console[consoleMethod]) {
-      console[consoleMethod](`[${level}] ${message}`, details || context || "")
+    const consoleMethod = level.toLowerCase() as "debug" | "info" | "warn" | "error"
+    const consoleLog = console[consoleMethod]
+
+    if (consoleLog) {
+      consoleLog(`[${level}] ${message}`, details || context || "")
     }
 
     return log
@@ -92,6 +94,12 @@ class AppLogger {
 
   clear(): void {
     this.logs = []
+    this.listeners.forEach((listener) => listener({
+      id: "",
+      timestamp: new Date(),
+      level: "INFO",
+      message: "Logs cleared",
+    }))
   }
 }
 

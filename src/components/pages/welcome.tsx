@@ -3,7 +3,7 @@
 import {
   SidebarInset,
   SidebarProvider,
-} from "../ui/sidebar"
+} from "@/components/ui/sidebar"
 
 import {
   IconShieldCheck,

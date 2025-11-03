@@ -6,8 +6,13 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "../ui/card"
-import type { HealthResponse, LicenseResponse, VersionResponse } from "../services/neo-api"
+} from "@/components/ui/card"
+
+import type { 
+  HealthResponse, 
+  LicenseResponse, 
+  VersionResponse
+} from "@/services/neo-api"
 
 interface SectionCardsProps {
   health: HealthResponse | null

@@ -1,6 +1,9 @@
 import { useCallback, useRef, useState } from "react"
+
 import { toast } from "sonner"
+
 import { appLogger } from "@/services/app-logger"
+
 import {
   NeoApiService,
   type HealthResponse,
@@ -17,8 +20,10 @@ import {
   type FileSearchResponse,
   AuthenticationError,
 } from "@/services/neo-api"
-// import type { ConnectionCredentials } from "@/components/dialogs/connect-dialog"
-import type { ConnectionCredentials } from "@/services/models"
+
+import type { 
+  ConnectionCredentials 
+} from "@/services/models"
 
 export function useNeoApi() {
   const [health, setHealth] = useState<HealthResponse | null>(null)

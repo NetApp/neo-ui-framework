@@ -1,11 +1,33 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
-import { IconPlus } from "@tabler/icons-react"
-import { CheckCircle2Icon, AlertCircleIcon } from "lucide-react"
-import type { ShareDetailsResponse, SharesResponse } from "../services/neo-api"
-import { SharesTable } from "../data-tables/shares"
-import { Button } from "../ui/button"
+import { 
+  useCallback, 
+  useEffect, 
+  useState 
+} from "react"
+
+import { 
+  IconPlus 
+} from "@tabler/icons-react"
+
+import { 
+  CheckCircle2Icon, 
+  AlertCircleIcon 
+} from "lucide-react"
+
+import type { 
+  ShareDetailsResponse, 
+  SharesResponse 
+} from "@/services/neo-api"
+
+import { 
+  SharesTable 
+} from "@/components/data-tables/shares"
+
+import { 
+  Button 
+} from "@/components/ui/button"
+
 import {
   Dialog,
   DialogContent,
@@ -13,11 +35,25 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "../ui/dialog"
-import { Input } from "../ui/input"
-import { Label } from "../ui/label"
-import { Alert, AlertDescription, AlertTitle } from "../ui/alert"
-import { Switch } from "../ui/switch"
+} from "@/components/ui/dialog"
+
+import { 
+  Input 
+} from "@/components/ui/input"
+
+import { 
+  Label 
+} from "@/components/ui/label"
+
+import { 
+  Alert, 
+  AlertDescription, 
+  AlertTitle 
+} from "@/components/ui/alert"
+
+import { 
+  Switch 
+} from "@/components/ui/switch"
 
 interface ShareFormValues {
   share_path: string

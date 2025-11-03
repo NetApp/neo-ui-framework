@@ -3,17 +3,23 @@
 import {
   SidebarInset,
   SidebarProvider,
-} from "../ui/sidebar"
+} from "@/components/ui/sidebar"
 
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from "../ui/accordion"
+} from "@/components/ui/accordion"
 
-import { IconKey, IconRefresh } from "@tabler/icons-react"
-import { Button } from "../ui/button"
+import { 
+  IconKey, 
+  IconRefresh 
+} from "@tabler/icons-react"
+
+import { 
+  Button 
+} from "@/components/ui/button"
 
 export default function Help() {
   

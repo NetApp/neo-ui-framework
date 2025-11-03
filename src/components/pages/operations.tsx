@@ -1,7 +1,12 @@
 "use client"
 
-import type { OperationResponse } from "../services/neo-api"
-import { OperationsTable } from "../data-tables/operations"
+import type { 
+  OperationResponse 
+} from "@/services/neo-api"
+
+import { 
+  OperationsTable 
+} from "@/components/data-tables/operations"
 
 interface OperationsProps {
   operations: OperationResponse[] | null
