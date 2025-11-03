@@ -3,7 +3,6 @@ import tailwindcss from "@tailwindcss/vite"
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 
-// https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: {
@@ -33,5 +32,35 @@ export default defineConfig({
         },
       },
     },
+  },
+  build: {
+    target: 'ES2020',
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,
+      },
+      mangle: true,
+      format: {
+        comments: false,
+      },
+    } as any,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-ui': ['@radix-ui/react-slot', '@radix-ui/react-dialog', '@radix-ui/react-select', '@radix-ui/react-accordion'],
+          'vendor-icons': ['@tabler/icons-react'],
+          'vendor-utils': ['clsx', 'sonner'],
+          'pages-main': ['./src/components/pages/dashboard', './src/components/pages/help'],
+          'pages-shares': ['./src/components/pages/shares'],
+          'pages-files': ['./src/components/pages/files'],
+          'pages-operations': ['./src/components/pages/operations'],
+          'pages-users': ['./src/components/pages/users'],
+          'pages-logs': ['./src/components/pages/logs'],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 600,
   },
 })
