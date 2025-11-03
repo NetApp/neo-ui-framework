@@ -2,9 +2,9 @@
 
 import { useCallback, useState } from "react"
 import { IconPlus } from "@tabler/icons-react"
-import type { MeResponse, UserResponse } from "../services/neo-api"
-import { UsersTable } from "../data-tables/users"
-import { Button } from "../ui/button"
+import type { MeResponse, UserResponse } from "@/services/neo-api"
+import { UsersTable } from "@/components/data-tables/users"
+import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogContent,

@@ -1,20 +1,19 @@
 import { HashRouter, Routes, Route } from "react-router-dom"
 
-import { ThemeProvider } from "./components/navs/theme-provider"
-import { AppSidebar } from "./components/sidebars/sidebar"
-import { SiteHeader } from "./components/sidebars/header"
-import { SidebarInset, SidebarProvider } from "./components/ui/sidebar"
+import { ThemeProvider } from "@/components/navs/theme-provider"
+import { AppSidebar } from "@/components/sidebars/sidebar"
+import { SiteHeader } from "@/components/sidebars/header"
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 
-import Dashboard from "./components/pages/dashboard"
-import Shares from "./components/pages/shares"
-import Files from "./components/pages/files"
-import Operations from "./components/pages/operations"
-import Users from "./components/pages/users"
-import Help from "./components/pages/help"
-import Logs from "./components/pages/logs"
+import Dashboard from "@/components/pages/dashboard"
+import Shares from "@/components/pages/shares"
+import Files from "@/components/pages/files"
+import Operations from "@/components/pages/operations"
+import Users from "@/components/pages/users"
+import Help from "@/components/pages/help"
+import Logs from "@/components/pages/logs"
 
 import { useNeoApi } from "@/hooks/useNeoApi"
-import { appLogger } from "@/services/app-logger"
 
 function App() {
   const { state, handlers } = useNeoApi()
@@ -75,7 +74,14 @@ function App() {
                 element={<Operations operations={state.operations} />}
               />
               <Route path="/logs" element={<Logs />} />
-              <Route path="/users" element={<Users />} />
+              <Route path="/users" element={
+                <Users
+                  users={state.users}
+                  me={state.me}
+                  onAddUser={handlers.handleAddUser}
+                  onChangePassword={handlers.handleChangePassword}
+                />
+              } />
               <Route path="/help" element={<Help />} />
             </Routes>
           </SidebarInset>

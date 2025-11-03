@@ -131,6 +131,8 @@ export interface FileSearchParams {
   sort_order?: "asc" | "desc"
   page?: number
   page_size?: number
+  query?: string
+  share_id?: string
 }
 
 export interface FileSearchResponse {

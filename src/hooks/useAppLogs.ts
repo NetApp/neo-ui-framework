@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react"
-import { appLogger, type AppLogEntry, type LogLevel } from "../services/app-logger"
+import { appLogger, type AppLogEntry, type LogLevel } from "@/services/app-logger"
 
 export function useAppLogs(level?: LogLevel, perPage: number = 50) {
   const [logs, setLogs] = useState<AppLogEntry[]>([])

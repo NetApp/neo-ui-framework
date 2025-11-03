@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from "react"
 import { toast } from "sonner"
-import { appLogger } from "../services/app-logger"
+import { appLogger } from "@/services/app-logger"
 import {
   NeoApiService,
   type HealthResponse,
