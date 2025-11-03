@@ -1,8 +1,18 @@
 "use client"
 
-import { useMemo, useState } from "react"
-import type { FileSearchParams } from "../services/neo-api"
-import { Button } from "../ui/button"
+import { 
+  useMemo, 
+  useState 
+} from "react"
+
+import type { 
+  FileSearchParams 
+} from "@/services/neo-api"
+
+import { 
+  Button 
+} from "@/components/ui/button"
+
 import {
   Dialog,
   DialogContent,
@@ -10,10 +20,23 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "../ui/dialog"
-import { Input } from "../ui/input"
-import { Label } from "../ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
+} from "@/components/ui/dialog"
+
+import { 
+  Input 
+} from "@/components/ui/input"
+
+import { 
+  Label 
+} from "@/components/ui/label"
+
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select"
 
 interface SearchFilesDialogProps {
   open: boolean

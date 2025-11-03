@@ -3,8 +3,13 @@ import {
     IconSun
 } from "@tabler/icons-react"
 
-import { Button } from "../ui/button"
-import { useTheme } from "../navs/theme-provider"
+import { 
+  Button 
+} from "@/components/ui/button"
+
+import { 
+  useTheme 
+} from "@/components/navs/theme-provider"
 
 export function ModeToggle() {
   const { theme, setTheme } = useTheme()
