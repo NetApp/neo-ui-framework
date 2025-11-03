@@ -7,7 +7,7 @@ import type {
   MouseEvent, 
   ReactElement 
 } from "react"
-import { Button } from "../ui/button"
+import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogContent,
@@ -16,9 +16,11 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "../ui/dialog"
-import { Input } from "../ui/input"
-import { Label } from "../ui/label"
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+
+import { type ConnectionCredentials } from "@/services/models"
 
 type TriggerElementProps = {
   onClick?: (event: MouseEvent<HTMLElement>) => void
@@ -34,11 +36,11 @@ interface ConnectDialogProps {
   children?: ReactElement<TriggerElementProps>
 }
 
-export interface ConnectionCredentials {
-  endpoint?: string
-  username: string
-  password: string
-}
+// export interface ConnectionCredentials {
+//   endpoint?: string
+//   username: string
+//   password: string
+// }
 
 export function ConnectDialog({ onConnect, onRefresh, isConnected, children }: ConnectDialogProps) {
   const [dialogOpen, setDialogOpen] = useState(false)
