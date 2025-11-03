@@ -1,5 +1,6 @@
 "use client"
 
+import type { MeResponse } from "@/services/neo-api"
 import {
   Sidebar,
 } from "@/components/ui/sidebar"
@@ -16,12 +17,17 @@ import {
   AppSidebarFooter
 } from "@/components/sidebars/sidebar-footer"
 
-export function AppSidebar() {
+interface AppSidebarProps {
+  me?: MeResponse | null
+  onLogout?: () => void
+}
+
+export function AppSidebar({ me, onLogout }: AppSidebarProps) {
   return (
     <Sidebar collapsible="icon">
       <AppSidebarHeader />
       <AppSidebarContent />
-      <AppSidebarFooter />
+      <AppSidebarFooter me={me} onLogout={onLogout} />
     </Sidebar>
   )
 }

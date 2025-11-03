@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { IconUser, IconUserShield } from "@tabler/icons-react"
 
 import {
   Sidebar,
@@ -11,18 +12,29 @@ import {
   NavUser 
 } from "@/components/navs/users"
 
-const data = {
-  user: {
-    name: "Rom Adams",
-    email: "me@romdams.com",
-    avatar: "/avatars/shadcn.jpg",
-  },
+interface AppSidebarFooterProps extends React.ComponentProps<typeof Sidebar> {
+  me?: {
+    username: string
+    is_admin: boolean
+  } | null
+  onLogout?: () => void
 }
 
-export function AppSidebarFooter({ ...props }: React.ComponentProps<typeof Sidebar>) {
+export function AppSidebarFooter({ me, onLogout, ...props }: AppSidebarFooterProps) {
+  const userData = me ? {
+    name: me.username,
+    email: me.is_admin ? "Administrator" : "User",
+    avatar: me.is_admin ? <IconUserShield className="h-8 w-8" /> : <IconUser className="h-8 w-8" />,
+    onLogout,
+  } : {
+    name: "Guest",
+    email: "Not connected",
+    avatar: <IconUser className="h-8 w-8" />,
+  }
+
   return (
-      <SidebarFooter {...props}>
-        <NavUser user={data.user} />
-      </SidebarFooter>
+    <SidebarFooter {...props}>
+      <NavUser user={userData} />
+    </SidebarFooter>
   )
 }

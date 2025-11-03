@@ -475,6 +475,13 @@ export function useNeoApi() {
     [token, shares, clearSystemData]
   )
 
+  const handleLogout = useCallback(() => {
+    appLogger.info("User logging out", undefined, { username: me?.username })
+    clearSystemData()
+    setToken(null)
+    appLogger.info("User logged out successfully")
+  }, [clearSystemData, me?.username])
+
   return {
     state: {
       health,
@@ -500,6 +507,7 @@ export function useNeoApi() {
       handleFetchFileMetadata,
       handleSelectFilesShare,
       handleSearchFiles,
+      handleLogout,
     },
   }
 }
