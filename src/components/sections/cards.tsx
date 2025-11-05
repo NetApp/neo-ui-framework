@@ -46,7 +46,7 @@ export function SectionCards({ health, license, version }: SectionCardsProps) {
       <Card className="@container/card">
         <CardHeader>
           <CardDescription>License</CardDescription>
-          <CardTitle className="text-lg font-semibold">{licenseStatus} for {license?.details.days_remaining ?? "Unknown"} days</CardTitle>
+          <CardTitle className="text-lg font-semibold">Expires in {license?.details.days_remaining ?? "Unknown"} days</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="mt-2 text-sm text-muted-foreground">Neo ID: {license?.details.connection_id ?? "Unknown"}</p>

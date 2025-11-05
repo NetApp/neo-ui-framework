@@ -41,7 +41,13 @@ function App() {
               <Route
                 path="/dashboard"
                 element={
-                  <Dashboard health={state.health} license={state.license} version={state.version} />
+                  <Dashboard
+                    health={state.health}
+                    license={state.license}
+                    version={state.version}
+                    monitoring={state.monitoring}
+                    onFetchMonitoring={handlers.handleFetchMonitoring}
+                  />
                 }
               />
               <Route

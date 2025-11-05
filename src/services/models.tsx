@@ -225,6 +225,181 @@ export interface OperationResponse {
   username: string
 }
 
+
+// Monitoring Page Models
+export interface MonitoringOverviewResponse { // only for v3
+  work_queue: {
+    total_items: number
+    pending_items: number
+    claimed_items: number
+    processing_items: number
+    failed_items: number
+    abandoned_items: number
+  }
+  ennumeration: {
+    active_enumerations: [
+      {
+        additionalProp1: {}
+      }
+    ]
+    enumeration_queue_depth: {
+      additionalProp1: number
+      additionalProp2: number
+      additionalProp3: number
+    }
+    completed_enumerations_last_24h: number
+    avg_enumeration_duration_seconds: number
+  }
+  workers: {
+    total_workers: number
+    active_workers: number
+    stopping_workers: number
+    stopped_workers: number
+    workers: {
+      additionalProp1: {}
+    }
+  }
+  graph_rate_limit: {
+    requests_made: number
+    requests_remaining: number
+    reset_time: string
+    rate_limited: boolean
+    backoff_until: string
+  }
+  timestamp: string
+}
+
+export interface MonitoringWorkerResponse { // only for v3
+  total_items: number
+  pending_items: number
+  claimed_items: number
+  processing_items: number
+  completed_items: number
+  failed_items: number
+  abandoned_items: number
+}
+
+export interface MonitoringEnumerationResponse {  // only for v3
+  active_enumerations: [
+    {
+      additionalProp1: {}
+    }
+  ]
+  enumeration_queue_depth: {
+    additionalProp1: number
+    additionalProp2: number
+    additionalProp3: number
+  }
+  completed_enumerations_last_24h: number
+  avg_enumeration_duration_seconds: number
+}
+
+export interface MonitoringWorkersResponse { // only for v3
+  total_workers: number
+  active_workers: number
+  stopping_workers: number
+  stopped_workers: number
+  workers: {
+    additionalProp1: {}
+  }
+}
+
+export interface MonitoringGraphRateLimitResponse { // only for v3
+  requests_made: number
+  requests_remaining: number
+  reset_time: string
+  rate_limited: boolean
+  backoff_until: string
+}
+
+export interface MonitoringFailedItemsResponse { // only for v3
+  total_failed_items: number
+  failed_items: [
+    {
+      id: string
+      share_id: string
+      file_inventory_id: string
+      work_type: string
+      priority: number
+      retry_count: number
+      max_retries: number
+      error_message: string
+      created_at: string
+      started_at: string
+      completed_at: string
+      claimed_by: string
+      file_path: string
+      filename: string
+    }
+  ]
+  failure_summary: {
+    additionalProp1: number
+    additionalProp2: number
+    additionalProp3: number
+  }
+  retry_summary: {
+    additionalProp1: number
+    additionalProp2: number
+    additionalProp3: number
+  } 
+}
+
+export interface TasksResponse { // only for v3
+  id: string
+  name: string
+  status: string
+  created_at: string
+  started_at: string
+  completed_at: string
+  error: string | null
+  results: {
+    status: string
+    share_id?: string
+    retry_result: string | null
+  }
+  progress: string | null
+  share_id?: string
+  metadata: {
+    operation: string 
+    retry_failed: boolean
+  }
+  cancellation_requested: boolean
+}
+
+export interface TaskStatisticsResponse { // only for v3
+  total_tasks: number
+  by_status: {
+    pending: number
+    running: number
+    completed: number
+    failed: number
+    cancelled: number
+  }
+  running_task_ids: string[]
+}
+
+export interface TaskResponse { // only for v3
+  id: string
+  name: string
+  status: string
+  created_at: string
+  started_at: string
+  completed_at: string
+  error: string | null
+  results: {
+    status: string
+    share_id?: string
+    retry_result: string | null
+  }
+  progress: string | null
+  share_id?: string
+  metadata: {
+    operation: string 
+    retry_failed: boolean
+  }
+  cancellation_requested: boolean
+} 
+
 // User Page models
 export interface UserResponse {
   id: number

@@ -18,6 +18,13 @@ import {
   type FileMetadataResponse,
   type FileSearchParams,
   type FileSearchResponse,
+  type MonitoringOverviewResponse,
+  type MonitoringWorkersResponse,
+  type MonitoringEnumerationResponse,
+  type MonitoringGraphRateLimitResponse,
+  type MonitoringFailedItemsResponse,
+  type TasksResponse,
+  type TaskStatisticsResponse,
   AuthenticationError,
 } from "@/services/neo-api"
 
@@ -36,6 +43,26 @@ export function useNeoApi() {
   const [files, setFiles] = useState<FilesResponse | null>(null)
   const [token, setToken] = useState<string | null>(null)
   const apiRef = useRef(new NeoApiService())
+
+  const [monitoring, setMonitoring] = useState<{
+    overview: MonitoringOverviewResponse | null
+    workers: MonitoringWorkersResponse | null
+    enumeration: MonitoringEnumerationResponse | null
+    graphRateLimit: MonitoringGraphRateLimitResponse | null
+    failedItems: MonitoringFailedItemsResponse | null
+    tasks: TasksResponse[] | null
+    taskStats: TaskStatisticsResponse | null
+    fileAnalytics: { file_type: string; count: number; total_size: number }[] | null
+  }>({
+    overview: null,
+    workers: null,
+    enumeration: null,
+    graphRateLimit: null,
+    failedItems: null,
+    tasks: null,
+    taskStats: null,
+    fileAnalytics: null,
+  })
 
   const applySystemData = useCallback(
     (data: {
@@ -69,6 +96,16 @@ export function useNeoApi() {
     setOperations(null)
     setShares(null)
     setFiles(null)
+    setMonitoring({
+      overview: null,
+      workers: null,
+      enumeration: null,
+      graphRateLimit: null,
+      failedItems: null,
+      tasks: null,
+      taskStats: null,
+      fileAnalytics: null,
+    })
   }, [])
 
   const handleConnect = useCallback(
@@ -475,6 +512,33 @@ export function useNeoApi() {
     [token, shares, clearSystemData]
   )
 
+  const handleFetchMonitoring = useCallback(async () => {
+    if (!token) {
+      appLogger.warn("Fetch monitoring attempted without active token")
+      throw new AuthenticationError()
+    }
+
+    const api = apiRef.current
+
+    try {
+      appLogger.debug("Fetching monitoring data")
+      const data = await api.fetchMonitoringData(token)
+      setMonitoring(data)
+      appLogger.info("Monitoring data fetched successfully")
+    } catch (error) {
+      if (error instanceof AuthenticationError) {
+        clearSystemData()
+        setToken(null)
+        appLogger.warn("Token expired during monitoring fetch")
+      }
+      appLogger.error(
+        "Failed to fetch monitoring data",
+        error instanceof Error ? error.message : "Unknown error"
+      )
+      throw error
+    }
+  }, [token, clearSystemData])
+
   const handleLogout = useCallback(() => {
     appLogger.info("User logging out", undefined, { username: me?.username })
     clearSystemData()
@@ -492,6 +556,7 @@ export function useNeoApi() {
       operations,
       shares,
       files,
+      monitoring,
       token,
     },
     handlers: {
@@ -507,6 +572,7 @@ export function useNeoApi() {
       handleFetchFileMetadata,
       handleSelectFilesShare,
       handleSearchFiles,
+      handleFetchMonitoring,
       handleLogout,
     },
   }

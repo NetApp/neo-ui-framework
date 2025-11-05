@@ -14,6 +14,15 @@ import type {
   FileSearchParams,
   FileSearchResponse,
   TokenResponse,
+  MonitoringOverviewResponse,
+  MonitoringWorkerResponse,
+  MonitoringEnumerationResponse,
+  MonitoringWorkersResponse,
+  MonitoringGraphRateLimitResponse,
+  MonitoringFailedItemsResponse,
+  TasksResponse,
+  TaskStatisticsResponse,
+  TaskResponse,
 } from "./models"
 
 export type {
@@ -30,6 +39,15 @@ export type {
   FileEntry,
   FileSearchParams,
   FileSearchResponse,
+  MonitoringOverviewResponse,
+  MonitoringWorkerResponse,
+  MonitoringEnumerationResponse,
+  MonitoringWorkersResponse,
+  MonitoringGraphRateLimitResponse,
+  MonitoringFailedItemsResponse,
+  TasksResponse,
+  TaskStatisticsResponse,
+  TaskResponse,
 }
 
 export class AuthenticationError extends Error {
@@ -501,5 +519,138 @@ export class NeoApiService {
     }
 
     appLogger.info("Password changed successfully")
+  }
+
+  // Monitoring API methods
+  async getMonitoringOverview(token: string): Promise<MonitoringOverviewResponse> {
+    appLogger.debug("Fetching monitoring overview")
+    return this.fetchWithToken<MonitoringOverviewResponse>("/monitoring/overview", token)
+  }
+
+  async getMonitoringWorkers(token: string): Promise<MonitoringWorkersResponse> {
+    appLogger.debug("Fetching monitoring workers")
+    return this.fetchWithToken<MonitoringWorkersResponse>("/monitoring/workers", token)
+  }
+
+  async getMonitoringEnumeration(token: string): Promise<MonitoringEnumerationResponse> {
+    appLogger.debug("Fetching monitoring enumeration")
+    return this.fetchWithToken<MonitoringEnumerationResponse>("/monitoring/enumeration", token)
+  }
+
+  async getMonitoringGraphRateLimit(token: string): Promise<MonitoringGraphRateLimitResponse> {
+    appLogger.debug("Fetching monitoring graph rate limit")
+    return this.fetchWithToken<MonitoringGraphRateLimitResponse>("/monitoring/graph-rate-limit", token)
+  }
+
+  async getMonitoringFailedItems(token: string): Promise<MonitoringFailedItemsResponse> {
+    appLogger.debug("Fetching monitoring failed items")
+    return this.fetchWithToken<MonitoringFailedItemsResponse>("/monitoring/failed-items", token)
+  }
+
+  async getTasks(token: string): Promise<TasksResponse[]> {
+    appLogger.debug("Fetching tasks")
+    return this.fetchWithToken<TasksResponse[]>("/tasks", token)
+  }
+
+  async getTaskStatistics(token: string): Promise<TaskStatisticsResponse> {
+    appLogger.debug("Fetching task statistics")
+    return this.fetchWithToken<TaskStatisticsResponse>("/tasks/statistics/summary", token)
+  }
+
+  async getFileAnalytics(token: string): Promise<{ file_type: string; count: number; total_size: number }[]> {
+    appLogger.debug("Fetching file analytics data")
+    
+    try {
+      // Get all files across all shares
+      const response = await this.fetchWithToken<FileSearchResponse>("/files", token)
+      
+      // Define specific file types we want to track
+      const targetTypes = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'txt']
+      
+      // Group files by type and calculate statistics
+      const fileTypeMap = new Map<string, { count: number; total_size: number }>()
+      
+      // Initialize target types with zero counts
+      targetTypes.forEach(type => {
+        fileTypeMap.set(type, { count: 0, total_size: 0 })
+      })
+      
+      // Add "Other" category for all non-target file types
+      fileTypeMap.set('Other', { count: 0, total_size: 0 })
+      
+      response.files.forEach(file => {
+        const fileType = file.file_type?.toLowerCase() || 'unknown'
+        
+        // Check if it's one of our target types
+        if (targetTypes.includes(fileType)) {
+          const current = fileTypeMap.get(fileType)!
+          fileTypeMap.set(fileType, {
+            count: current.count + 1,
+            total_size: current.total_size + file.size
+          })
+        } else {
+          // Add to "Other" category
+          const current = fileTypeMap.get('Other')!
+          fileTypeMap.set('Other', {
+            count: current.count + 1,
+            total_size: current.total_size + file.size
+          })
+        }
+      })
+      
+      // Convert to array and filter out types with zero counts, then sort by count
+      const analytics = Array.from(fileTypeMap.entries())
+        .map(([file_type, stats]) => ({
+          file_type,
+          count: stats.count,
+          total_size: stats.total_size
+        }))
+        .filter(item => item.count > 0) // Only include types that have files
+        .sort((a, b) => b.count - a.count)
+      
+      appLogger.info("File analytics data processed", undefined, {
+        total_file_types: analytics.length,
+        total_files: response.files.length,
+        target_types_found: analytics.filter(a => targetTypes.includes(a.file_type)).length
+      })
+      
+      return analytics
+    } catch (error) {
+      appLogger.error("Failed to fetch file analytics", error instanceof Error ? error.message : "Unknown error")
+      throw error
+    }
+  }
+
+  async fetchMonitoringData(token: string) {
+    appLogger.info("Fetching monitoring data")
+
+    try {
+      const [overview, workers, enumeration, graphRateLimit, failedItems, tasks, taskStats, fileAnalytics] = await Promise.all([
+        this.getMonitoringOverview(token),
+        this.getMonitoringWorkers(token),
+        this.getMonitoringEnumeration(token),
+        this.getMonitoringGraphRateLimit(token),
+        this.getMonitoringFailedItems(token),
+        this.getTasks(token),
+        this.getTaskStatistics(token),
+        this.getFileAnalytics(token),
+      ])
+
+      appLogger.info("Monitoring data fetched successfully", undefined, {
+        total_workers: workers.total_workers,
+        active_workers: workers.active_workers,
+        total_tasks: taskStats.total_tasks,
+        failed_items: failedItems.total_failed_items,
+        file_types: fileAnalytics.length,
+      })
+
+      return { overview, workers, enumeration, graphRateLimit, failedItems, tasks, taskStats, fileAnalytics }
+    } catch (error) {
+      appLogger.error(
+        "Failed to fetch monitoring data",
+        error instanceof Error ? error.message : "Unknown error"
+      )
+      throw error
+    }
   }
 }
