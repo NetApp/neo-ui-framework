@@ -15,7 +15,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
+// import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
@@ -32,6 +32,7 @@ import type {
 import { FileTypeChart } from "@/components/charts/filetype"
 import { SharesDistributionChart } from "@/components/charts/sharesdistribution"
 import { DatabaseSizeCard } from "@/components/charts/databasesize"
+import { ContentSavingsChart } from "@/components/charts/contentsavings"
 
 interface DashboardChartProps {
   monitoring: {
@@ -80,18 +81,8 @@ export function DashboardChart({ databaseSize, monitoring, onRefreshMonitoring }
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             Monitoring Overview
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onRefreshMonitoring}
-              className="h-8"
-            >
-              <IconRefresh className="mr-2 h-4 w-4" />
-              Refresh
-            </Button>
           </CardTitle>
           <CardDescription>
-            Real-time monitoring data for NetApp Neo operations. Auto-refreshes every 5 seconds.
             {overview?.timestamp && (
               <span className="block mt-1">
                 Last updated (UTC): {new Date(overview.timestamp).toLocaleString()}
@@ -101,7 +92,11 @@ export function DashboardChart({ databaseSize, monitoring, onRefreshMonitoring }
         </CardHeader>
       </Card>
 
+      {/* Database Size Card */}
       <DatabaseSizeCard databaseSize={databaseSize} />
+
+      {/* Content Savings Chart */}
+      <ContentSavingsChart databaseSize={databaseSize} />
 
       {/* File Types Distribution */}
       <FileTypeChart fileAnalytics={fileAnalytics} />

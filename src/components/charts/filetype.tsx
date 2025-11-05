@@ -98,7 +98,7 @@ export function FileTypeChart({ fileAnalytics }: FileTypeChartProps) {
   }
 
   return (
-    <Card className="md:col-span-1 lg:col-span-1 flex flex-col">
+    <Card className="md:col-span-2 lg:col-span-2 flex flex-col">
       <CardHeader className="items-center pb-0">
         <CardTitle>Document Types Distribution</CardTitle>
         <CardDescription>Breakdown by document type (PDF, DOC, PPT, TXT)</CardDescription>
