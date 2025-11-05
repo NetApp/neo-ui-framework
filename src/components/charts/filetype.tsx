@@ -1,7 +1,10 @@
 "use client"
 
 import * as React from "react"
-import { TrendingUp, File } from "lucide-react"
+import { 
+    TrendingUp, 
+    // File 
+} from "lucide-react"
 import { Label, Pie, PieChart } from "recharts"
 
 import {
@@ -83,7 +86,7 @@ export function FileTypeChart({ fileAnalytics }: FileTypeChartProps) {
 
   if (!fileAnalytics || fileAnalytics.length === 0) {
     return (
-      <Card className="flex flex-col">
+      <Card className="md:col-span-1 lg:col-span-1 flex flex-col">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle>Document Types</CardTitle>
         </CardHeader>
@@ -95,7 +98,7 @@ export function FileTypeChart({ fileAnalytics }: FileTypeChartProps) {
   }
 
   return (
-    <Card className="flex flex-col">
+    <Card className="md:col-span-1 lg:col-span-1 flex flex-col">
       <CardHeader className="items-center pb-0">
         <CardTitle>Document Types Distribution</CardTitle>
         <CardDescription>Breakdown by document type (PDF, DOC, PPT, TXT)</CardDescription>

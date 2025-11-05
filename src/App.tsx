@@ -45,6 +45,7 @@ function App() {
                     health={state.health}
                     license={state.license}
                     version={state.version}
+                    databaseSize={state.databaseSize}
                     monitoring={state.monitoring}
                     onFetchMonitoring={handlers.handleFetchMonitoring}
                   />

@@ -72,17 +72,17 @@ export interface DatabaseSizeResponse { // only for v3
   database_size_info: string
   table_statistics: {
     shares: {
-      rows_count: number
+      row_count: number
     }
     file_metadata: {
-      rows_count: number
+      row_count: number
       total_file_size_bytes: number
       total_content_size_bytes: number
     }
     operations_log: {
-      rows_count: number
+      row_count: number
       total_content_size_bytes: number
-      total_content_sizemb: number
+      total_content_size_mb: number
       field_breakdown: {
         operation_type_size_bytes: number
         status_size_bytes: number
@@ -92,7 +92,7 @@ export interface DatabaseSizeResponse { // only for v3
       }
     }
     users: {
-      rows_count: number
+      row_count: number
     }
   }
   total_files_tracked: number

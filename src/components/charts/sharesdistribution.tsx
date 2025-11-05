@@ -16,7 +16,7 @@ import {
   type ChartConfig,
   ChartContainer,
   ChartTooltip,
-  ChartTooltipContent,
+//   ChartTooltipContent,
 } from "@/components/ui/chart"
 
 interface SharesDistributionChartProps {
@@ -111,7 +111,7 @@ export function SharesDistributionChart({ sharesAnalytics }: SharesDistributionC
 
   if (!sharesAnalytics || sharesAnalytics.length === 0) {
     return (
-      <Card className="flex flex-col">
+      <Card className="md:col-span-1 lg:col-span-1 flex flex-col">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Document Distribution by Shares</CardTitle>
           <FolderOpen className="h-4 w-4 text-muted-foreground" />
@@ -124,7 +124,7 @@ export function SharesDistributionChart({ sharesAnalytics }: SharesDistributionC
   }
 
   return (
-    <Card className="flex flex-col">
+    <Card className="md:col-span-1 lg:col-span-1 flex flex-col">
       <CardHeader className="items-center pb-0">
         <CardTitle>Document Distribution by Shares</CardTitle>
         <CardDescription>File count breakdown across {chartData.length} active shares</CardDescription>

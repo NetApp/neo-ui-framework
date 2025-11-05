@@ -3,6 +3,7 @@ import type {
   HealthResponse,
   LicenseResponse,
   VersionResponse,
+  DatabaseSizeResponse,  // Add this import
   UserResponse,
   MeResponse,
   OperationResponse,
@@ -25,10 +26,12 @@ import type {
   TaskResponse,
 } from "./models"
 
+// Also add to exports
 export type {
   HealthResponse,
   LicenseResponse,
   VersionResponse,
+  DatabaseSizeResponse,  // Add this export
   UserResponse,
   MeResponse,
   OperationResponse,
@@ -460,7 +463,7 @@ export class NeoApiService {
     appLogger.info("Fetching system data")
 
     try {
-      const [health, license, version, users, me, operations, shares] = await Promise.all([
+      const [health, license, version, users, me, operations, shares, databaseSize] = await Promise.all([
         this.getHealth(token),
         this.getLicenseStatus(token),
         this.getVersion(token),
@@ -468,15 +471,18 @@ export class NeoApiService {
         this.getMeUsers(token),
         this.getOperations(token),
         this.getShares(token),
+        this.getDatabaseSize(token),
       ])
 
       appLogger.info("System data fetched successfully", undefined, {
         users_count: users.length,
         shares_count: shares.length,
         operations_count: operations.length,
+        database_size_mb: databaseSize.database_file_size_mb,
+        total_files_tracked: databaseSize.total_files_tracked,
       })
 
-      return { health, license, version, users, me, operations, shares, files: null }
+      return { health, license, version, users, me, operations, shares, files: null, databaseSize }
     } catch (error) {
       appLogger.error(
         "Failed to fetch system data",
@@ -709,5 +715,10 @@ export class NeoApiService {
       )
       throw error
     }
+  }
+
+  async getDatabaseSize(token: string): Promise<DatabaseSizeResponse> {
+    appLogger.debug("Fetching database size information")
+    return this.fetchWithToken<DatabaseSizeResponse>("/database/size", token)
   }
 }

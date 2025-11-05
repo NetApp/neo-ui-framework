@@ -11,6 +11,7 @@ import type {
   HealthResponse, 
   LicenseResponse, 
   VersionResponse,
+  DatabaseSizeResponse,
   MonitoringOverviewResponse,
   MonitoringWorkersResponse,
   MonitoringEnumerationResponse,
@@ -18,13 +19,13 @@ import type {
   MonitoringFailedItemsResponse,
   TasksResponse,
   TaskStatisticsResponse,
-  SharesResponse,
 } from "@/services/neo-api"
 
 interface DashboardProps {
   health: HealthResponse | null
   license: LicenseResponse | null
   version: VersionResponse | null
+  databaseSize: DatabaseSizeResponse | null
   monitoring: {
     overview: MonitoringOverviewResponse | null
     workers: MonitoringWorkersResponse | null
@@ -39,7 +40,7 @@ interface DashboardProps {
   onFetchMonitoring: () => Promise<void>
 }
 
-export default function Dashboard({ health, license, version, monitoring, onFetchMonitoring }: DashboardProps) {
+export default function Dashboard({ health, license, version, databaseSize, monitoring, onFetchMonitoring }: DashboardProps) {
   // Load monitoring data on mount
   useEffect(() => {
     onFetchMonitoring().catch((error) => {
@@ -51,9 +52,15 @@ export default function Dashboard({ health, license, version, monitoring, onFetc
     <div className="flex flex-1 flex-col">
       <div className="@container/main flex flex-1 flex-col gap-2">
         <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-          <SectionCards health={health} license={license} version={version} />
+          <SectionCards 
+            health={health} 
+            license={license} 
+            version={version} 
+            // databaseSize={databaseSize}
+          />
           <div className="px-4 lg:px-6">
             <DashboardChart 
+              databaseSize={databaseSize}
               monitoring={monitoring} 
               onRefreshMonitoring={onFetchMonitoring} 
             />

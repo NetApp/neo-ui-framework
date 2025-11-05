@@ -1,7 +1,13 @@
 "use client"
 
 import { useEffect } from "react"
-import { IconRefresh, IconAlertTriangle, IconClock, IconUsers, IconActivity } from "@tabler/icons-react"
+import { 
+  IconRefresh, 
+  IconAlertTriangle, 
+  IconClock, 
+  IconUsers, 
+  IconActivity 
+} from "@tabler/icons-react"
 import {
   Card,
   CardContent,
@@ -13,7 +19,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
-import type {
+import type { 
   MonitoringOverviewResponse,
   MonitoringWorkersResponse,
   MonitoringEnumerationResponse,
@@ -21,10 +27,11 @@ import type {
   MonitoringFailedItemsResponse,
   TasksResponse,
   TaskStatisticsResponse,
-  SharesResponse,
+  DatabaseSizeResponse,
 } from "@/services/neo-api"
 import { FileTypeChart } from "@/components/charts/filetype"
 import { SharesDistributionChart } from "@/components/charts/sharesdistribution"
+import { DatabaseSizeCard } from "@/components/charts/databasesize"
 
 interface DashboardChartProps {
   monitoring: {
@@ -38,11 +45,22 @@ interface DashboardChartProps {
     fileAnalytics: { file_type: string; count: number; total_size: number }[] | null
     sharesAnalytics: { share_id: string; share_name: string; share_path: string; count: number; total_size: number }[] | null
   }
+  databaseSize: DatabaseSizeResponse | null
   onRefreshMonitoring: () => Promise<void>
 }
 
-export function DashboardChart({ monitoring, onRefreshMonitoring }: DashboardChartProps) {
-  const { overview, workers, enumeration, graphRateLimit, failedItems, tasks, taskStats, fileAnalytics, sharesAnalytics } = monitoring
+export function DashboardChart({ databaseSize, monitoring, onRefreshMonitoring }: DashboardChartProps) {
+  const { 
+    overview, 
+    workers, 
+    enumeration, 
+    graphRateLimit, 
+    failedItems, 
+    // tasks, 
+    taskStats, 
+    fileAnalytics, 
+    sharesAnalytics 
+  } = monitoring
 
   // Auto-refresh monitoring data every 30 seconds
   useEffect(() => {
@@ -56,9 +74,9 @@ export function DashboardChart({ monitoring, onRefreshMonitoring }: DashboardCha
   }, [onRefreshMonitoring])
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       {/* Refresh Controls */}
-      <Card className="md:col-span-2 lg:col-span-3">
+      <Card className="md:col-span-2 lg:col-span-4">
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             Monitoring Overview
@@ -83,6 +101,14 @@ export function DashboardChart({ monitoring, onRefreshMonitoring }: DashboardCha
         </CardHeader>
       </Card>
 
+      <DatabaseSizeCard databaseSize={databaseSize} />
+
+      {/* File Types Distribution */}
+      <FileTypeChart fileAnalytics={fileAnalytics} />
+
+      {/* Document Distribution by Shares */}
+      <SharesDistributionChart sharesAnalytics={sharesAnalytics} />
+
       {/* Work Queue Overview */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -102,6 +128,34 @@ export function DashboardChart({ monitoring, onRefreshMonitoring }: DashboardCha
                 <div className="flex justify-between text-xs">
                   <span>Claimed: {overview.work_queue.claimed_items}</span>
                   <span className="text-destructive">Failed: {overview.work_queue.failed_items}</span>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="text-sm text-muted-foreground">No data available</div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Enumeration Status */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Enumeration</CardTitle>
+          <IconActivity className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          {enumeration ? (
+            <div className="space-y-2">
+              <div className="text-2xl font-bold">{enumeration.completed_enumerations_last_24h}</div>
+              <p className="text-xs text-muted-foreground">Completed (24h)</p>
+              <div className="space-y-1">
+                <div className="flex justify-between text-xs">
+                  <span>Avg Duration:</span>
+                  <span>{enumeration.avg_enumeration_duration_seconds.toFixed(1)}s</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span>Active:</span>
+                  <Badge variant="default">{enumeration.active_enumerations.length}</Badge>
                 </div>
               </div>
             </div>
@@ -176,6 +230,36 @@ export function DashboardChart({ monitoring, onRefreshMonitoring }: DashboardCha
         </CardContent>
       </Card>
 
+      {/* Failed Items */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Failed Items</CardTitle>
+          <IconAlertTriangle className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          {failedItems ? (
+            <div className="space-y-2">
+              <div className="text-2xl font-bold text-destructive">{failedItems.total_failed_items}</div>
+              <p className="text-xs text-muted-foreground">Total failed</p>
+              {failedItems.failed_items.length > 0 && (
+                <div className="space-y-1">
+                  <Separator />
+                  <p className="text-xs font-medium">Recent failures:</p>
+                  {failedItems.failed_items.slice(0, 3).map((item, index) => (
+                    <div key={index} className="text-xs">
+                      <div className="truncate font-medium">{item.filename || item.file_path}</div>
+                      <div className="text-muted-foreground truncate">{item.error_message}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-sm text-muted-foreground">No data available</div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Task Statistics */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -212,64 +296,6 @@ export function DashboardChart({ monitoring, onRefreshMonitoring }: DashboardCha
         </CardContent>
       </Card>
 
-      {/* Failed Items */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Failed Items</CardTitle>
-          <IconAlertTriangle className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          {failedItems ? (
-            <div className="space-y-2">
-              <div className="text-2xl font-bold text-destructive">{failedItems.total_failed_items}</div>
-              <p className="text-xs text-muted-foreground">Total failed</p>
-              {failedItems.failed_items.length > 0 && (
-                <div className="space-y-1">
-                  <Separator />
-                  <p className="text-xs font-medium">Recent failures:</p>
-                  {failedItems.failed_items.slice(0, 3).map((item, index) => (
-                    <div key={index} className="text-xs">
-                      <div className="truncate font-medium">{item.filename || item.file_path}</div>
-                      <div className="text-muted-foreground truncate">{item.error_message}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="text-sm text-muted-foreground">No data available</div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Enumeration Status */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Enumeration</CardTitle>
-          <IconActivity className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          {enumeration ? (
-            <div className="space-y-2">
-              <div className="text-2xl font-bold">{enumeration.completed_enumerations_last_24h}</div>
-              <p className="text-xs text-muted-foreground">Completed (24h)</p>
-              <div className="space-y-1">
-                <div className="flex justify-between text-xs">
-                  <span>Avg Duration:</span>
-                  <span>{enumeration.avg_enumeration_duration_seconds.toFixed(1)}s</span>
-                </div>
-                <div className="flex justify-between text-xs">
-                  <span>Active:</span>
-                  <Badge variant="default">{enumeration.active_enumerations.length}</Badge>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="text-sm text-muted-foreground">No data available</div>
-          )}
-        </CardContent>
-      </Card>
-
       {/* File Types Breakdown */}
       {/* <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -283,7 +309,7 @@ export function DashboardChart({ monitoring, onRefreshMonitoring }: DashboardCha
                 {fileAnalytics.reduce((sum, item) => sum + item.count, 0).toLocaleString()}
               </div>
               <p className="text-xs text-muted-foreground">Total documents</p>
-              <div className="space-y-1">
+              // <div className="space-y-1">
                 {fileAnalytics.slice(0, 4).map((item, index) => (
                   <div key={index} className="flex justify-between text-xs">
                     <span className="uppercase">{item.file_type}</span>
@@ -298,11 +324,6 @@ export function DashboardChart({ monitoring, onRefreshMonitoring }: DashboardCha
         </CardContent>
       </Card> */}
 
-      {/* File Types Distribution */}
-      <FileTypeChart fileAnalytics={fileAnalytics} />
-
-      {/* Document Distribution by Shares */}
-      <SharesDistributionChart sharesAnalytics={sharesAnalytics} />
 
     </div>
   )

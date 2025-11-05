@@ -8,10 +8,11 @@ import {
   NeoApiService,
   type HealthResponse,
   type LicenseResponse,
+  type VersionResponse,
+  type DatabaseSizeResponse,  // Add this import
   type OperationResponse,
   type UserResponse,
   type MeResponse,
-  type VersionResponse,
   type SharesResponse,
   type FilesResponse,
   type ShareDetailsResponse,
@@ -36,6 +37,7 @@ export function useNeoApi() {
   const [health, setHealth] = useState<HealthResponse | null>(null)
   const [license, setLicense] = useState<LicenseResponse | null>(null)
   const [version, setVersion] = useState<VersionResponse | null>(null)
+  const [databaseSize, setDatabaseSize] = useState<DatabaseSizeResponse | null>(null)  // Add this state
   const [users, setUsers] = useState<UserResponse[] | null>(null)
   const [me, setMe] = useState<MeResponse | null>(null)
   const [operations, setOperations] = useState<OperationResponse[] | null>(null)
@@ -71,6 +73,7 @@ export function useNeoApi() {
       health: HealthResponse
       license: LicenseResponse
       version: VersionResponse
+      databaseSize: DatabaseSizeResponse  // Add this
       users: UserResponse[]
       me: MeResponse
       operations: OperationResponse[]
@@ -80,6 +83,7 @@ export function useNeoApi() {
       setHealth(data.health)
       setLicense(data.license)
       setVersion(data.version)
+      setDatabaseSize(data.databaseSize)  // Add this
       setUsers(data.users)
       setMe(data.me)
       setOperations(data.operations)
@@ -93,6 +97,7 @@ export function useNeoApi() {
     setHealth(null)
     setLicense(null)
     setVersion(null)
+    setDatabaseSize(null)  // Add this
     setUsers(null)
     setMe(null)
     setOperations(null)
@@ -554,6 +559,7 @@ export function useNeoApi() {
       health,
       license,
       version,
+      databaseSize,  // Add this to state
       users,
       me,
       operations,
