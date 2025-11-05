@@ -21,8 +21,10 @@ import type {
   MonitoringFailedItemsResponse,
   TasksResponse,
   TaskStatisticsResponse,
+  SharesResponse,
 } from "@/services/neo-api"
 import { FileTypeChart } from "@/components/charts/filetype"
+import { SharesDistributionChart } from "@/components/charts/sharesdistribution"
 
 interface DashboardChartProps {
   monitoring: {
@@ -34,12 +36,13 @@ interface DashboardChartProps {
     tasks: TasksResponse[] | null
     taskStats: TaskStatisticsResponse | null
     fileAnalytics: { file_type: string; count: number; total_size: number }[] | null
+    sharesAnalytics: { share_id: string; share_name: string; share_path: string; count: number; total_size: number }[] | null
   }
   onRefreshMonitoring: () => Promise<void>
 }
 
 export function DashboardChart({ monitoring, onRefreshMonitoring }: DashboardChartProps) {
-  const { overview, workers, enumeration, graphRateLimit, failedItems, tasks, taskStats, fileAnalytics } = monitoring
+  const { overview, workers, enumeration, graphRateLimit, failedItems, tasks, taskStats, fileAnalytics, sharesAnalytics } = monitoring
 
   // Auto-refresh monitoring data every 30 seconds
   useEffect(() => {
@@ -79,6 +82,7 @@ export function DashboardChart({ monitoring, onRefreshMonitoring }: DashboardCha
           </CardDescription>
         </CardHeader>
       </Card>
+
       {/* Work Queue Overview */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -296,6 +300,9 @@ export function DashboardChart({ monitoring, onRefreshMonitoring }: DashboardCha
 
       {/* File Types Distribution */}
       <FileTypeChart fileAnalytics={fileAnalytics} />
+
+      {/* Document Distribution by Shares */}
+      <SharesDistributionChart sharesAnalytics={sharesAnalytics} />
 
     </div>
   )

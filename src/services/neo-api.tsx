@@ -621,11 +621,66 @@ export class NeoApiService {
     }
   }
 
+  async getSharesAnalytics(token: string): Promise<{ share_id: string; share_name: string; share_path: string; count: number; total_size: number }[]> {
+    appLogger.debug("Fetching shares analytics data")
+    
+    try {
+      // Get all files across all shares
+      const response = await this.fetchWithToken<FileSearchResponse>("/files", token)
+      
+      // Group files by share and calculate statistics
+      const shareFileMap = new Map<string, { share_name: string; share_path: string; count: number; total_size: number }>()
+      
+      response.files.forEach(file => {
+        const shareId = file.share_id || 'unknown'
+        const shareName = file.share_name || 'Unknown Share'
+        const sharePath = file.share_path || 'Unknown Path'
+        
+        const current = shareFileMap.get(shareId) || { 
+          share_name: shareName, 
+          share_path: sharePath, 
+          count: 0, 
+          total_size: 0 
+        }
+        
+        shareFileMap.set(shareId, {
+          share_name: shareName,
+          share_path: sharePath,
+          count: current.count + 1,
+          total_size: current.total_size + file.size
+        })
+      })
+      
+      // Convert to array and sort by count
+      const analytics = Array.from(shareFileMap.entries())
+        .map(([share_id, stats]) => ({
+          share_id,
+          share_name: stats.share_name,
+          share_path: stats.share_path,
+          count: stats.count,
+          total_size: stats.total_size
+        }))
+        .filter(item => item.count > 0) // Only include shares that have files
+        .sort((a, b) => b.count - a.count)
+    
+      appLogger.info("Shares analytics data processed", undefined, {
+        total_shares_with_files: analytics.length,
+        total_files: response.files.length,
+        shares_breakdown: analytics.map(a => `${a.share_name}: ${a.count}`)
+      })
+    
+      return analytics
+    } catch (error) {
+      appLogger.error("Failed to fetch shares analytics", error instanceof Error ? error.message : "Unknown error")
+      throw error
+    }
+  }
+
   async fetchMonitoringData(token: string) {
     appLogger.info("Fetching monitoring data")
 
     try {
-      const [overview, workers, enumeration, graphRateLimit, failedItems, tasks, taskStats, fileAnalytics] = await Promise.all([
+      const [overview, workers, enumeration, graphRateLimit, failedItems, tasks, taskStats, fileAnalytics, sharesAnalytics] = await Promise.all([
         this.getMonitoringOverview(token),
         this.getMonitoringWorkers(token),
         this.getMonitoringEnumeration(token),
@@ -634,6 +689,7 @@ export class NeoApiService {
         this.getTasks(token),
         this.getTaskStatistics(token),
         this.getFileAnalytics(token),
+        this.getSharesAnalytics(token),
       ])
 
       appLogger.info("Monitoring data fetched successfully", undefined, {
@@ -642,9 +698,10 @@ export class NeoApiService {
         total_tasks: taskStats.total_tasks,
         failed_items: failedItems.total_failed_items,
         file_types: fileAnalytics.length,
+        shares_with_files: sharesAnalytics.length,
       })
 
-      return { overview, workers, enumeration, graphRateLimit, failedItems, tasks, taskStats, fileAnalytics }
+      return { overview, workers, enumeration, graphRateLimit, failedItems, tasks, taskStats, fileAnalytics, sharesAnalytics }
     } catch (error) {
       appLogger.error(
         "Failed to fetch monitoring data",

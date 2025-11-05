@@ -53,6 +53,7 @@ export function useNeoApi() {
     tasks: TasksResponse[] | null
     taskStats: TaskStatisticsResponse | null
     fileAnalytics: { file_type: string; count: number; total_size: number }[] | null
+    sharesAnalytics: { share_id: string; share_name: string; share_path: string; count: number; total_size: number }[] | null
   }>({
     overview: null,
     workers: null,
@@ -62,6 +63,7 @@ export function useNeoApi() {
     tasks: null,
     taskStats: null,
     fileAnalytics: null,
+    sharesAnalytics: null,
   })
 
   const applySystemData = useCallback(
@@ -105,6 +107,7 @@ export function useNeoApi() {
       tasks: null,
       taskStats: null,
       fileAnalytics: null,
+      sharesAnalytics: null,
     })
   }, [])
 

@@ -18,7 +18,7 @@ import type {
   MonitoringFailedItemsResponse,
   TasksResponse,
   TaskStatisticsResponse,
-  FileAnalyticsResponse
+  SharesResponse,
 } from "@/services/neo-api"
 
 interface DashboardProps {
@@ -34,6 +34,7 @@ interface DashboardProps {
     tasks: TasksResponse[] | null
     taskStats: TaskStatisticsResponse | null
     fileAnalytics: { file_type: string; count: number; total_size: number }[] | null
+    sharesAnalytics: { share_id: string; share_name: string; share_path: string; count: number; total_size: number }[] | null
   }
   onFetchMonitoring: () => Promise<void>
 }
@@ -52,7 +53,10 @@ export default function Dashboard({ health, license, version, monitoring, onFetc
         <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
           <SectionCards health={health} license={license} version={version} />
           <div className="px-4 lg:px-6">
-            <DashboardChart monitoring={monitoring} onRefreshMonitoring={onFetchMonitoring} />
+            <DashboardChart 
+              monitoring={monitoring} 
+              onRefreshMonitoring={onFetchMonitoring} 
+            />
           </div>
         </div>
       </div>
