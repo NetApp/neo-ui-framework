@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { IconInfoCircle } from "@tabler/icons-react"
 import type {
   FileEntry,
@@ -47,11 +47,19 @@ export function FilesTable({ files, loading = false, emptyMessage, onFetchFileMe
   const [metadata, setMetadata] = useState<FileMetadataResponse | null>(null)
 
   const handleShowMetadata = async (file: FileEntry) => {
+    // Use the provided shareId first, then fall back to the file's share_id
     const effectiveShareId = shareId ?? file.share_id
 
-    if (!onFetchFileMetadata || !effectiveShareId) {
+    if (!onFetchFileMetadata) {
       setMetadataOpen(true)
-      setMetadataError("Cannot fetch metadata: share not available.")
+      setMetadataError("Cannot fetch metadata: handler not available.")
+      setMetadata(null)
+      return
+    }
+
+    if (!effectiveShareId) {
+      setMetadataOpen(true)
+      setMetadataError("Cannot fetch metadata: share information not available.")
       setMetadata(null)
       return
     }
@@ -70,6 +78,30 @@ export function FilesTable({ files, loading = false, emptyMessage, onFetchFileMe
       setMetadataLoading(false)
     }
   }
+
+  // Helper function to determine if a file can have its metadata fetched
+  const canFetchMetadata = (file: FileEntry) => {
+    // Must have the metadata handler
+    if (!onFetchFileMetadata) {
+      return false
+    }
+    
+    // Must have either a shareId from props OR a share_id from the file
+    const effectiveShareId = shareId ?? file.share_id
+    return !!effectiveShareId
+  }
+
+  // Debug logging to help troubleshoot
+  useEffect(() => {
+    if (rows.length > 0) {
+      console.log("FilesTable Debug:", {
+        shareId,
+        sampleFile: rows[0],
+        canFetchFirst: canFetchMetadata(rows[0]),
+        effectiveShareId: shareId ?? rows[0]?.share_id
+      })
+    }
+  }, [shareId, rows])
 
   return (
     <>
@@ -107,16 +139,21 @@ export function FilesTable({ files, loading = false, emptyMessage, onFetchFileMe
                     <TableCell>{file.share_name ?? file.share_path ?? "—"}</TableCell>
                   ) : null}
                   <TableCell className="text-right">
-                    {onFetchFileMetadata ? (
+                    {canFetchMetadata(file) ? (
                       <Button
                         variant="outline"
                         size="icon"
                         onClick={() => handleShowMetadata(file)}
-                        aria-label="File details"
+                        aria-label={`File details for ${file.filename}`}
+                        title={`View details for ${file.filename} (Share: ${shareId ?? file.share_id})`}
                       >
                         <IconInfoCircle className="size-4" />
                       </Button>
-                    ) : null}
+                    ) : (
+                      <span className="text-xs text-muted-foreground" title="No share information available">
+                        —
+                      </span>
+                    )}
                   </TableCell>
                 </TableRow>
               ))

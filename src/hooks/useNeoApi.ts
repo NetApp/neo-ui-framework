@@ -29,8 +29,10 @@ import {
   AuthenticationError,
 } from "@/services/neo-api"
 
+
 import type { 
-  ConnectionCredentials 
+  ConnectionCredentials,
+  FileEntry
 } from "@/services/models"
 
 export function useNeoApi() {
@@ -469,37 +471,52 @@ export function useNeoApi() {
       try {
         appLogger.info("Loading files", undefined, { shareKey })
         if (shareKey === "all") {
-          if (!shares?.length) {
-            appLogger.debug("No shares available to load files from")
-            setFiles(null)
-            return
+          // Use the /files endpoint to get ALL files across all shares with pagination
+          const allFiles: FileEntry[] = []
+          let page = 1
+          let hasNextPage = true
+          let totalCount = 0
+          let totalSize = 0
+
+          while (hasNextPage) {
+            appLogger.debug(`Fetching all files page ${page}`)
+            const response = await api.searchFiles(token, { page, page_size: 1000 })
+            
+            allFiles.push(...response.files)
+            totalCount = response.total_count
+            totalSize = response.total_size
+            
+            // Check if there are more pages
+            hasNextPage = response.has_next
+            page += 1
+            
+            appLogger.debug(`Fetched page ${page - 1}: ${response.files.length} files, has_next: ${response.has_next}`)
           }
-
-          const responses = await Promise.all(shares.map((share) => api.getFiles(token, share.id)))
-
-          const aggregatedFiles = responses.flatMap((response) => response.files)
 
           const aggregated: FilesResponse = {
             share_id: "all",
             path: "All shares",
-            files: aggregatedFiles,
-            total_count: responses.reduce((total, response) => total + response.total_count, 0),
-            total_size: responses.reduce((total, response) => total + response.total_size, 0),
+            files: allFiles,
+            total_count: totalCount,
+            total_size: totalSize,
             page: 0,
-            page_size: aggregatedFiles.length,
-            total_pages: aggregatedFiles.length ? 1 : 0,
+            page_size: allFiles.length,
+            total_pages: 1,
             has_next: false,
             has_previous: false,
           }
 
           setFiles(aggregated)
-          appLogger.info("Files loaded from all shares", undefined, {
-            total_files: aggregatedFiles.length,
+          appLogger.info("Files loaded from all shares via /files endpoint", undefined, {
+            total_files: allFiles.length,
+            pages_fetched: page - 1,
+            files_with_share_id: allFiles.filter(f => f.share_id).length
           })
         } else {
+          // Use the /shares/{shareId}/files endpoint for specific shares
           const response = await api.getFiles(token, shareKey)
           setFiles(response)
-          appLogger.info("Files loaded from share", undefined, {
+          appLogger.info("Files loaded from specific share", undefined, {
             shareKey,
             total_files: response.files.length,
           })
@@ -517,7 +534,7 @@ export function useNeoApi() {
         toast.error("Failed to load files.")
       }
     },
-    [token, shares, clearSystemData]
+    [token, clearSystemData]
   )
 
   const handleFetchMonitoring = useCallback(async () => {

@@ -191,9 +191,9 @@ export default function Files({ files, shares, onSelectShare, onFetchFileMetadat
   const selectedShareId =
     value === ALL_VALUE || value === NONE_VALUE ? undefined : value
 
-  const tableShareId = isSearchMode ? undefined : selectedShareId
-  const metadataHandler =
-    isSearchMode || selectedShareId ? onFetchFileMetadata : undefined
+  // Fix: Always provide the metadata handler when we have onFetchFileMetadata
+  // For "All shares" or search mode, the FilesTable will use the file's share_id
+  const metadataHandler = onFetchFileMetadata
 
   return (
     <div className="flex flex-1 flex-col">
@@ -299,7 +299,7 @@ export default function Files({ files, shares, onSelectShare, onFetchFileMetadat
               loading={loading}
               emptyMessage={emptyMessage}
               onFetchFileMetadata={metadataHandler}
-              shareId={tableShareId}
+              shareId={selectedShareId}
             />
           </div>
         </div>
