@@ -15,7 +15,7 @@ import {
 
 import { 
   LogsTable
- } from "@/components/data-tables/logs"
+ } from "@/components/data-tables/logsT"
 
  import { 
   Button 

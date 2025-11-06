@@ -1,6 +1,7 @@
 "use client"
 
 import type { MeResponse } from "@/services/neo-api"
+import type { ConnectionCredentials } from "@/services/models"
 import {
   Sidebar,
 } from "@/components/ui/sidebar"
@@ -19,15 +20,22 @@ import {
 
 interface AppSidebarProps {
   me?: MeResponse | null
+  isConnected?: boolean
+  onConnect?: (credentials: ConnectionCredentials) => Promise<void>
   onLogout?: () => void
 }
 
-export function AppSidebar({ me, onLogout }: AppSidebarProps) {
+export function AppSidebar({ me, isConnected = false, onConnect, onLogout }: AppSidebarProps) {
   return (
     <Sidebar collapsible="icon">
       <AppSidebarHeader />
       <AppSidebarContent />
-      <AppSidebarFooter me={me} onLogout={onLogout} />
+      <AppSidebarFooter 
+        me={me} 
+        isConnected={isConnected}
+        onConnect={onConnect}
+        onLogout={onLogout} 
+      />
     </Sidebar>
   )
 }

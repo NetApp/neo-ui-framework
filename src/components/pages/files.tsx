@@ -30,7 +30,7 @@ import type {
 
 import { 
   FilesTable 
-} from "@/components/data-tables/files"
+} from "@/components/data-tables/filesT"
 
 import { 
   SearchFilesDialog 
@@ -62,15 +62,23 @@ import {
 interface FilesProps {
   files: FilesResponse | null
   shares: SharesResponse[] | null
-  onSelectShare: (shareId: string | "all" | null) => Promise<void>
-  onFetchFileMetadata: (shareId: string, fileId: string) => Promise<FileMetadataResponse>
+  onSelectShare: (shareId: string | null) => Promise<void> // Update type to accept null
+  onFetchFileMetadata: (shareId: string, fileId: string) => Promise<FileMetadataResponse> // Fix parameter order
   onSearchFiles: (params: FileSearchParams) => Promise<FileSearchResponse>
+  onPageChange?: (page: number) => Promise<void> // Add this if missing
 }
 
 const NONE_VALUE = "__none__"
 const ALL_VALUE = "__all__"
 
-export default function Files({ files, shares, onSelectShare, onFetchFileMetadata, onSearchFiles }: FilesProps) {
+export default function Files({
+  files,
+  shares,
+  onSelectShare,
+  onFetchFileMetadata,
+  onSearchFiles,
+  onPageChange, // Add this
+}: FilesProps) {
   const [open, setOpen] = useState(false)
   const [value, setValue] = useState<string>(NONE_VALUE)
   const [loading, setLoading] = useState(false)
@@ -132,7 +140,7 @@ export default function Files({ files, shares, onSelectShare, onFetchFileMetadat
 
     try {
       if (resolved === NONE_VALUE) {
-        await onSelectShare(null)
+        await onSelectShare(null) // This now works with updated type
       } else if (resolved === ALL_VALUE) {
         await onSelectShare("all")
       } else {
@@ -191,9 +199,10 @@ export default function Files({ files, shares, onSelectShare, onFetchFileMetadat
   const selectedShareId =
     value === ALL_VALUE || value === NONE_VALUE ? undefined : value
 
-  const tableShareId = isSearchMode ? undefined : selectedShareId
-  const metadataHandler =
-    isSearchMode || selectedShareId ? onFetchFileMetadata : undefined
+  // Fix: Always provide the metadata handler when we have onFetchFileMetadata
+  // For "All shares" or search mode, the FilesTable will use the file's share_id
+  // Fix: The parameter order should match what FilesTable expects
+  const metadataHandler = (shareId: string, fileId: string) => onFetchFileMetadata(shareId, fileId)
 
   return (
     <div className="flex flex-1 flex-col">
@@ -299,7 +308,8 @@ export default function Files({ files, shares, onSelectShare, onFetchFileMetadat
               loading={loading}
               emptyMessage={emptyMessage}
               onFetchFileMetadata={metadataHandler}
-              shareId={tableShareId}
+              shareId={selectedShareId}
+              onPageChange={onPageChange} // Use the prop instead of handlers.handleFilesPageChange
             />
           </div>
         </div>

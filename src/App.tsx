@@ -29,7 +29,12 @@ function App() {
         }
       >
         <HashRouter>
-          <AppSidebar me={state.me} onLogout={handlers.handleLogout} />
+          <AppSidebar 
+            me={state.me} 
+            isConnected={!!state.token}
+            onConnect={handlers.handleConnect}
+            onLogout={handlers.handleLogout} 
+          />
           <SidebarInset>
             <SiteHeader
               onConnect={handlers.handleConnect}
@@ -41,7 +46,14 @@ function App() {
               <Route
                 path="/dashboard"
                 element={
-                  <Dashboard health={state.health} license={state.license} version={state.version} />
+                  <Dashboard
+                    health={state.health}
+                    license={state.license}
+                    version={state.version}
+                    databaseSize={state.databaseSize}
+                    monitoring={state.monitoring}
+                    onFetchMonitoring={handlers.handleFetchMonitoring}
+                  />
                 }
               />
               <Route
@@ -66,6 +78,7 @@ function App() {
                     onSelectShare={handlers.handleSelectFilesShare}
                     onFetchFileMetadata={handlers.handleFetchFileMetadata}
                     onSearchFiles={handlers.handleSearchFiles}
+                    onPageChange={handlers.handleFilesPageChange}
                   />
                 }
               />

@@ -22,7 +22,7 @@ export function AppSidebarHeader() {
             >
               <a href="#">
                 <IconBrain className="!size-5" />
-                <span className="text-base font-semibold">NetApp Neo UI</span>
+                <span className="text-base font-semibold">Neo Console</span>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>

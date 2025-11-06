@@ -20,7 +20,7 @@ import {
 
 import { 
   IconBrandGithub, 
-  IconKey, 
+  IconLogin, 
   IconRefresh 
 } from "@tabler/icons-react"
 
@@ -94,7 +94,7 @@ export function SiteHeader({ onConnect, onRefresh, isConnected }: SiteHeaderProp
           </Button>
           <ConnectDialog onConnect={onConnect} onRefresh={onRefresh} isConnected={isConnected}>
             <Button variant="outline" size="icon" className="hidden sm:flex">
-              {isConnected ? <IconRefresh /> : <IconKey />}
+              {isConnected ? <IconRefresh /> : <IconLogin />}
               <span className="sr-only">
                 {isConnected ? "Refresh data" : "Connect"}
               </span>

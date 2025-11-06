@@ -47,19 +47,34 @@ interface ConnectDialogProps {
   onRefresh?: () => Promise<void>
   isConnected: boolean
   children?: ReactElement<TriggerElementProps>
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
-export function ConnectDialog({ onConnect, onRefresh, isConnected, children }: ConnectDialogProps) {
-  const [dialogOpen, setDialogOpen] = useState(false)
+export function ConnectDialog({ 
+  onConnect, 
+  onRefresh, 
+  isConnected, 
+  children, 
+  open: externalOpen, 
+  onOpenChange: externalOnOpenChange 
+}: ConnectDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false)
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
+  // const [endpoint, setEndpoint] = useState("http://localhost:8081")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [refreshing, setRefreshing] = useState(false)
 
+  // Use external state if provided, otherwise use internal state
+  const dialogOpen = externalOpen !== undefined ? externalOpen : internalOpen
+  const setDialogOpen = externalOnOpenChange || setInternalOpen
+
   const handleTriggerClick = useCallback(
     async (event: MouseEvent<HTMLElement>) => {
       if (!isConnected || !onRefresh) {
+        setDialogOpen(true)
         return
       }
 
@@ -78,7 +93,7 @@ export function ConnectDialog({ onConnect, onRefresh, isConnected, children }: C
         setRefreshing(false)
       }
     },
-    [isConnected, onRefresh]
+    [isConnected, onRefresh, setDialogOpen]
   )
 
   const handleSubmit = useCallback(
@@ -89,9 +104,14 @@ export function ConnectDialog({ onConnect, onRefresh, isConnected, children }: C
       setError(null)
 
       try {
-        await onConnect({ username, password })
+        await onConnect({ 
+          // endpoint,
+          username, 
+          password 
+        })
         setDialogOpen(false)
         setPassword("")
+        setUsername("")
         setError(null)
       } catch (err) {
         setError(err instanceof Error ? err.message : "Connection failed")
@@ -99,7 +119,8 @@ export function ConnectDialog({ onConnect, onRefresh, isConnected, children }: C
         setLoading(false)
       }
     },
-    [username, password, onConnect]
+    // [ endpoint, username, password, onConnect, setDialogOpen]
+    [ username, password, onConnect, setDialogOpen]
   )
 
   const triggerChild = (() => {
@@ -137,7 +158,7 @@ export function ConnectDialog({ onConnect, onRefresh, isConnected, children }: C
         }
       }}
     >
-      <DialogTrigger asChild>{triggerChild}</DialogTrigger>
+      {!externalOpen && <DialogTrigger asChild>{triggerChild}</DialogTrigger>}
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Connect to Neo</DialogTitle>
@@ -146,6 +167,17 @@ export function ConnectDialog({ onConnect, onRefresh, isConnected, children }: C
           </DialogDescription>
         </DialogHeader>
         <form className="space-y-4" onSubmit={handleSubmit}>
+          {/* <div className="space-y-2">
+            <Label htmlFor="endpoint">API Endpoint</Label>
+            <Input
+              id="endpoint"
+              type="url"
+              value={endpoint}
+              onChange={(event) => setEndpoint(event.target.value)}
+              placeholder="http://localhost:8000"
+              required
+            />
+          </div> */}
           <div className="space-y-2">
             <Label htmlFor="username">Username</Label>
             <Input

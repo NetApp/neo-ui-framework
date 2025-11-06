@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { IconInfoCircle } from "@tabler/icons-react"
 import type {
   FileEntry,
@@ -33,9 +33,17 @@ interface FilesTableProps {
   emptyMessage?: string
   onFetchFileMetadata?: (shareId: string, fileId: string) => Promise<FileMetadataResponse>
   shareId?: string
+  onPageChange?: (page: number) => Promise<void>
 }
 
-export function FilesTable({ files, loading = false, emptyMessage, onFetchFileMetadata, shareId }: FilesTableProps) {
+export function FilesTable({ 
+  files, 
+  loading = false, 
+  emptyMessage, 
+  onFetchFileMetadata, 
+  shareId,
+  onPageChange 
+}: FilesTableProps) {
   const rows = files?.files ?? []
   const message = emptyMessage ?? (loading ? "Loading files…" : "No files available.")
   const showShareColumn = rows.some((file) => file.share_name || file.share_path)
@@ -45,13 +53,22 @@ export function FilesTable({ files, loading = false, emptyMessage, onFetchFileMe
   const [metadataLoading, setMetadataLoading] = useState(false)
   const [metadataError, setMetadataError] = useState<string | null>(null)
   const [metadata, setMetadata] = useState<FileMetadataResponse | null>(null)
+  const [pageChanging, setPageChanging] = useState(false)
 
   const handleShowMetadata = async (file: FileEntry) => {
+    // Use the provided shareId first, then fall back to the file's share_id
     const effectiveShareId = shareId ?? file.share_id
 
-    if (!onFetchFileMetadata || !effectiveShareId) {
+    if (!onFetchFileMetadata) {
       setMetadataOpen(true)
-      setMetadataError("Cannot fetch metadata: share not available.")
+      setMetadataError("Cannot fetch metadata: handler not available.")
+      setMetadata(null)
+      return
+    }
+
+    if (!effectiveShareId) {
+      setMetadataOpen(true)
+      setMetadataError("Cannot fetch metadata: share information not available.")
       setMetadata(null)
       return
     }
@@ -70,6 +87,51 @@ export function FilesTable({ files, loading = false, emptyMessage, onFetchFileMe
       setMetadataLoading(false)
     }
   }
+
+  // Helper function to determine if a file can have its metadata fetched
+  const canFetchMetadata = (file: FileEntry) => {
+    // Must have the metadata handler
+    if (!onFetchFileMetadata) {
+      return false
+    }
+    
+    // Must have either a shareId from props OR a share_id from the file
+    const effectiveShareId = shareId ?? file.share_id
+    return !!effectiveShareId
+  }
+
+  const handlePageChange = async (newPage: number) => {
+    if (onPageChange && !pageChanging && !loading) {
+      setPageChanging(true)
+      try {
+        await onPageChange(newPage)
+      } catch (error) {
+        console.error("Page change failed:", error)
+      } finally {
+        setPageChanging(false)
+      }
+    }
+  }
+
+  // Debug logging to help troubleshoot
+  useEffect(() => {
+    if (rows.length > 0) {
+      console.log("FilesTable Debug:", {
+        shareId,
+        sampleFile: rows[0],
+        canFetchFirst: canFetchMetadata(rows[0]),
+        effectiveShareId: shareId ?? rows[0]?.share_id
+      })
+    }
+  }, [shareId, rows, canFetchMetadata])
+
+  // Calculate pagination info
+  const currentPage = files?.page ?? 0
+  const totalPages = files?.total_pages ?? 0
+  const hasPrevious = files?.has_previous ?? false
+  const hasNext = files?.has_next ?? false
+  const totalCount = files?.total_count ?? 0
+  const totalSize = files?.total_size ?? 0
 
   return (
     <>
@@ -107,16 +169,21 @@ export function FilesTable({ files, loading = false, emptyMessage, onFetchFileMe
                     <TableCell>{file.share_name ?? file.share_path ?? "—"}</TableCell>
                   ) : null}
                   <TableCell className="text-right">
-                    {onFetchFileMetadata ? (
+                    {canFetchMetadata(file) ? (
                       <Button
                         variant="outline"
                         size="icon"
                         onClick={() => handleShowMetadata(file)}
-                        aria-label="File details"
+                        aria-label={`File details for ${file.filename}`}
+                        title={`View details for ${file.filename} (Share: ${shareId ?? file.share_id})`}
                       >
                         <IconInfoCircle className="size-4" />
                       </Button>
-                    ) : null}
+                    ) : (
+                      <span className="text-xs text-muted-foreground" title="No share information available">
+                        —
+                      </span>
+                    )}
                   </TableCell>
                 </TableRow>
               ))
@@ -130,10 +197,35 @@ export function FilesTable({ files, loading = false, emptyMessage, onFetchFileMe
           </TableBody>
         </Table>
       </div>
-      {files && !loading ? (
+      
+      {/* Pagination Controls */}
+      {files && !loading && totalPages > 1 ? (
+        <div className="flex items-center justify-between space-x-2 py-4">
+          <div className="text-muted-foreground flex-1 text-sm">
+            Showing page {currentPage} of {totalPages} · {totalCount.toLocaleString()} files · Total size {totalSize.toLocaleString()} bytes
+          </div>
+          <div className="space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={!hasPrevious || pageChanging || loading}
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={!hasNext || pageChanging || loading}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      ) : files && !loading ? (
         <p className="mt-2 text-sm text-muted-foreground">
-          Showing page {files.page + 1} of {files.total_pages} · {files.total_count} files · Total size{" "}
-          {files.total_size.toLocaleString()} bytes
+          Showing page {currentPage + 1} of {totalPages} · {totalCount.toLocaleString()} files · Total size {totalSize.toLocaleString()} bytes
         </p>
       ) : null}
 

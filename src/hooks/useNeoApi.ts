@@ -8,27 +8,38 @@ import {
   NeoApiService,
   type HealthResponse,
   type LicenseResponse,
+  type VersionResponse,
+  type DatabaseSizeResponse,  // Add this import
   type OperationResponse,
   type UserResponse,
   type MeResponse,
-  type VersionResponse,
   type SharesResponse,
   type FilesResponse,
   type ShareDetailsResponse,
   type FileMetadataResponse,
   type FileSearchParams,
   type FileSearchResponse,
+  type MonitoringOverviewResponse,
+  type MonitoringWorkersResponse,
+  type MonitoringEnumerationResponse,
+  type MonitoringGraphRateLimitResponse,
+  type MonitoringFailedItemsResponse,
+  type TasksResponse,
+  type TaskStatisticsResponse,
   AuthenticationError,
 } from "@/services/neo-api"
 
+
 import type { 
-  ConnectionCredentials 
+  ConnectionCredentials,
+  // FileEntry
 } from "@/services/models"
 
 export function useNeoApi() {
   const [health, setHealth] = useState<HealthResponse | null>(null)
   const [license, setLicense] = useState<LicenseResponse | null>(null)
   const [version, setVersion] = useState<VersionResponse | null>(null)
+  const [databaseSize, setDatabaseSize] = useState<DatabaseSizeResponse | null>(null)  // Add this state
   const [users, setUsers] = useState<UserResponse[] | null>(null)
   const [me, setMe] = useState<MeResponse | null>(null)
   const [operations, setOperations] = useState<OperationResponse[] | null>(null)
@@ -37,11 +48,36 @@ export function useNeoApi() {
   const [token, setToken] = useState<string | null>(null)
   const apiRef = useRef(new NeoApiService())
 
+  const [monitoring, setMonitoring] = useState<{
+    overview: MonitoringOverviewResponse | null
+    workers: MonitoringWorkersResponse | null
+    enumeration: MonitoringEnumerationResponse | null
+    graphRateLimit: MonitoringGraphRateLimitResponse | null
+    failedItems: MonitoringFailedItemsResponse | null
+    tasks: TasksResponse[] | null
+    taskStats: TaskStatisticsResponse | null
+    fileAnalytics: { file_type: string; count: number; total_size: number }[] | null
+    sharesAnalytics: { share_id: string; share_name: string; share_path: string; count: number; total_size: number }[] | null
+  }>({
+    overview: null,
+    workers: null,
+    enumeration: null,
+    graphRateLimit: null,
+    failedItems: null,
+    tasks: null,
+    taskStats: null,
+    fileAnalytics: null,
+    sharesAnalytics: null,
+  })
+
+  const [currentShareId, setCurrentShareId] = useState<string | "all" | null>(null)
+
   const applySystemData = useCallback(
     (data: {
       health: HealthResponse
       license: LicenseResponse
       version: VersionResponse
+      databaseSize: DatabaseSizeResponse  // Add this
       users: UserResponse[]
       me: MeResponse
       operations: OperationResponse[]
@@ -51,6 +87,7 @@ export function useNeoApi() {
       setHealth(data.health)
       setLicense(data.license)
       setVersion(data.version)
+      setDatabaseSize(data.databaseSize)  // Add this
       setUsers(data.users)
       setMe(data.me)
       setOperations(data.operations)
@@ -64,11 +101,23 @@ export function useNeoApi() {
     setHealth(null)
     setLicense(null)
     setVersion(null)
+    setDatabaseSize(null)  // Add this
     setUsers(null)
     setMe(null)
     setOperations(null)
     setShares(null)
     setFiles(null)
+    setMonitoring({
+      overview: null,
+      workers: null,
+      enumeration: null,
+      graphRateLimit: null,
+      failedItems: null,
+      tasks: null,
+      taskStats: null,
+      fileAnalytics: null,
+      sharesAnalytics: null,
+    })
   }, [])
 
   const handleConnect = useCallback(
@@ -404,7 +453,7 @@ export function useNeoApi() {
   )
 
   const handleSelectFilesShare = useCallback(
-    async (shareKey: string | "all" | null) => {
+    async (shareKey: string | "all" | null, page?: number) => {
       if (!token) {
         appLogger.warn("Select files share attempted without active token")
         toast.error("Connect first to load files.")
@@ -416,47 +465,52 @@ export function useNeoApi() {
       if (shareKey === null) {
         appLogger.debug("Clearing files selection")
         setFiles(null)
+        setCurrentShareId(null)
         return
       }
 
+      // Store current share ID for pagination
+      setCurrentShareId(shareKey)
       setFiles(null)
 
       try {
-        appLogger.info("Loading files", undefined, { shareKey })
+        appLogger.info("Loading files", undefined, { shareKey, page })
         if (shareKey === "all") {
-          if (!shares?.length) {
-            appLogger.debug("No shares available to load files from")
-            setFiles(null)
-            return
+          // Use the /files endpoint to get ALL files across all shares with pagination
+          const searchParams: FileSearchParams = { 
+            page: page || 1, 
+            page_size: 100 
           }
-
-          const responses = await Promise.all(shares.map((share) => api.getFiles(token, share.id)))
-
-          const aggregatedFiles = responses.flatMap((response) => response.files)
-
+          const response = await api.searchFiles(token, searchParams)
+          
           const aggregated: FilesResponse = {
             share_id: "all",
             path: "All shares",
-            files: aggregatedFiles,
-            total_count: responses.reduce((total, response) => total + response.total_count, 0),
-            total_size: responses.reduce((total, response) => total + response.total_size, 0),
-            page: 0,
-            page_size: aggregatedFiles.length,
-            total_pages: aggregatedFiles.length ? 1 : 0,
-            has_next: false,
-            has_previous: false,
+            files: response.files,
+            total_count: response.total_count,
+            total_size: response.total_size,
+            page: response.page,
+            page_size: response.page_size,
+            total_pages: response.total_pages,
+            has_next: response.has_next,
+            has_previous: response.has_previous,
           }
 
           setFiles(aggregated)
-          appLogger.info("Files loaded from all shares", undefined, {
-            total_files: aggregatedFiles.length,
+          appLogger.info("Files loaded from all shares via /files endpoint", undefined, {
+            total_files: response.files.length,
+            page: response.page,
+            total_pages: response.total_pages
           })
         } else {
-          const response = await api.getFiles(token, shareKey)
+          // Use the /shares/{shareId}/files endpoint for specific shares
+          const response = await api.getFiles(token, shareKey, page || 1, 100)
           setFiles(response)
-          appLogger.info("Files loaded from share", undefined, {
+          appLogger.info("Files loaded from specific share", undefined, {
             shareKey,
             total_files: response.files.length,
+            page: response.page,
+            total_pages: response.total_pages
           })
         }
       } catch (error) {
@@ -467,13 +521,49 @@ export function useNeoApi() {
         appLogger.error(
           "Failed to load files",
           error instanceof Error ? error.message : "Unknown error",
-          { shareKey }
+          { shareKey, page }
         )
         toast.error("Failed to load files.")
       }
     },
-    [token, shares, clearSystemData]
+    [token, clearSystemData]
   )
+
+  const handleFilesPageChange = useCallback(
+    async (page: number) => {
+      if (currentShareId !== null) {
+        await handleSelectFilesShare(currentShareId, page)
+      }
+    },
+    [currentShareId, handleSelectFilesShare]
+  )
+
+  const handleFetchMonitoring = useCallback(async () => {
+    if (!token) {
+      appLogger.warn("Fetch monitoring attempted without active token")
+      throw new AuthenticationError()
+    }
+
+    const api = apiRef.current
+
+    try {
+      appLogger.debug("Fetching monitoring data")
+      const data = await api.fetchMonitoringData(token)
+      setMonitoring(data)
+      appLogger.info("Monitoring data fetched successfully")
+    } catch (error) {
+      if (error instanceof AuthenticationError) {
+        clearSystemData()
+        setToken(null)
+        appLogger.warn("Token expired during monitoring fetch")
+      }
+      appLogger.error(
+        "Failed to fetch monitoring data",
+        error instanceof Error ? error.message : "Unknown error"
+      )
+      throw error
+    }
+  }, [token, clearSystemData])
 
   const handleLogout = useCallback(() => {
     appLogger.info("User logging out", undefined, { username: me?.username })
@@ -487,11 +577,13 @@ export function useNeoApi() {
       health,
       license,
       version,
+      databaseSize,  // Add this to state
       users,
       me,
       operations,
       shares,
       files,
+      monitoring,
       token,
     },
     handlers: {
@@ -507,7 +599,9 @@ export function useNeoApi() {
       handleFetchFileMetadata,
       handleSelectFilesShare,
       handleSearchFiles,
+      handleFetchMonitoring,
       handleLogout,
+      handleFilesPageChange,
     },
   }
 }
