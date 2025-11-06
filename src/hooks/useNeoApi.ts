@@ -32,7 +32,7 @@ import {
 
 import type { 
   ConnectionCredentials,
-  FileEntry
+  // FileEntry
 } from "@/services/models"
 
 export function useNeoApi() {
@@ -69,6 +69,8 @@ export function useNeoApi() {
     fileAnalytics: null,
     sharesAnalytics: null,
   })
+
+  const [currentShareId, setCurrentShareId] = useState<string | "all" | null>(null)
 
   const applySystemData = useCallback(
     (data: {
@@ -451,7 +453,7 @@ export function useNeoApi() {
   )
 
   const handleSelectFilesShare = useCallback(
-    async (shareKey: string | "all" | null) => {
+    async (shareKey: string | "all" | null, page?: number) => {
       if (!token) {
         appLogger.warn("Select files share attempted without active token")
         toast.error("Connect first to load files.")
@@ -463,62 +465,52 @@ export function useNeoApi() {
       if (shareKey === null) {
         appLogger.debug("Clearing files selection")
         setFiles(null)
+        setCurrentShareId(null)
         return
       }
 
+      // Store current share ID for pagination
+      setCurrentShareId(shareKey)
       setFiles(null)
 
       try {
-        appLogger.info("Loading files", undefined, { shareKey })
+        appLogger.info("Loading files", undefined, { shareKey, page })
         if (shareKey === "all") {
           // Use the /files endpoint to get ALL files across all shares with pagination
-          const allFiles: FileEntry[] = []
-          let page = 1
-          let hasNextPage = true
-          let totalCount = 0
-          let totalSize = 0
-
-          while (hasNextPage) {
-            appLogger.debug(`Fetching all files page ${page}`)
-            const response = await api.searchFiles(token, { page, page_size: 100 })
-            
-            allFiles.push(...response.files)
-            totalCount = response.total_count
-            totalSize = response.total_size
-            
-            // Check if there are more pages
-            hasNextPage = response.has_next
-            page += 1
-            
-            appLogger.debug(`Fetched page ${page - 1}: ${response.files.length} files, has_next: ${response.has_next}`)
+          const searchParams: FileSearchParams = { 
+            page: page || 1, 
+            page_size: 100 
           }
-
+          const response = await api.searchFiles(token, searchParams)
+          
           const aggregated: FilesResponse = {
             share_id: "all",
             path: "All shares",
-            files: allFiles,
-            total_count: totalCount,
-            total_size: totalSize,
-            page: 0,
-            page_size: allFiles.length,
-            total_pages: 1,
-            has_next: false,
-            has_previous: false,
+            files: response.files,
+            total_count: response.total_count,
+            total_size: response.total_size,
+            page: response.page,
+            page_size: response.page_size,
+            total_pages: response.total_pages,
+            has_next: response.has_next,
+            has_previous: response.has_previous,
           }
 
           setFiles(aggregated)
           appLogger.info("Files loaded from all shares via /files endpoint", undefined, {
-            total_files: allFiles.length,
-            pages_fetched: page - 1,
-            files_with_share_id: allFiles.filter(f => f.share_id).length
+            total_files: response.files.length,
+            page: response.page,
+            total_pages: response.total_pages
           })
         } else {
           // Use the /shares/{shareId}/files endpoint for specific shares
-          const response = await api.getFiles(token, shareKey)
+          const response = await api.getFiles(token, shareKey, page || 1, 100)
           setFiles(response)
           appLogger.info("Files loaded from specific share", undefined, {
             shareKey,
             total_files: response.files.length,
+            page: response.page,
+            total_pages: response.total_pages
           })
         }
       } catch (error) {
@@ -529,12 +521,21 @@ export function useNeoApi() {
         appLogger.error(
           "Failed to load files",
           error instanceof Error ? error.message : "Unknown error",
-          { shareKey }
+          { shareKey, page }
         )
         toast.error("Failed to load files.")
       }
     },
     [token, clearSystemData]
+  )
+
+  const handleFilesPageChange = useCallback(
+    async (page: number) => {
+      if (currentShareId !== null) {
+        await handleSelectFilesShare(currentShareId, page)
+      }
+    },
+    [currentShareId, handleSelectFilesShare]
   )
 
   const handleFetchMonitoring = useCallback(async () => {
@@ -600,6 +601,7 @@ export function useNeoApi() {
       handleSearchFiles,
       handleFetchMonitoring,
       handleLogout,
+      handleFilesPageChange,
     },
   }
 }

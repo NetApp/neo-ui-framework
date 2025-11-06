@@ -375,9 +375,16 @@ export class NeoApiService {
     return this.fetchWithToken<ShareDetailsResponse>(`/shares/${shareId}`, token)
   }
 
-  async getFiles(token: string, shareId: string): Promise<FilesResponse> {
-    appLogger.debug("Fetching files for share", undefined, { shareId })
-    return this.fetchWithToken<FilesResponse>(`/shares/${shareId}/files`, token)
+  async getFiles(token: string, shareId: string, page?: number, pageSize?: number): Promise<FilesResponse> {
+    const params = new URLSearchParams()
+    if (page !== undefined) params.append('page', page.toString())
+    if (pageSize !== undefined) params.append('page_size', pageSize.toString())
+    
+    const query = params.toString()
+    const endpoint = `/shares/${shareId}/files${query ? `?${query}` : ""}`
+    
+    appLogger.debug("Fetching files for share", undefined, { shareId, page, pageSize })
+    return this.fetchWithToken<FilesResponse>(endpoint, token)
   }
 
   async getFileMetadata(

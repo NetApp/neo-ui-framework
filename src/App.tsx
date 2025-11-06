@@ -78,6 +78,7 @@ function App() {
                     onSelectShare={handlers.handleSelectFilesShare}
                     onFetchFileMetadata={handlers.handleFetchFileMetadata}
                     onSearchFiles={handlers.handleSearchFiles}
+                    onPageChange={handlers.handleFilesPageChange}
                   />
                 }
               />
