@@ -46,6 +46,10 @@ import {
 } from "@/components/ui/label"
 
 import { 
+  Textarea 
+} from "@/components/ui/textarea"
+
+import { 
   Alert, 
   AlertDescription, 
   AlertTitle 
@@ -66,6 +70,7 @@ interface ShareFormValues {
     max_file_size: number
     min_file_size: number
     persist_file_content: boolean
+    enable_copilot_upload: boolean
   }
   realm: string
   use_kerberos: string
@@ -95,6 +100,15 @@ interface SharesProps {
   onFetchShareDetails: (shareId: string) => Promise<ShareDetailsResponse>
 }
 
+const DEFAULT_RULES_JSON = `{
+  "max_file_size": 1000000000,
+  "min_file_size": 0,
+  "exclude_patterns": [],
+  "include_patterns": [],
+  "persist_file_content": true,
+  "enable_copilot_upload": true
+}`
+
 export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShare, onStartCrawl, onFetchShareDetails }: SharesProps) {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [sharePath, setSharePath] = useState("")
@@ -105,11 +119,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
   const [alertMessage, setAlertMessage] = useState<string | null>(null)
   const [alertVariant, setAlertVariant] = useState<"success" | "error">("success")
   const [crawlSchedule, setCrawlSchedule] = useState("0 0 * * *")
-  const [excludePatterns, setExcludePatterns] = useState("")
-  const [includePatterns, setIncludePatterns] = useState("")
-  const [maxFileSize, setMaxFileSize] = useState("1000000000")
-  const [minFileSize, setMinFileSize] = useState("0")
-  const [persistFileContent, setPersistFileContent] = useState(true)
+  const [rulesJson, setRulesJson] = useState(DEFAULT_RULES_JSON)
   const [realm, setRealm] = useState("")
   const [useKerberos, setUseKerberos] = useState("required")
   const [workgroup, setWorkgroup] = useState("")
@@ -122,11 +132,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
     setUsername("")
     setPassword("")
     setCrawlSchedule("0 0 * * *")
-    setExcludePatterns("")
-    setIncludePatterns("")
-    setMaxFileSize("1000000000")
-    setMinFileSize("0")
-    setPersistFileContent(true)
+    setRulesJson(DEFAULT_RULES_JSON)
     setRealm("")
     setUseKerberos("required")
     setWorkgroup("")
@@ -136,6 +142,18 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
     setError(null)
   }, [])
 
+  const parseRules = useCallback((jsonString: string) => {
+    try {
+      const parsed = JSON.parse(jsonString)
+      return parsed
+    } catch (error) {
+      if (error instanceof SyntaxError) {
+        throw new Error(`Invalid JSON format in rules field: ${error.message}`)
+      }
+      throw new Error("Invalid JSON format in rules field")
+    }
+  }, [])
+
   const handleSubmit = useCallback(
     async (event: React.FormEvent<HTMLFormElement>) => {
       event.preventDefault()
@@ -143,25 +161,15 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
       setError(null)
 
       try {
+        const parsedRules = parseRules(rulesJson)
+
         if (editingShareId != null) {
           await onUpdateShare(editingShareId, {
             share_path: sharePath,
             username,
             password,
             crawl_schedule: crawlSchedule,
-            rules: {
-              exclude_patterns: excludePatterns
-                .split(",")
-                .map((item) => item.trim())
-                .filter(Boolean),
-              include_patterns: includePatterns
-                .split(",")
-                .map((item) => item.trim())
-                .filter(Boolean),
-              max_file_size: Number.parseInt(maxFileSize, 10) || 0,
-              min_file_size: Number.parseInt(minFileSize, 10) || 0,
-              persist_file_content: persistFileContent,
-            },
+            rules: parsedRules,
             realm,
             use_kerberos: useKerberos,
             workgroup,
@@ -173,19 +181,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
             username,
             password,
             crawl_schedule: crawlSchedule,
-            rules: {
-              exclude_patterns: excludePatterns
-                .split(",")
-                .map((item) => item.trim())
-                .filter(Boolean),
-              include_patterns: includePatterns
-                .split(",")
-                .map((item) => item.trim())
-                .filter(Boolean),
-              max_file_size: Number.parseInt(maxFileSize, 10) || 0,
-              min_file_size: Number.parseInt(minFileSize, 10) || 0,
-              persist_file_content: persistFileContent,
-            },
+            rules: parsedRules,
             realm,
             use_kerberos: useKerberos,
             workgroup,
@@ -200,7 +196,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
         setSubmitting(false)
       }
     },
-    [onAddShare, onUpdateShare, password, resetForm, sharePath, username, crawlSchedule, excludePatterns, includePatterns, maxFileSize, minFileSize, persistFileContent, realm, useKerberos, workgroup, resolveOrder, editingShareId]
+    [onAddShare, onUpdateShare, password, resetForm, sharePath, username, crawlSchedule, rulesJson, realm, useKerberos, workgroup, resolveOrder, editingShareId, parseRules]
   )
 
   const handleCrawl = useCallback(
@@ -233,18 +229,15 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
     setUsername(details.username ?? "")
     setPassword("")
     setCrawlSchedule(details.crawl_schedule ?? "0 0 * * *")
-    const rules = (details.rules ?? {}) as Record<string, unknown>
-    setExcludePatterns(Array.isArray(rules.exclude_patterns) ? rules.exclude_patterns.join(", ") : "")
-    setIncludePatterns(Array.isArray(rules.include_patterns) ? rules.include_patterns.join(", ") : "")
-    setMaxFileSize(
-      typeof rules.max_file_size === "number" ? String(rules.max_file_size) : "1000000000"
-    )
-    setMinFileSize(
-      typeof rules.min_file_size === "number" ? String(rules.min_file_size) : "0"
-    )
-    setPersistFileContent(
-      typeof rules.persist_file_content === "boolean" ? rules.persist_file_content : true
-    )
+    
+    // Convert rules object to formatted JSON string
+    const rules = details.rules ?? {}
+    try {
+      setRulesJson(JSON.stringify(rules, null, 2))
+    } catch (error) {
+      setRulesJson(DEFAULT_RULES_JSON)
+    }
+    
     setRealm(details.realm ?? "")
     setUseKerberos(details.use_kerberos ?? "required")
     setWorkgroup(details.workgroup ?? "")
@@ -362,55 +355,25 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
                     id="crawl-schedule"
                     value={crawlSchedule}
                     onChange={(event) => setCrawlSchedule(event.target.value)}
+                    placeholder="0 0 * * *"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="exclude-patterns">Exclude patterns (comma separated)</Label>
-                  <Input
-                    id="exclude-patterns"
-                    value={excludePatterns}
-                    onChange={(event) => setExcludePatterns(event.target.value)}
+                  <Label htmlFor="rules">Rules (JSON format)*</Label>
+                  <Textarea
+                    id="rules"
+                    value={rulesJson}
+                    onChange={(event) => setRulesJson(event.target.value)}
+                    placeholder={DEFAULT_RULES_JSON}
+                    className="min-h-[200px] font-mono text-sm"
+                    required
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Enter rules configuration in JSON format. Use the placeholder as a template.
+                    <br />
+                    <strong>Note:</strong> Ensure no trailing commas after the last property.
+                  </p>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="include-patterns">Include patterns (comma separated)</Label>
-                  <Input
-                    id="include-patterns"
-                    value={includePatterns}
-                    onChange={(event) => setIncludePatterns(event.target.value)}
-                  />
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="max-file-size">Max file size (bytes)</Label>
-                    <Input
-                      id="max-file-size"
-                      type="number"
-                      min={0}
-                      value={maxFileSize}
-                      onChange={(event) => setMaxFileSize(event.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="min-file-size">Min file size (bytes)</Label>
-                    <Input
-                      id="min-file-size"
-                      type="number"
-                      min={0}
-                      value={minFileSize}
-                      onChange={(event) => setMinFileSize(event.target.value)}
-                    />
-                  </div>
-                </div>
-                <label className="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    className="size-4 accent-primary"
-                    checked={persistFileContent}
-                    onChange={(event) => setPersistFileContent(event.target.checked)}
-                  />
-                  Persist file content
-                </label>
                 <div className="grid gap-4 sm:grid-cols-3">
                   <div className="space-y-2">
                     <Label htmlFor="realm">Realm</Label>

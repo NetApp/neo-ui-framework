@@ -58,6 +58,7 @@ export function SharesTable({ shares, onDeleteShare, onStartCrawl, onFetchShareD
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [pendingId, setPendingId] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null) // Add this state
   const [crawlingId, setCrawlingId] = useState<string | null>(null)
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [detailsLoading, setDetailsLoading] = useState(false)
@@ -72,11 +73,14 @@ export function SharesTable({ shares, onDeleteShare, onStartCrawl, onFetchShareD
   const handleConfirm = async () => {
     if (!pendingId) return
     setSubmitting(true)
+    setDeletingId(pendingId) // Set the deleting ID
     try {
       await onDeleteShare(pendingId)
       setConfirmOpen(false)
+      setPendingId(null)
     } finally {
       setSubmitting(false)
+      setDeletingId(null) // Clear the deleting ID
     }
   }
 
@@ -133,8 +137,18 @@ export function SharesTable({ shares, onDeleteShare, onStartCrawl, onFetchShareD
                     <Button
                       variant="outline"
                       size="icon"
+                      onClick={() => handleShowDetails(share.id)}
+                      aria-label="Share details"
+                      disabled={deletingId === share.id} // Disable when deleting
+                    >
+                      <IconInfoCircle className="size-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
                       onClick={() => onEditShare(share.id)}
                       aria-label="Edit share"
+                      disabled={deletingId === share.id} // Disable when deleting
                     >
                       <IconEdit className="size-4" />
                     </Button>
@@ -142,7 +156,7 @@ export function SharesTable({ shares, onDeleteShare, onStartCrawl, onFetchShareD
                       variant="outline"
                       size="icon"
                       onClick={() => handleStartCrawlClick(share.id)}
-                      disabled={crawlingId === share.id}
+                      disabled={crawlingId === share.id || deletingId === share.id} // Disable when crawling or deleting
                       aria-label="Start crawl"
                       aria-busy={crawlingId === share.id}
                     >
@@ -155,20 +169,17 @@ export function SharesTable({ shares, onDeleteShare, onStartCrawl, onFetchShareD
                     <Button
                       variant="outline"
                       size="icon"
-                      onClick={() => handleShowDetails(share.id)}
-                      aria-label="Share details"
-                    >
-                      <IconInfoCircle className="size-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon"
                       className="text-red-700"
                       onClick={() => openConfirm(share.id)}
                       aria-label="Delete share"
-                      disabled={submitting && pendingId === share.id}
+                      disabled={deletingId === share.id || crawlingId === share.id} // Disable when deleting or crawling
+                      aria-busy={deletingId === share.id}
                     >
-                      <IconTrash className="size-4" />
+                      {deletingId === share.id ? (
+                        <Spinner className="size-4" />
+                      ) : (
+                        <IconTrash className="size-4" />
+                      )}
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -186,7 +197,14 @@ export function SharesTable({ shares, onDeleteShare, onStartCrawl, onFetchShareD
 
       <Dialog 
         open={confirmOpen} 
-        onOpenChange={setConfirmOpen}
+        onOpenChange={(open) => {
+          if (!submitting) { // Prevent closing while deleting
+            setConfirmOpen(open)
+            if (!open) {
+              setPendingId(null)
+            }
+          }
+        }}
       >
         <DialogContent>
           <DialogHeader>
@@ -198,11 +216,27 @@ export function SharesTable({ shares, onDeleteShare, onStartCrawl, onFetchShareD
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setConfirmOpen(false)} disabled={submitting}>
+            <Button 
+              variant="outline" 
+              onClick={() => setConfirmOpen(false)} 
+              disabled={submitting}
+            >
               Cancel
             </Button>
-            <Button variant="destructive" onClick={handleConfirm} disabled={submitting}>
-              {submitting ? "Deleting…" : "Delete"}
+            <Button 
+              variant="destructive" 
+              onClick={handleConfirm} 
+              disabled={submitting}
+              aria-busy={submitting}
+            >
+              {submitting ? (
+                <>
+                  <Spinner className="mr-2 size-4" />
+                  Deleting…
+                </>
+              ) : (
+                "Delete"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
