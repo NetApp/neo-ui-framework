@@ -30,7 +30,7 @@ import type {
 
 import { 
   FilesTable 
-} from "@/components/data-tables/files"
+} from "@/components/data-tables/filesT"
 
 import { 
   SearchFilesDialog 

@@ -6,7 +6,7 @@ import type {
 
 import { 
   OperationsTable 
-} from "@/components/data-tables/operations"
+} from "@/components/data-tables/operationsT"
 
 interface OperationsProps {
   operations: OperationResponse[] | null

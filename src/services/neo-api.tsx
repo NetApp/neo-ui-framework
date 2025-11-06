@@ -574,7 +574,7 @@ export class NeoApiService {
       
       while (hasNextPage) {
         appLogger.debug(`Fetching files page ${page}`)
-        const response = await this.fetchWithToken<FileSearchResponse>(`/files?page=${page}&page_size=1000`, token)
+        const response = await this.fetchWithToken<FileSearchResponse>(`/files?page=${page}&page_size=100`, token)
         
         allFiles.push(...response.files)
         

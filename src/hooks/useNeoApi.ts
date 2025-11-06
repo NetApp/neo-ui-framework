@@ -480,7 +480,7 @@ export function useNeoApi() {
 
           while (hasNextPage) {
             appLogger.debug(`Fetching all files page ${page}`)
-            const response = await api.searchFiles(token, { page, page_size: 1000 })
+            const response = await api.searchFiles(token, { page, page_size: 100 })
             
             allFiles.push(...response.files)
             totalCount = response.total_count

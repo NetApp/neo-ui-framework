@@ -63,13 +63,13 @@ export function DashboardChart({ databaseSize, monitoring, onRefreshMonitoring }
     sharesAnalytics 
   } = monitoring
 
-  // Auto-refresh monitoring data every 30 seconds
+  // Auto-refresh monitoring data every 60 seconds
   useEffect(() => {
     const interval = setInterval(() => {
       onRefreshMonitoring().catch((error) => {
         console.error("Auto-refresh failed:", error)
       })
-    }, 5000)
+    }, 60000)
 
     return () => clearInterval(interval)
   }, [onRefreshMonitoring])
@@ -92,7 +92,7 @@ export function DashboardChart({ databaseSize, monitoring, onRefreshMonitoring }
             </Button>
           </CardTitle>
           <CardDescription>
-            Real-time monitoring data for NetApp Neo operations. Auto-refreshes every 5 seconds.
+            Real-time monitoring data for NetApp Neo operations. Auto-refreshes every 60 seconds.
             {overview?.timestamp && (
               <span className="block mt-1">
                 Last updated (UTC): {new Date(overview.timestamp).toLocaleString()}

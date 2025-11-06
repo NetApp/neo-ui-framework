@@ -16,7 +16,7 @@ import type {
 
 import { 
   UsersTable 
-} from "@/components/data-tables/users"
+} from "@/components/data-tables/usersT"
 
 import {
    Button 

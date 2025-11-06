@@ -22,7 +22,7 @@ import type {
 
 import { 
   SharesTable 
-} from "@/components/data-tables/shares"
+} from "@/components/data-tables/sharesT"
 
 import { 
   Button 

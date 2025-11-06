@@ -6,7 +6,7 @@ import {
 } from "@/components/sections/cards"
 import { 
   DashboardChart 
-} from "@/components/data-tables/dashboard-chart"
+} from "@/components/data-tables/dashboardT"
 import type { 
   HealthResponse, 
   LicenseResponse, 
