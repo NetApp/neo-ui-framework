@@ -12,29 +12,37 @@ import {
   NavUser 
 } from "@/components/navs/users"
 
+import type { ConnectionCredentials } from "@/services/models"
+
 interface AppSidebarFooterProps extends React.ComponentProps<typeof Sidebar> {
   me?: {
     username: string
     is_admin: boolean
   } | null
+  isConnected?: boolean
+  onConnect?: (credentials: ConnectionCredentials) => Promise<void>
   onLogout?: () => void
 }
 
-export function AppSidebarFooter({ me, onLogout, ...props }: AppSidebarFooterProps) {
-  const userData = me ? {
+export function AppSidebarFooter({ me, isConnected = false, onConnect, onLogout, ...props }: AppSidebarFooterProps) {
+  const userData = me && isConnected ? {
     name: me.username,
     email: me.is_admin ? "Administrator" : "User",
-    avatar: me.is_admin ? <IconUserShield className="h-8 w-8" /> : <IconUser className="h-8 w-8" />,
+    avatar: me.is_admin ? <IconUserShield /> : <IconUser />,
     onLogout,
   } : {
     name: "Guest",
     email: "Not connected",
-    avatar: <IconUser className="h-8 w-8" />,
+    avatar: <IconUser />,
   }
 
   return (
     <SidebarFooter {...props}>
-      <NavUser user={userData} />
+      <NavUser 
+        user={userData}
+        isConnected={isConnected}
+        onConnect={onConnect}
+      />
     </SidebarFooter>
   )
 }

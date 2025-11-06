@@ -29,7 +29,12 @@ function App() {
         }
       >
         <HashRouter>
-          <AppSidebar me={state.me} onLogout={handlers.handleLogout} />
+          <AppSidebar 
+            me={state.me} 
+            isConnected={!!state.token}
+            onConnect={handlers.handleConnect}
+            onLogout={handlers.handleLogout} 
+          />
           <SidebarInset>
             <SiteHeader
               onConnect={handlers.handleConnect}
