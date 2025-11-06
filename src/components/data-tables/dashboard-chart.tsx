@@ -15,7 +15,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-// import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
@@ -81,8 +81,18 @@ export function DashboardChart({ databaseSize, monitoring, onRefreshMonitoring }
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             Monitoring Overview
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onRefreshMonitoring}
+              className="h-8"
+            >
+              <IconRefresh className="mr-2 h-4 w-4" />
+              Refresh
+            </Button>
           </CardTitle>
           <CardDescription>
+            Real-time monitoring data for NetApp Neo operations. Auto-refreshes every 5 seconds.
             {overview?.timestamp && (
               <span className="block mt-1">
                 Last updated (UTC): {new Date(overview.timestamp).toLocaleString()}
@@ -226,7 +236,7 @@ export function DashboardChart({ databaseSize, monitoring, onRefreshMonitoring }
       </Card>
 
       {/* Failed Items */}
-      <Card>
+      <Card className="md:col-span-2 lg:col-span-3">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Failed Items</CardTitle>
           <IconAlertTriangle className="h-4 w-4 text-muted-foreground" />
@@ -291,7 +301,7 @@ export function DashboardChart({ databaseSize, monitoring, onRefreshMonitoring }
         </CardContent>
       </Card>
 
-      {/* File Types Breakdown */}
+      {/* File Types Breakdown - to be used for debugging*/}
       {/* <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Document Breakdown</CardTitle>

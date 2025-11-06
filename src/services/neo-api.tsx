@@ -567,8 +567,25 @@ export class NeoApiService {
     appLogger.debug("Fetching file analytics data")
     
     try {
-      // Get all files across all shares
-      const response = await this.fetchWithToken<FileSearchResponse>("/files", token)
+      // Get all files across all shares by fetching all pages
+      const allFiles: FileEntry[] = []
+      let page = 1
+      let hasNextPage = true
+      
+      while (hasNextPage) {
+        appLogger.debug(`Fetching files page ${page}`)
+        const response = await this.fetchWithToken<FileSearchResponse>(`/files?page=${page}&page_size=1000`, token)
+        
+        allFiles.push(...response.files)
+        
+        // Check if there are more pages
+        hasNextPage = response.has_next
+        page += 1
+        
+        appLogger.debug(`Fetched page ${page - 1}: ${response.files.length} files, has_next: ${response.has_next}`)
+      }
+      
+      appLogger.info(`Fetched all files: ${allFiles.length} total files across ${page - 1} pages`)
       
       // Define specific file types we want to track
       const targetTypes = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'txt']
@@ -582,9 +599,9 @@ export class NeoApiService {
       })
       
       // Add "Other" category for all non-target file types
-      fileTypeMap.set('Other', { count: 0, total_size: 0 })
+      fileTypeMap.set('other', { count: 0, total_size: 0 })
       
-      response.files.forEach(file => {
+      allFiles.forEach(file => {
         const fileType = file.file_type?.toLowerCase() || 'unknown'
         
         // Check if it's one of our target types
@@ -596,8 +613,8 @@ export class NeoApiService {
           })
         } else {
           // Add to "Other" category
-          const current = fileTypeMap.get('Other')!
-          fileTypeMap.set('Other', {
+          const current = fileTypeMap.get('other')!
+          fileTypeMap.set('other', {
             count: current.count + 1,
             total_size: current.total_size + file.size
           })
@@ -613,11 +630,12 @@ export class NeoApiService {
         }))
         .filter(item => item.count > 0) // Only include types that have files
         .sort((a, b) => b.count - a.count)
-      
+    
       appLogger.info("File analytics data processed", undefined, {
         total_file_types: analytics.length,
-        total_files: response.files.length,
-        target_types_found: analytics.filter(a => targetTypes.includes(a.file_type)).length
+        total_files: allFiles.length,
+        target_types_found: analytics.filter(a => targetTypes.includes(a.file_type)).length,
+        pages_fetched: page - 1
       })
       
       return analytics
@@ -631,13 +649,30 @@ export class NeoApiService {
     appLogger.debug("Fetching shares analytics data")
     
     try {
-      // Get all files across all shares
-      const response = await this.fetchWithToken<FileSearchResponse>("/files", token)
+      // Get all files across all shares by fetching all pages
+      const allFiles: FileEntry[] = []
+      let page = 1
+      let hasNextPage = true
       
+      while (hasNextPage) {
+        appLogger.debug(`Fetching files page ${page} for shares analytics`)
+        const response = await this.fetchWithToken<FileSearchResponse>(`/files?page=${page}&page_size=1000`, token)
+        
+        allFiles.push(...response.files)
+        
+        // Check if there are more pages
+        hasNextPage = response.has_next
+        page += 1
+        
+        appLogger.debug(`Fetched page ${page - 1}: ${response.files.length} files, has_next: ${response.has_next}`)
+      }
+    
+      appLogger.info(`Fetched all files for shares analytics: ${allFiles.length} total files across ${page - 1} pages`)
+    
       // Group files by share and calculate statistics
       const shareFileMap = new Map<string, { share_name: string; share_path: string; count: number; total_size: number }>()
-      
-      response.files.forEach(file => {
+    
+      allFiles.forEach(file => {
         const shareId = file.share_id || 'unknown'
         const shareName = file.share_name || 'Unknown Share'
         const sharePath = file.share_path || 'Unknown Path'
@@ -668,13 +703,14 @@ export class NeoApiService {
         }))
         .filter(item => item.count > 0) // Only include shares that have files
         .sort((a, b) => b.count - a.count)
-    
+
       appLogger.info("Shares analytics data processed", undefined, {
         total_shares_with_files: analytics.length,
-        total_files: response.files.length,
-        shares_breakdown: analytics.map(a => `${a.share_name}: ${a.count}`)
+        total_files: allFiles.length,
+        shares_breakdown: analytics.map(a => `${a.share_name}: ${a.count}`),
+        pages_fetched: page - 1
       })
-    
+
       return analytics
     } catch (error) {
       appLogger.error("Failed to fetch shares analytics", error instanceof Error ? error.message : "Unknown error")
