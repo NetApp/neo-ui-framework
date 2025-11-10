@@ -14,6 +14,7 @@ import {
 
 import { 
   IconKey, 
+  IconLogin, 
   IconRefresh 
 } from "@tabler/icons-react"
 
@@ -46,9 +47,11 @@ export default function Help() {
                   configure shares, schedule crawls, search files, monitor status, and view logs.</p>
                 <br /><p>To start using Neo UI:</p>
                 <ul className="my-6 ml-6 list-disc [&>li]:mt-2">
-                  <li>Simply click the icon <Button variant="outline" size="icon" className="hidden sm:inline-flex"><IconKey /></Button> in the top right corner and enter Neo's URL with the admin credentials to get started.</li>
-                  <li>Once you've entered the credentials, pages can easily be refreshed by clicking <Button variant="outline" size="icon" className="hidden sm:inline-flex"><IconRefresh /></Button> in the top right corner.</li>
-                  <li>If the token expires, the icon <Button variant="outline" size="icon" className="hidden sm:inline-flex"><IconKey /></Button> will be displayed, and you will need to re-enter the admin credentials to continue using the UI.</li>
+                  <li>Simply click the icon <Button variant="outline" size="icon" className="hidden sm:inline-flex"><IconLogin /></Button> 
+                  either at the top right corner or bottom left corner, and enter the admin credentials to get started.</li>
+                  <li>Once you've entered the credentials, pages can easily be refreshed by clicking 
+                    <Button variant="outline" size="icon" className="hidden sm:inline-flex"><IconRefresh /></Button> in the top right corner.</li>
+                  <li>If the token expires, enter your credentials again.</li>
                 </ul>
               </AccordionContent>
             </AccordionItem>
