@@ -146,9 +146,15 @@ export class NeoApiService {
           { endpoint, status: response.status }
         )
 
-        if (response.status === 401 || response.status === 403) {
-          throw new AuthenticationError()
+        if (response.status === 401) {
+          // Token is invalid or expired
+          throw new AuthenticationError("Your session has expired. Please log in again.")
         }
+        
+        if (response.status === 403) {
+          throw new AuthenticationError("You don't have permission to access this resource.")
+        }
+        
         throw new Error(
           `${endpoint} failed (${response.status} ${response.statusText})`
         )
@@ -763,5 +769,38 @@ export class NeoApiService {
   async getDatabaseSize(token: string): Promise<DatabaseSizeResponse> {
     appLogger.debug("Fetching database size information")
     return this.fetchWithToken<DatabaseSizeResponse>("/database/size", token)
+  }
+
+  async logout(token: string): Promise<void> {
+    appLogger.debug("Sending logout request to invalidate token")
+
+    try {
+      const response = await fetch(`${this.baseUrl}/logout`, {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        appLogger.warn(
+          "Logout request failed",
+          `Status: ${response.status}, Response: ${errorText}`,
+          { status: response.status }
+        )
+        // Don't throw error - we still want to clear local state even if server logout fails
+        return
+      }
+
+      appLogger.info("Token invalidated successfully on server")
+    } catch (error) {
+      appLogger.warn(
+        "Failed to invalidate token on server",
+        error instanceof Error ? error.message : "Unknown error"
+      )
+      // Don't throw error - we still want to clear local state even if server logout fails
+    }
   }
 }

@@ -123,16 +123,21 @@ export function useNeoApi() {
   const handleConnect = useCallback(
     async (credentials: ConnectionCredentials) => {
       appLogger.info("Connecting to NetApp Neo API endpoint", undefined, {
-        endpoint: credentials.endpoint,
+        username: credentials.username,
       })
+
+      // Clear any existing state before attempting new connection
+      clearSystemData()
+      setToken(null)
 
       try {
         const api = apiRef.current
-        const token = await api.authenticate(credentials.username, credentials.password)
-        const data = await api.fetchSystemData(token)
+        const newToken = await api.authenticate(credentials.username, credentials.password)
+        const data = await api.fetchSystemData(newToken)
 
         applySystemData(data)
-        setToken(token)
+        setToken(newToken)
+        toast.success(`Welcome, ${data.me?.username}!`)
         appLogger.info("Successfully connected to NetApp Neo", undefined, {
           userId: data.me?.id,
           username: data.me?.username,
@@ -140,6 +145,16 @@ export function useNeoApi() {
       } catch (error) {
         clearSystemData()
         setToken(null)
+        
+        // Provide user-friendly error messages
+        if (error instanceof AuthenticationError) {
+          toast.error(error.message)
+        } else if (error instanceof Error) {
+          toast.error(`Connection failed: ${error.message}`)
+        } else {
+          toast.error("Connection failed. Please try again.")
+        }
+        
         appLogger.error(
           "Connection to NetApp Neo failed",
           error instanceof Error ? error.message : "Unknown error"
@@ -565,12 +580,29 @@ export function useNeoApi() {
     }
   }, [token, clearSystemData])
 
-  const handleLogout = useCallback(() => {
+  const handleLogout = useCallback(async () => {
     appLogger.info("User logging out", undefined, { username: me?.username })
+    
+    // If we have a token, try to invalidate it on the server first
+    if (token) {
+      const api = apiRef.current
+      try {
+        await api.logout(token)
+      } catch (error) {
+        // Log the error but continue with logout
+        appLogger.warn(
+          "Server logout failed, continuing with client-side logout",
+          error instanceof Error ? error.message : "Unknown error"
+        )
+      }
+    }
+    
+    // Always clear local state regardless of server response
     clearSystemData()
     setToken(null)
+    toast.success("Logged out successfully")
     appLogger.info("User logged out successfully")
-  }, [clearSystemData, me?.username])
+  }, [clearSystemData, me?.username, token])
 
   return {
     state: {
