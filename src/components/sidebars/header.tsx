@@ -80,7 +80,7 @@ export function SiteHeader({ onConnect, onRefresh, isConnected }: SiteHeaderProp
           <Button
             variant="outline"
             asChild
-            size="icon"
+            size="default"
             className="hidden sm:flex"
           >
             <a
@@ -89,12 +89,15 @@ export function SiteHeader({ onConnect, onRefresh, isConnected }: SiteHeaderProp
               target="_blank"
               className="dark:text-foreground"
             >
-              <IconBrandGithub />
+              <IconBrandGithub /> GitHub
             </a>
           </Button>
           <ConnectDialog onConnect={onConnect} onRefresh={onRefresh} isConnected={isConnected}>
-            <Button variant="outline" size="icon" className="hidden sm:flex">
-              {isConnected ? <IconRefresh /> : <IconLogin />}
+            <Button 
+            variant="outline" 
+            size="default" 
+            className="hidden sm:flex">
+              {isConnected ? <><IconRefresh /> Refresh</> : <><IconLogin /> Connect</>}
               <span className="sr-only">
                 {isConnected ? "Refresh data" : "Connect"}
               </span>
