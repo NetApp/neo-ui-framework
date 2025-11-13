@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
-import { Separator } from "@radix-ui/react-separator"
+import { Separator } from "@/components/ui/separator"
 
 interface FilesTableProps {
   files?: FilesResponse | null

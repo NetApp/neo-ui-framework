@@ -43,7 +43,7 @@ import {
 } from "@/components/ui/spinner"
 import { 
   Separator 
-} from "@radix-ui/react-separator"
+} from "@/components/ui/separator"
 
 interface SharesTableProps {
   shares: SharesResponse[] | null
