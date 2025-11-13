@@ -8,7 +8,8 @@ import {
   IconTrash, 
   IconDatabaseExport, 
   IconInfoCircle, 
-  IconEdit 
+  IconEdit,
+  IconMenu2
 } from "@tabler/icons-react"
 
 import type { 
@@ -38,6 +39,15 @@ import {
   TableRow,
 } from "@/components/ui/table"
 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+
 import { 
   Spinner 
 } from "@/components/ui/spinner"
@@ -58,7 +68,7 @@ export function SharesTable({ shares, onDeleteShare, onStartCrawl, onFetchShareD
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [pendingId, setPendingId] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
-  const [deletingId, setDeletingId] = useState<string | null>(null) // Add this state
+  const [deletingId, setDeletingId] = useState<string | null>(null)
   const [crawlingId, setCrawlingId] = useState<string | null>(null)
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [detailsLoading, setDetailsLoading] = useState(false)
@@ -73,14 +83,14 @@ export function SharesTable({ shares, onDeleteShare, onStartCrawl, onFetchShareD
   const handleConfirm = async () => {
     if (!pendingId) return
     setSubmitting(true)
-    setDeletingId(pendingId) // Set the deleting ID
+    setDeletingId(pendingId)
     try {
       await onDeleteShare(pendingId)
       setConfirmOpen(false)
       setPendingId(null)
     } finally {
       setSubmitting(false)
-      setDeletingId(null) // Clear the deleting ID
+      setDeletingId(null)
     }
   }
 
@@ -108,6 +118,10 @@ export function SharesTable({ shares, onDeleteShare, onStartCrawl, onFetchShareD
     }
   }
 
+  const isShareBusy = (shareId: string) => {
+    return deletingId === shareId || crawlingId === shareId
+  }
+
   return (
     <>
       <div className="overflow-hidden rounded-lg border">
@@ -119,7 +133,7 @@ export function SharesTable({ shares, onDeleteShare, onStartCrawl, onFetchShareD
               <TableHead>Status</TableHead>
               <TableHead>Last Crawled</TableHead>
               <TableHead>Files</TableHead>
-              <TableHead className="w-[160px] text-right">Actions</TableHead>
+              <TableHead className="w-[80px] text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -133,54 +147,57 @@ export function SharesTable({ shares, onDeleteShare, onStartCrawl, onFetchShareD
                     {share.last_crawled ? new Date(share.last_crawled).toLocaleString() : "—"}
                   </TableCell>
                   <TableCell>{share.last_crawl_file_count}</TableCell>
-                  <TableCell className="space-x-2 text-right">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => handleShowDetails(share.id)}
-                      aria-label="Share details"
-                      disabled={deletingId === share.id} // Disable when deleting
-                    >
-                      <IconInfoCircle className="size-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => onEditShare(share.id)}
-                      aria-label="Edit share"
-                      disabled={deletingId === share.id} // Disable when deleting
-                    >
-                      <IconEdit className="size-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => handleStartCrawlClick(share.id)}
-                      disabled={crawlingId === share.id || deletingId === share.id} // Disable when crawling or deleting
-                      aria-label="Start crawl"
-                      aria-busy={crawlingId === share.id}
-                    >
-                      {crawlingId === share.id ? (
-                        <Spinner className="size-4" />
-                      ) : (
-                        <IconDatabaseExport className="size-4" />
-                      )}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="text-red-700"
-                      onClick={() => openConfirm(share.id)}
-                      aria-label="Delete share"
-                      disabled={deletingId === share.id || crawlingId === share.id} // Disable when deleting or crawling
-                      aria-busy={deletingId === share.id}
-                    >
-                      {deletingId === share.id ? (
-                        <Spinner className="size-4" />
-                      ) : (
-                        <IconTrash className="size-4" />
-                      )}
-                    </Button>
+                  <TableCell className="text-right">
+                    <DropdownMenu modal={false}>
+                      <DropdownMenuTrigger asChild>
+                        <Button 
+                          variant="outline" 
+                          size="icon"
+                          aria-label="Share actions"
+                          disabled={isShareBusy(share.id)}
+                        >
+                          {isShareBusy(share.id) ? (
+                            <Spinner className="size-4" />
+                          ) : (
+                            <IconMenu2 className="size-4" />
+                          )}
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-40">
+                        <DropdownMenuGroup>
+                          <DropdownMenuItem
+                            onSelect={() => handleStartCrawlClick(share.id)}
+                            disabled={crawlingId === share.id || deletingId === share.id}
+                          >
+                            <IconDatabaseExport className="mr-2 size-4" />
+                            {crawlingId === share.id ? "Crawling..." : "Crawl"}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onSelect={() => handleShowDetails(share.id)}
+                            disabled={deletingId === share.id}
+                          >
+                            <IconInfoCircle className="mr-2 size-4" />
+                            Details
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onSelect={() => onEditShare(share.id)}
+                            disabled={deletingId === share.id}
+                          >
+                            <IconEdit className="mr-2 size-4" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onSelect={() => openConfirm(share.id)}
+                            disabled={deletingId === share.id || crawlingId === share.id}
+                            className="text-red-600 focus:text-red-600"
+                          >
+                            <IconTrash className="mr-2 size-4" />
+                            {deletingId === share.id ? "Deleting..." : "Delete"}
+                          </DropdownMenuItem>
+                        </DropdownMenuGroup>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
               ))
@@ -198,7 +215,7 @@ export function SharesTable({ shares, onDeleteShare, onStartCrawl, onFetchShareD
       <Dialog 
         open={confirmOpen} 
         onOpenChange={(open) => {
-          if (!submitting) { // Prevent closing while deleting
+          if (!submitting) {
             setConfirmOpen(open)
             if (!open) {
               setPendingId(null)
