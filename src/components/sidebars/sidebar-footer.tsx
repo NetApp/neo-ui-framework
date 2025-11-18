@@ -6,6 +6,7 @@ import { IconUser, IconUserShield } from "@tabler/icons-react"
 import {
   Sidebar,
   SidebarFooter,
+  useSidebar,
 } from "@/components/ui/sidebar"
 
 import { 
@@ -36,12 +37,16 @@ export function AppSidebarFooter({ me, isConnected = false, onConnect, onLogout,
     avatar: <IconUser />,
   }
 
+  const { state } = useSidebar()
+  const collapsed = state === "collapsed"
+
   return (
     <SidebarFooter {...props}>
-      <NavUser 
+      <NavUser
         user={userData}
         isConnected={isConnected}
         onConnect={onConnect}
+        collapsed={collapsed}
       />
     </SidebarFooter>
   )

@@ -42,7 +42,20 @@ function App() {
               isConnected={!!state.token}
             />
             <Routes>
-              <Route path="/" element={<Help />} />
+              <Route
+                path="/"
+                element={
+                  <Dashboard
+                    health={state.health}
+                    license={state.license}
+                    version={state.version}
+                    helmChartVersion={state.helmChartVersion}  // Add this
+                    databaseSize={state.databaseSize}
+                    monitoring={state.monitoring}
+                    onFetchMonitoring={handlers.handleFetchMonitoring}
+                  />
+                }
+              />
               <Route
                 path="/dashboard"
                 element={
