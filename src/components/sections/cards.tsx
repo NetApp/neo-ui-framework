@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import {
   Card,
   CardContent,
@@ -7,6 +8,16 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Separator } from "@/components/ui/separator"
 
 import type { 
   HealthResponse, 
@@ -16,17 +27,19 @@ import type {
   // DatabaseSizeResponse
 } from "@/services/neo-api"
 import { IconCpu, IconRuler3 } from "@tabler/icons-react"
-import { HardDrive } from "lucide-react"
+import { HardDrive, CheckIcon, AlertCircleIcon, Info } from "lucide-react"
 // import { DatabaseSizeCard } from "@/components/charts/databasesize"
 
 interface SectionCardsProps {
   health: HealthResponse | null
   license: LicenseResponse | null
   version: VersionResponse | null
-  helmChartVersion: HelmChartVersionResponse | null  // Add this
+  helmChartVersion: HelmChartVersionResponse | null
 }
 
 export function SectionCards({ health, license, version, helmChartVersion }: SectionCardsProps) {
+  const [healthDialogOpen, setHealthDialogOpen] = useState(false)
+
   // Derive card values
   const healthStatus = health?.status ?? "Not connected"
   const versionLabel = version?.version ?? "Unknown"
@@ -36,7 +49,12 @@ export function SectionCards({ health, license, version, helmChartVersion }: Sec
   const latestAppVersion = helmChartVersion?.app_version ?? "Checking..."
   const latestChartVersion = helmChartVersion?.chart_version ?? "Checking..."
 
-
+  const healthComponents = [
+    { key: "database", label: "Database"},
+    { key: "filesystem", label: "Filesystem"},
+    { key: "graph_connector", label: "Graph Connector"},
+    { key: "shares", label: "Shares"},
+  ]
 
   return (
     <>
@@ -45,7 +63,17 @@ export function SectionCards({ health, license, version, helmChartVersion }: Sec
         <Card className="@container/card">
           <CardHeader>
             <CardDescription>Neo Instance</CardDescription>
-            <CardTitle className="text-lg font-semibold">{healthStatus}</CardTitle>
+            <CardTitle className="text-lg font-semibold">
+              <Button
+                variant="ghost"
+                size={null}
+                className="h-auto p-0 hover:bg-transparent font-semibold text-lg"
+                onClick={() => setHealthDialogOpen(true)}
+              >
+                {healthStatus}
+                <Info className="ml-1 h-4 w-4" />
+              </Button>
+            </CardTitle>
           </CardHeader>
           <CardContent>
             {health && (
@@ -103,6 +131,160 @@ export function SectionCards({ health, license, version, helmChartVersion }: Sec
           </CardContent>
         </Card>
       </div>
+
+      {/* Health Status Dialog */}
+      <Dialog open={healthDialogOpen} onOpenChange={setHealthDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>System Health Status</DialogTitle>
+            <DialogDescription>
+              Detailed health information for all system components
+            </DialogDescription>
+          </DialogHeader>
+
+          {health ? (
+            <div className="space-y-4">
+              {/* Overall Status */}
+              <div className="flex items-center justify-between rounded-lg border p-4">
+                <div>
+                  <p className="font-medium">Overall Status</p>
+                  <p className="text-sm text-muted-foreground">
+                    {new Date(health.timestamp).toLocaleString()}
+                  </p>
+                </div>
+                <Badge
+                  variant={health.status === "healthy" ? "default" : "destructive"}
+                  className={`text-base ${
+                    health.status === "healthy"
+                      ? "bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700"
+                      : ""
+                  }`}
+                >
+                  {health.status}
+                </Badge>
+              </div>
+
+              <Separator />
+
+              {/* Components Status */}
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold">Components</h3>
+                {healthComponents.map(({ key, label }) => {
+                  const component = health.components[key as keyof typeof health.components]
+                  
+                  // Handle shares component differently (has active_count and errors)
+                  if (key === "shares" && component && 'active_count' in component) {
+                    const isHealthy = component.errors.length === 0
+                    return (
+                      <div key={key} className="rounded-lg border p-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-2">
+                            <div>
+                              <p className="font-medium">{label}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {component.active_count} active share{component.active_count !== 1 ? 's' : ''}
+                              </p>
+                            </div>
+                          </div>
+                          <Badge
+                            variant={isHealthy ? "default" : "destructive"}
+                            className={`gap-1 ${
+                              isHealthy
+                                ? "bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700"
+                                : ""
+                            }`}
+                          >
+                            {isHealthy ? (
+                              <CheckIcon className="h-3 w-3" />
+                            ) : (
+                              <AlertCircleIcon className="h-3 w-3" />
+                            )}
+                            {isHealthy ? "Healthy" : "Errors"}
+                          </Badge>
+                        </div>
+                        {!isHealthy && component.errors.length > 0 && (
+                          <div className="mt-3 space-y-1">
+                            {component.errors.map((error, idx) => (
+                              <p key={idx} className="text-sm text-destructive">
+                                • {error}
+                              </p>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  }
+
+                  // Handle other components (database, filesystem, graph_connector)
+                  if (component && 'status' in component) {
+                    const isHealthy = component.status === "healthy"
+                    return (
+                      <div key={key} className="rounded-lg border p-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium">{label}</p>
+                          </div>
+                          <Badge
+                            variant={isHealthy ? "default" : "destructive"}
+                            className={`gap-1 ${
+                              isHealthy
+                                ? "bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700"
+                                : ""
+                            }`}
+                          >
+                            {isHealthy ? (
+                              <CheckIcon className="h-3 w-3" />
+                            ) : (
+                              <AlertCircleIcon className="h-3 w-3" />
+                            )}
+                            {component.status}
+                          </Badge>
+                        </div>
+                        {component.error && (
+                          <p className="mt-2 text-sm text-destructive">
+                            Error: {component.error}
+                          </p>
+                        )}
+                      </div>
+                    )
+                  }
+
+                  return null
+                })}
+              </div>
+
+              <Separator />
+
+              {/* System Metrics */}
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold">System Metrics</h3>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="rounded-lg border p-3 text-center">
+                    <IconCpu className="mx-auto mb-1 h-5 w-5 text-muted-foreground" />
+                    <p className="text-2xl font-bold">{health.metrics.cpu_percent.toFixed(1)}%</p>
+                    <p className="text-xs text-muted-foreground">CPU</p>
+                  </div>
+                  <div className="rounded-lg border p-3 text-center">
+                    <IconRuler3 className="mx-auto mb-1 h-5 w-5 text-muted-foreground" />
+                    <p className="text-2xl font-bold">{health.metrics.memory_percent.toFixed(1)}%</p>
+                    <p className="text-xs text-muted-foreground">Memory</p>
+                  </div>
+                  <div className="rounded-lg border p-3 text-center">
+                    <HardDrive className="mx-auto mb-1 h-5 w-5 text-muted-foreground" />
+                    <p className="text-2xl font-bold">{health.metrics.disk_percent.toFixed(1)}%</p>
+                    <p className="text-xs text-muted-foreground">Disk</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <p className="py-6 text-center text-sm text-muted-foreground">
+              No health data available
+            </p>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* Database Size Card - spans 2 columns */}
       {/* <div className="px-4 lg:px-6">
         <DatabaseSizeCard databaseSize={databaseSize} />
