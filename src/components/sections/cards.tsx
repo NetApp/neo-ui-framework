@@ -12,21 +12,31 @@ import type {
   HealthResponse, 
   LicenseResponse, 
   VersionResponse,
+  HelmChartVersionResponse,
   // DatabaseSizeResponse
 } from "@/services/neo-api"
+import { IconCpu, IconRuler3 } from "@tabler/icons-react"
+import { HardDrive } from "lucide-react"
 // import { DatabaseSizeCard } from "@/components/charts/databasesize"
 
 interface SectionCardsProps {
   health: HealthResponse | null
   license: LicenseResponse | null
   version: VersionResponse | null
-  // databaseSize: DatabaseSizeResponse | null
+  helmChartVersion: HelmChartVersionResponse | null  // Add this
 }
 
-export function SectionCards({ health, license, version }: SectionCardsProps) {
+export function SectionCards({ health, license, version, helmChartVersion }: SectionCardsProps) {
   // Derive card values
   const healthStatus = health?.status ?? "Not connected"
   const versionLabel = version?.version ?? "Unknown"
+  const buildDateLabel = version?.build_date
+    ? version.build_date.split("T")[0] ?? "Unknown"
+    : "Unknown"
+  const latestAppVersion = helmChartVersion?.app_version ?? "Checking..."
+  const latestChartVersion = helmChartVersion?.chart_version ?? "Checking..."
+
+
 
   return (
     <>
@@ -39,8 +49,13 @@ export function SectionCards({ health, license, version }: SectionCardsProps) {
           </CardHeader>
           <CardContent>
             {health && (
-              <div className="mt-2 space-y-1 text-sm text-muted-foreground">
-                <p>CPU: {health.metrics.cpu_percent.toFixed(1)}% | Memory: {health.metrics.memory_percent.toFixed(1)}% | Disk: {health.metrics.disk_percent.toFixed(1)}%</p>
+              <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                <IconCpu className="text-muted-foreground" />
+                <span> {health.metrics.cpu_percent.toFixed(1)}%</span> | 
+                <IconRuler3 className="text-muted-foreground" /> 
+                <span>{health.metrics.memory_percent.toFixed(1)}%</span> |
+                <HardDrive className="text-muted-foreground" />
+                <span>{health.metrics.disk_percent.toFixed(1)}%</span>
               </div>
             )}
           </CardContent>
@@ -52,7 +67,11 @@ export function SectionCards({ health, license, version }: SectionCardsProps) {
             <CardTitle className="text-lg font-semibold">Expires in {license?.details.days_remaining ?? "Unknown"} days</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="mt-2 text-sm text-muted-foreground">Neo ID: {license?.details.connection_id ?? "Unknown"}</p>
+            <div className="flex items-center gap-1 text-sm text-muted-foreground">
+              <span>
+                Neo ID: {license?.details.connection_id ?? "Unknown"}
+              </span>
+            </div>
           </CardContent>
         </Card>
 
@@ -62,17 +81,25 @@ export function SectionCards({ health, license, version }: SectionCardsProps) {
             <CardTitle className="text-lg font-semibold">{versionLabel}</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="mt-2 text-sm text-muted-foreground">Build date: {version?.build_date ?? "Unknown"}</p>
+            <div className="flex items-center gap-1 text-sm text-muted-foreground">
+              <span>Release Date: {buildDateLabel}</span>
+            </div>
           </CardContent>
         </Card>
 
         <Card className="@container/card">
           <CardHeader>
-            <CardDescription>Latest</CardDescription>
-            <CardTitle className="text-lg font-semibold">Most recent build</CardTitle>
+            <CardDescription>Latest Release</CardDescription>
+            <CardTitle className="text-lg font-semibold">
+              {helmChartVersion?.app_version === "Unknown" ? "Unable to check" : latestAppVersion}
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="mt-2 text-sm text-muted-foreground">{version?.latest ?? version?.build_date ?? "Unknown"}</p>
+            <div className="space-y-2">
+              <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                <span>Helm Chart: {latestChartVersion}</span>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>

@@ -50,6 +50,7 @@ function App() {
                     health={state.health}
                     license={state.license}
                     version={state.version}
+                    helmChartVersion={state.helmChartVersion}  // Add this
                     databaseSize={state.databaseSize}
                     monitoring={state.monitoring}
                     onFetchMonitoring={handlers.handleFetchMonitoring}

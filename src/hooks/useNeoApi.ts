@@ -9,7 +9,8 @@ import {
   type HealthResponse,
   type LicenseResponse,
   type VersionResponse,
-  type DatabaseSizeResponse,  // Add this import
+  type HelmChartVersionResponse,  // Add this import
+  type DatabaseSizeResponse,
   type OperationResponse,
   type UserResponse,
   type MeResponse,
@@ -39,7 +40,8 @@ export function useNeoApi() {
   const [health, setHealth] = useState<HealthResponse | null>(null)
   const [license, setLicense] = useState<LicenseResponse | null>(null)
   const [version, setVersion] = useState<VersionResponse | null>(null)
-  const [databaseSize, setDatabaseSize] = useState<DatabaseSizeResponse | null>(null)  // Add this state
+  const [helmChartVersion, setHelmChartVersion] = useState<HelmChartVersionResponse | null>(null)  // Add this state
+  const [databaseSize, setDatabaseSize] = useState<DatabaseSizeResponse | null>(null)
   const [users, setUsers] = useState<UserResponse[] | null>(null)
   const [me, setMe] = useState<MeResponse | null>(null)
   const [operations, setOperations] = useState<OperationResponse[] | null>(null)
@@ -77,7 +79,8 @@ export function useNeoApi() {
       health: HealthResponse
       license: LicenseResponse
       version: VersionResponse
-      databaseSize: DatabaseSizeResponse  // Add this
+      helmChartVersion: HelmChartVersionResponse  // Add this
+      databaseSize: DatabaseSizeResponse
       users: UserResponse[]
       me: MeResponse
       operations: OperationResponse[]
@@ -87,7 +90,8 @@ export function useNeoApi() {
       setHealth(data.health)
       setLicense(data.license)
       setVersion(data.version)
-      setDatabaseSize(data.databaseSize)  // Add this
+      setHelmChartVersion(data.helmChartVersion)  // Add this
+      setDatabaseSize(data.databaseSize)
       setUsers(data.users)
       setMe(data.me)
       setOperations(data.operations)
@@ -101,7 +105,8 @@ export function useNeoApi() {
     setHealth(null)
     setLicense(null)
     setVersion(null)
-    setDatabaseSize(null)  // Add this
+    setHelmChartVersion(null)  // Add this
+    setDatabaseSize(null)
     setUsers(null)
     setMe(null)
     setOperations(null)
@@ -609,7 +614,8 @@ export function useNeoApi() {
       health,
       license,
       version,
-      databaseSize,  // Add this to state
+      helmChartVersion,  // Add this to state
+      databaseSize,
       users,
       me,
       operations,
