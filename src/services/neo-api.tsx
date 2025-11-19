@@ -55,6 +55,8 @@ export type {
   HelmChartVersionResponse,
 }
 
+import * as yaml from "js-yaml"
+
 export class AuthenticationError extends Error {
   constructor(message = "Session expired. Please reconnect.") {
     super(message)
@@ -498,82 +500,54 @@ export class NeoApiService {
 
       const yamlText = await response.text()
       
-      // Parse YAML manually for the netapp-connector entries
-      const lines = yamlText.split('\n')
-      let inNetAppConnector = false
-      let inFirstEntry = false
-      let appVersion = "Unknown"
-      let chartVersion = "Unknown"
-      
-      for (let i = 0; i < lines.length; i++) {
-        const line = lines[i]
-        
-        // Check if we're in the netapp-connector section
-        if (line.trim() === 'netapp-connector:') {
-          inNetAppConnector = true
-          appLogger.debug("Found netapp-connector section")
-          continue
-        }
-        
-        // Look for the first entry (indicated by "- apiVersion:")
-        if (inNetAppConnector && !inFirstEntry && line.includes('- apiVersion:')) {
-          inFirstEntry = true
-          appLogger.debug("Found first chart entry")
-          continue
-        }
-        
-        // If we're in the first entry, look for appVersion and version
-        if (inNetAppConnector && inFirstEntry) {
-          // Look for appVersion (without dash, indented further)
-          if (line.match(/^\s{4}appVersion:/)) {
-            const match = line.match(/appVersion:\s*(.+)/)
-            if (match) {
-              appVersion = match[1].trim()
-              appLogger.debug(`Found appVersion: ${appVersion}`)
-            }
-          }
-          
-          // Look for version (without dash, indented further)
-          if (line.match(/^\s{4}version:/)) {
-            const match = line.match(/version:\s*(.+)/)
-            if (match) {
-              chartVersion = match[1].trim()
-              appLogger.debug(`Found chart version: ${chartVersion}`)
-              // We found both values, we can stop
-              break
-            }
-          }
-          
-          // Check if we've hit the next entry (another "- apiVersion:")
-          if (line.includes('- apiVersion:') && chartVersion !== "Unknown") {
-            break
-          }
-        }
-        
-        // Stop if we hit another chart section
-        if (inNetAppConnector && line.match(/^[a-z-]+:$/) && !line.includes('netapp-connector')) {
-          break
+      // Parse YAML using js-yaml library
+      const indexData = yaml.load(yamlText) as {
+        apiVersion: string
+        entries: {
+          [chartName: string]: Array<{
+            apiVersion: string
+            appVersion: string
+            version: string
+            name: string
+            [key: string]: unknown
+          }>
         }
       }
+
+      // Check if netapp-connector exists in entries
+      const netappConnectorEntries = indexData.entries?.['netapp-connector']
+      
+      if (!netappConnectorEntries || netappConnectorEntries.length === 0) {
+        appLogger.warn("No netapp-connector entries found in index.yaml")
+        return { 
+          chart_name: "netapp-connector",
+          app_version: "Unknown", 
+          chart_version: "Unknown" 
+        }
+      }
+
+      // Get the first entry (most recent version)
+      const latestEntry = netappConnectorEntries[0]
+      
+      const appVersion = latestEntry.appVersion || "Unknown"
+      const chartVersion = latestEntry.version || "Unknown"
 
       if (appVersion !== "Unknown" && chartVersion !== "Unknown") {
         appLogger.info("Latest Helm versions fetched successfully", undefined, { 
           appVersion, 
           chartVersion,
-          source: "index.yaml"
+          source: "index.yaml",
+          chart_name: latestEntry.name
         })
         return { 
-          chart_name: "netapp-connector",
+          chart_name: latestEntry.name || "netapp-connector",
           app_version: appVersion, 
           chart_version: chartVersion 
         }
       }
 
-      appLogger.warn("Could not parse Helm versions from index.yaml", undefined, {
-        appVersion,
-        chartVersion,
-        inNetAppConnector,
-        inFirstEntry
+      appLogger.warn("Could not extract versions from netapp-connector entry", undefined, {
+        entry: latestEntry
       })
       return { 
         chart_name: "netapp-connector",
@@ -582,7 +556,7 @@ export class NeoApiService {
       }
     } catch (error) {
       appLogger.error(
-        "Failed to fetch latest Helm version",
+        "Failed to fetch or parse latest Helm version",
         error instanceof Error ? error.message : "Unknown error"
       )
       return { 
