@@ -19,6 +19,7 @@ export function AppSidebarHeader() {
             <SidebarMenuButton
               asChild
               className="data-[slot=sidebar-menu-button]:!p-1.5"
+              variant="default"
             >
               <a href="#">
                 <IconBrain className="!size-5" />

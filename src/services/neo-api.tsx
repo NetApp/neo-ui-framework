@@ -24,6 +24,7 @@ import type {
   TasksResponse,
   TaskStatisticsResponse,
   TaskResponse,
+  HelmChartVersionResponse,
 } from "./models"
 
 // Also add to exports
@@ -51,10 +52,13 @@ export type {
   TasksResponse,
   TaskStatisticsResponse,
   TaskResponse,
+  HelmChartVersionResponse,
 }
 
+import * as yaml from "js-yaml"
+
 export class AuthenticationError extends Error {
-  constructor(message = "Session expired. Please reconnect.") {
+  constructor(message = "Authentication failed. Please log in again.") {
     super(message)
     this.name = "AuthenticationError"
   }
@@ -96,7 +100,7 @@ export class NeoApiService {
         )
 
         if (response.status === 401 || response.status === 403) {
-          throw new AuthenticationError("Invalid username or password.")
+          throw new AuthenticationError("Authentication failed. Please check your credentials.")
         }
         throw new Error(
           `Authentication failed (${response.status} ${response.statusText})`
@@ -147,8 +151,10 @@ export class NeoApiService {
         )
 
         if (response.status === 401 || response.status === 403) {
+          // Generic message for both authentication and authorization failures
           throw new AuthenticationError()
         }
+        
         throw new Error(
           `${endpoint} failed (${response.status} ${response.statusText})`
         )
@@ -466,11 +472,120 @@ export class NeoApiService {
     })
   }
 
+  async getLatestHelmVersion(): Promise<HelmChartVersionResponse> {
+    appLogger.debug("Fetching latest Helm chart version from index.yaml")
+    
+    try {
+      // Create an AbortController with a 5-second timeout
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 5000)
+      
+      const response = await fetch(
+        "https://netapp.github.io/Innovation-Labs/index.yaml",
+        {
+          headers: {
+            Accept: "application/x-yaml, text/yaml, */*",
+          },
+          signal: controller.signal,
+        }
+      )
+      
+      // Clear timeout if fetch succeeds
+      clearTimeout(timeoutId)
+
+      if (!response.ok) {
+        appLogger.warn("Failed to fetch Helm index.yaml", `Status: ${response.status}`)
+        return { 
+          chart_name: "netapp-connector",
+          app_version: "Unknown", 
+          chart_version: "Unknown" 
+        }
+      }
+
+      const yamlText = await response.text()
+      
+      // Parse YAML using js-yaml library
+      const indexData = yaml.load(yamlText) as {
+        apiVersion: string
+        entries: {
+          [chartName: string]: Array<{
+            apiVersion: string
+            appVersion: string
+            version: string
+            name: string
+            [key: string]: unknown
+          }>
+        }
+      }
+
+      // Check if netapp-connector exists in entries
+      const netappConnectorEntries = indexData.entries?.['netapp-connector']
+      
+      if (!netappConnectorEntries || netappConnectorEntries.length === 0) {
+        appLogger.warn("No netapp-connector entries found in index.yaml")
+        return { 
+          chart_name: "netapp-connector",
+          app_version: "Unknown", 
+          chart_version: "Unknown" 
+        }
+      }
+
+      // Get the first entry (most recent version)
+      const latestEntry = netappConnectorEntries[0]
+      
+      const appVersion = latestEntry.appVersion || "Unknown"
+      const chartVersion = latestEntry.version || "Unknown"
+
+      if (appVersion !== "Unknown" && chartVersion !== "Unknown") {
+        appLogger.info("Latest Helm versions fetched successfully", undefined, { 
+          appVersion, 
+          chartVersion,
+          source: "index.yaml",
+          chart_name: latestEntry.name
+        })
+        return { 
+          chart_name: latestEntry.name || "netapp-connector",
+          app_version: appVersion, 
+          chart_version: chartVersion 
+        }
+      }
+
+      appLogger.warn("Could not extract versions from netapp-connector entry", undefined, {
+        entry: latestEntry
+      })
+      return { 
+        chart_name: "netapp-connector",
+        app_version: appVersion, 
+        chart_version: chartVersion 
+      }
+    } catch (error) {
+      // Handle timeout specifically
+      if (error instanceof Error && error.name === 'AbortError') {
+        appLogger.warn("Helm version fetch timed out after 5 seconds")
+        return { 
+          chart_name: "netapp-connector",
+          app_version: "Unknown", 
+          chart_version: "Unknown" 
+        }
+      }
+      
+      appLogger.error(
+        "Failed to fetch or parse latest Helm version",
+        error instanceof Error ? error.message : "Unknown error"
+      )
+      return { 
+        chart_name: "netapp-connector",
+        app_version: "Unknown", 
+        chart_version: "Unknown" 
+      }
+    }
+  }
+
   async fetchSystemData(token: string) {
     appLogger.info("Fetching system data")
 
     try {
-      const [health, license, version, users, me, operations, shares, databaseSize] = await Promise.all([
+      const [health, license, version, users, me, operations, shares, databaseSize, helmChartVersion] = await Promise.all([
         this.getHealth(token),
         this.getLicenseStatus(token),
         this.getVersion(token),
@@ -479,6 +594,7 @@ export class NeoApiService {
         this.getOperations(token),
         this.getShares(token),
         this.getDatabaseSize(token),
+        this.getLatestHelmVersion(),
       ])
 
       appLogger.info("System data fetched successfully", undefined, {
@@ -487,9 +603,11 @@ export class NeoApiService {
         operations_count: operations.length,
         database_size_mb: databaseSize.database_file_size_mb,
         total_files_tracked: databaseSize.total_files_tracked,
+        latest_app_version: helmChartVersion.app_version,
+        latest_chart_version: helmChartVersion.chart_version,
       })
 
-      return { health, license, version, users, me, operations, shares, files: null, databaseSize }
+      return { health, license, version, users, me, operations, shares, files: null, databaseSize, helmChartVersion }
     } catch (error) {
       appLogger.error(
         "Failed to fetch system data",
@@ -763,5 +881,38 @@ export class NeoApiService {
   async getDatabaseSize(token: string): Promise<DatabaseSizeResponse> {
     appLogger.debug("Fetching database size information")
     return this.fetchWithToken<DatabaseSizeResponse>("/database/size", token)
+  }
+
+  async logout(token: string): Promise<void> {
+    appLogger.debug("Sending logout request to invalidate token")
+
+    try {
+      const response = await fetch(`${this.baseUrl}/logout`, {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        appLogger.warn(
+          "Logout request failed",
+          `Status: ${response.status}, Response: ${errorText}`,
+          { status: response.status }
+        )
+        // Don't throw error - we still want to clear local state even if server logout fails
+        return
+      }
+
+      appLogger.info("Token invalidated successfully on server")
+    } catch (error) {
+      appLogger.warn(
+        "Failed to invalidate token on server",
+        error instanceof Error ? error.message : "Unknown error"
+      )
+      // Don't throw error - we still want to clear local state even if server logout fails
+    }
   }
 }

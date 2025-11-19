@@ -62,7 +62,12 @@ export interface VersionResponse {
   version: string
   build_date?: string
   name?: string
-  latest?: string
+}
+
+export interface HelmChartVersionResponse {
+  chart_name: string
+  chart_version: string
+  app_version: string
 }
 
 export interface DatabaseSizeResponse { // only for v3

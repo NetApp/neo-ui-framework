@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
-import { Separator } from "@radix-ui/react-separator"
+import { Separator } from "@/components/ui/separator"
 
 interface FilesTableProps {
   files?: FilesResponse | null
@@ -126,7 +126,7 @@ export function FilesTable({
   }, [shareId, rows, canFetchMetadata])
 
   // Calculate pagination info
-  const currentPage = files?.page ?? 0
+  const currentPage = files?.page ?? 1  // Change from 0 to 1 as default
   const totalPages = files?.total_pages ?? 0
   const hasPrevious = files?.has_previous ?? false
   const hasNext = files?.has_next ?? false
@@ -223,9 +223,9 @@ export function FilesTable({
             </Button>
           </div>
         </div>
-      ) : files && !loading ? (
+      ) : files && !loading && totalCount > 0 ? (
         <p className="mt-2 text-sm text-muted-foreground">
-          Showing page {currentPage + 1} of {totalPages} · {totalCount.toLocaleString()} files · Total size {totalSize.toLocaleString()} bytes
+          Showing page {currentPage} of {totalPages} · {totalCount.toLocaleString()} files · Total size {totalSize.toLocaleString()} bytes
         </p>
       ) : null}
 

@@ -11,6 +11,7 @@ import type {
   HealthResponse, 
   LicenseResponse, 
   VersionResponse,
+  HelmChartVersionResponse,
   DatabaseSizeResponse,
   MonitoringOverviewResponse,
   MonitoringWorkersResponse,
@@ -25,6 +26,7 @@ interface DashboardProps {
   health: HealthResponse | null
   license: LicenseResponse | null
   version: VersionResponse | null
+  helmChartVersion: HelmChartVersionResponse | null
   databaseSize: DatabaseSizeResponse | null
   monitoring: {
     overview: MonitoringOverviewResponse | null
@@ -40,7 +42,7 @@ interface DashboardProps {
   onFetchMonitoring: () => Promise<void>
 }
 
-export default function Dashboard({ health, license, version, databaseSize, monitoring, onFetchMonitoring }: DashboardProps) {
+export default function Dashboard({ health, license, version, helmChartVersion, databaseSize, monitoring, onFetchMonitoring }: DashboardProps) {
   // Load monitoring data on mount
   useEffect(() => {
     onFetchMonitoring().catch((error) => {
@@ -55,8 +57,8 @@ export default function Dashboard({ health, license, version, databaseSize, moni
           <SectionCards 
             health={health} 
             license={license} 
-            version={version} 
-            // databaseSize={databaseSize}
+            version={version}
+            helmChartVersion={helmChartVersion}
           />
           <div className="px-4 lg:px-6">
             <DashboardChart 
