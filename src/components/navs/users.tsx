@@ -10,7 +10,7 @@ export interface NavUser {
   name: string
   email: string
   avatar: string | ReactNode
-  onLogout?: () => void
+  onLogout?: () => void | Promise<void>
 }
 
 interface NavUserProps {
@@ -48,7 +48,17 @@ export function NavUser({ user, isConnected = false, onConnect, collapsed = fals
             </Button>
           </ConnectDialog>
         ) : user.onLogout ? (
-          <Button variant="outline" onClick={user.onLogout} title="Logout">
+          <Button 
+            variant="outline" 
+            onClick={async () => { 
+              try {
+                await user.onLogout?.();
+              } catch (err) {
+                console.error('Logout failed:', err);
+              }
+            }} 
+            title="Logout"
+          >
             <IconLogout />
           </Button>
         ) : null

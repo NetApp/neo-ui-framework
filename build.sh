@@ -45,6 +45,63 @@ while [ "$#" -gt 0 ]; do
     esac
 done
 
+# --- Prerequisites Check ---
+echo "--- Prerequisites Check 🔍 ---"
+
+# Check if podman is available
+echo -n "Checking for podman... "
+if ! command -v podman &> /dev/null; then
+    echo "❌"
+    echo "Error: podman is not installed or not in PATH"
+    echo "Please install Podman before running this script"
+    echo ""
+    echo "Install instructions:"
+    echo "  - Ubuntu/Debian: sudo apt install podman"
+    echo "  - RHEL/Fedora:   sudo dnf install podman"
+    echo "  - macOS:         brew install podman"
+    echo "  - Or visit:      https://podman.io/getting-started/installation"
+    exit 1
+fi
+echo "✅"
+
+# Check if npm is available (only if --build-app flag is set)
+if [ "$BUILD_APP" = true ]; then
+    echo -n "Checking for npm... "
+    if ! command -v npm &> /dev/null; then
+        echo "❌"
+        echo "Error: npm is not installed or not in PATH"
+        echo "Please install Node.js and npm before running with --build-app"
+        echo ""
+        echo "Install instructions:"
+        echo "  - Ubuntu/Debian: sudo apt install nodejs npm"
+        echo "  - RHEL/Fedora:   sudo dnf install nodejs npm"
+        echo "  - macOS:         brew install node"
+        echo "  - Or visit:      https://nodejs.org/"
+        exit 1
+    fi
+    echo "✅"
+    
+    # Check if package.json exists
+    echo -n "Checking for package.json... "
+    if [ ! -f "package.json" ]; then
+        echo "❌"
+        echo "Error: package.json not found in current directory"
+        exit 1
+    fi
+    echo "✅"
+fi
+
+# Check if Dockerfile exists
+echo -n "Checking for Dockerfile... "
+if [ ! -f "Dockerfile" ]; then
+    echo "❌"
+    echo "Error: Dockerfile not found in current directory"
+    exit 1
+fi
+echo "✅"
+
+echo ""
+
 # If FINAL_TAG is not provided, read from package.json
 if [ -z "$FINAL_TAG" ]; then
     if [ ! -f "package.json" ]; then

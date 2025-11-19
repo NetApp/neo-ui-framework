@@ -58,7 +58,7 @@ export type {
 import * as yaml from "js-yaml"
 
 export class AuthenticationError extends Error {
-  constructor(message = "Session expired. Please reconnect.") {
+  constructor(message = "Authentication failed. Please log in again.") {
     super(message)
     this.name = "AuthenticationError"
   }
@@ -100,7 +100,7 @@ export class NeoApiService {
         )
 
         if (response.status === 401 || response.status === 403) {
-          throw new AuthenticationError("Invalid username or password.")
+          throw new AuthenticationError("Authentication failed. Please check your credentials.")
         }
         throw new Error(
           `Authentication failed (${response.status} ${response.statusText})`
@@ -150,13 +150,9 @@ export class NeoApiService {
           { endpoint, status: response.status }
         )
 
-        if (response.status === 401) {
-          // Token is invalid or expired
-          throw new AuthenticationError("Your session has expired. Please log in again.")
-        }
-        
-        if (response.status === 403) {
-          throw new AuthenticationError("You don't have permission to access this resource.")
+        if (response.status === 401 || response.status === 403) {
+          // Generic message for both authentication and authorization failures
+          throw new AuthenticationError()
         }
         
         throw new Error(
@@ -480,14 +476,22 @@ export class NeoApiService {
     appLogger.debug("Fetching latest Helm chart version from index.yaml")
     
     try {
+      // Create an AbortController with a 5-second timeout
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 5000)
+      
       const response = await fetch(
         "https://netapp.github.io/Innovation-Labs/index.yaml",
         {
           headers: {
             Accept: "application/x-yaml, text/yaml, */*",
           },
+          signal: controller.signal,
         }
       )
+      
+      // Clear timeout if fetch succeeds
+      clearTimeout(timeoutId)
 
       if (!response.ok) {
         appLogger.warn("Failed to fetch Helm index.yaml", `Status: ${response.status}`)
@@ -555,6 +559,16 @@ export class NeoApiService {
         chart_version: chartVersion 
       }
     } catch (error) {
+      // Handle timeout specifically
+      if (error instanceof Error && error.name === 'AbortError') {
+        appLogger.warn("Helm version fetch timed out after 5 seconds")
+        return { 
+          chart_name: "netapp-connector",
+          app_version: "Unknown", 
+          chart_version: "Unknown" 
+        }
+      }
+      
       appLogger.error(
         "Failed to fetch or parse latest Helm version",
         error instanceof Error ? error.message : "Unknown error"

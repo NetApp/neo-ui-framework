@@ -69,20 +69,21 @@ export function SectionCards({ health, license, version, helmChartVersion }: Sec
                 size={null}
                 className="h-auto p-0 hover:bg-transparent font-semibold text-lg"
                 onClick={() => setHealthDialogOpen(true)}
+                aria-label="View detailed health status information"
               >
                 {healthStatus}
-                <Info className="ml-1 h-4 w-4" />
+                <Info className="ml-1 h-4 w-4" aria-hidden="true" />
               </Button>
             </CardTitle>
           </CardHeader>
           <CardContent>
             {health && (
               <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                <IconCpu className="text-muted-foreground" />
+                <IconCpu className="text-muted-foreground" aria-hidden="true" />
                 <span> {health.metrics.cpu_percent.toFixed(1)}%</span> | 
-                <IconRuler3 className="text-muted-foreground" /> 
+                <IconRuler3 className="text-muted-foreground" aria-hidden="true" /> 
                 <span>{health.metrics.memory_percent.toFixed(1)}%</span> |
-                <HardDrive className="text-muted-foreground" />
+                <HardDrive className="text-muted-foreground" aria-hidden="true" />
                 <span>{health.metrics.disk_percent.toFixed(1)}%</span>
               </div>
             )}
