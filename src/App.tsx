@@ -108,6 +108,7 @@ function App() {
                     tasks={state.monitoring.tasks}
                     taskStats={state.monitoring.taskStats}
                     onFetchTasks={handlers.handleFetchTasks}
+                    onDeleteTask={handlers.handleDeleteTask}
                   />
                 }
               />

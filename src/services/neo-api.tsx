@@ -25,6 +25,7 @@ import type {
   TaskStatisticsResponse,
   HelmChartVersionResponse,
   TokenResponse,
+  // TaskCancelResponse,
 } from "./models"
 import { BaseApiClient, AuthenticationError } from "./api/base"
 import { AuthApiClient } from "./api/auth"
@@ -34,7 +35,7 @@ import { SharesApiClient } from "./api/shares"
 import { FilesApiClient } from "./api/files"
 import { OperationsApiClient } from "./api/operations"
 import { MonitoringApiClient } from "./api/monitoring"
-import { TasksApiClient } from "./api/tasks"
+import { TasksApiClient, type TaskCancelResponse } from "./api/tasks"
 import { AnalyticsApiClient } from "./api/analytics"
 import { HelmApiClient } from "./api/helm"
 
@@ -64,6 +65,7 @@ export type {
   TaskStatisticsResponse,
   HelmChartVersionResponse,
   TokenResponse,
+  TaskCancelResponse,
 }
 export { AuthenticationError }
 
@@ -209,6 +211,10 @@ export class NeoApiService extends BaseApiClient {
 
   getTaskStatistics(token: string) {
     return this.tasks.getTaskStatistics(token)
+  }
+
+  deleteTask(token: string, taskId: string) {
+    return this.tasks.deleteTask(token, taskId)
   }
 
   getFileAnalytics(token: string) {

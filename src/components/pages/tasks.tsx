@@ -15,9 +15,10 @@ interface TasksProps {
   tasks: TasksResponse[] | null
   taskStats: TaskStatisticsResponse | null
   onFetchTasks: () => Promise<void>
+  onDeleteTask: (taskId: string) => Promise<void>
 }
 
-export default function Tasks({ tasks, taskStats, onFetchTasks }: TasksProps) {
+export default function Tasks({ tasks, taskStats, onFetchTasks, onDeleteTask }: TasksProps) {
   const [alertMessage, setAlertMessage] = useState<string | null>(null)
   const [alertVariant, setAlertVariant] = useState<"success" | "error">("success")
   const [refreshing, setRefreshing] = useState(false)
@@ -131,7 +132,7 @@ export default function Tasks({ tasks, taskStats, onFetchTasks }: TasksProps) {
               </div>
             )}
 
-            <TasksTable tasks={tasks} />
+            <TasksTable tasks={tasks} onDeleteTask={onDeleteTask} />
           </div>
         </div>
       </div>

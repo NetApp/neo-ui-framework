@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { IconInfoCircle } from "@tabler/icons-react"
+import { IconInfoCircle, IconTrash, IconMenu2 } from "@tabler/icons-react"
 import { CheckCircle2, XCircle, Clock, Loader2 } from "lucide-react"
 
 import type { TasksResponse } from "@/services/neo-api"
@@ -17,6 +17,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Separator } from "@/components/ui/separator"
+import { Spinner } from "@/components/ui/spinner"
 import {
   Table,
   TableBody,
@@ -25,9 +26,18 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 interface TasksTableProps {
   tasks: TasksResponse[] | null
+  onDeleteTask: (taskId: string) => Promise<void>
 }
 
 function getStatusIcon(status: string) {
@@ -86,11 +96,43 @@ function formatDuration(startedAt: string | null, completedAt: string | null): s
   return `${(durationMs / 3600000).toFixed(2)}h`
 }
 
-export function TasksTable({ tasks }: TasksTableProps) {
+export function TasksTable({ tasks, onDeleteTask }: TasksTableProps) {
   const rows = tasks ?? []
   const [selectedTask, setSelectedTask] = useState<TasksResponse | null>(null)
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [pendingId, setPendingId] = useState<string | null>(null)
+  const [submitting, setSubmitting] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   const closeDialog = () => setSelectedTask(null)
+
+  const openConfirm = (taskId: string) => {
+    setPendingId(taskId)
+    setConfirmOpen(true)
+  }
+
+  const handleConfirm = async () => {
+    if (!pendingId) return
+    setSubmitting(true)
+    setDeletingId(pendingId)
+    try {
+      await onDeleteTask(pendingId)
+      setConfirmOpen(false)
+      setPendingId(null)
+    } finally {
+      setSubmitting(false)
+      setDeletingId(null)
+    }
+  }
+
+  const isTaskBusy = (taskId: string) => {
+    return deletingId === taskId
+  }
+
+  const canCancelTask = (status: string) => {
+    const statusLower = status.toLowerCase()
+    return statusLower === "pending" || statusLower === "running"
+  }
 
   return (
     <>
@@ -122,14 +164,46 @@ export function TasksTable({ tasks }: TasksTableProps) {
                     {task.share_id ? task.share_id.substring(0, 8) + "..." : "—"}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      aria-label="Task details"
-                      onClick={() => setSelectedTask(task)}
-                    >
-                      <IconInfoCircle className="size-4" />
-                    </Button>
+                    <DropdownMenu modal={false}>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          aria-label="Task actions"
+                          disabled={isTaskBusy(task.id)}
+                        >
+                          {isTaskBusy(task.id) ? (
+                            <Spinner className="size-4" />
+                          ) : (
+                            <IconMenu2 className="size-4" />
+                          )}
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-40">
+                        <DropdownMenuGroup>
+                          <DropdownMenuItem
+                            onSelect={() => setSelectedTask(task)}
+                            disabled={deletingId === task.id}
+                          >
+                            <IconInfoCircle className="mr-2 size-4" />
+                            Details
+                          </DropdownMenuItem>
+                          {canCancelTask(task.status) && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onSelect={() => openConfirm(task.id)}
+                                disabled={deletingId === task.id}
+                                className="text-red-600 focus:text-red-600"
+                              >
+                                <IconTrash className="mr-2 size-4" />
+                                {deletingId === task.id ? "Cancelling..." : "Cancel"}
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                        </DropdownMenuGroup>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
               ))
@@ -143,6 +217,53 @@ export function TasksTable({ tasks }: TasksTableProps) {
           </TableBody>
         </Table>
       </div>
+
+      <Dialog
+        open={confirmOpen}
+        onOpenChange={(open) => {
+          if (!submitting) {
+            setConfirmOpen(open)
+            if (!open) {
+              setPendingId(null)
+            }
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cancel task?</DialogTitle>
+            <DialogDescription className="text-destructive mb-4">
+              <br />
+              <p>This will attempt to cancel the running or pending task.</p>
+              <p>Already completed or failed tasks cannot be cancelled.</p>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setConfirmOpen(false)}
+              disabled={submitting}
+            >
+              Close
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleConfirm}
+              disabled={submitting}
+              aria-busy={submitting}
+            >
+              {submitting ? (
+                <>
+                  <Spinner className="mr-2 size-4" />
+                  Cancelling…
+                </>
+              ) : (
+                "Cancel Task"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={selectedTask !== null} onOpenChange={(open) => (open ? null : closeDialog())}>
         <DialogContent className="sm:max-w-[90vw] lg:max-w-[70vw] max-h-[90vh] overflow-y-auto">
@@ -170,9 +291,7 @@ export function TasksTable({ tasks }: TasksTableProps) {
                 </div>
                 <div className="rounded-lg border p-3">
                   <dt className="font-medium text-muted-foreground mb-1">Share ID</dt>
-                  <dd className="font-mono text-xs">
-                    {selectedTask.share_id ?? "N/A"}
-                  </dd>
+                  <dd className="font-mono text-xs">{selectedTask.share_id ?? "N/A"}</dd>
                 </div>
                 <div className="rounded-lg border p-3">
                   <dt className="font-medium text-muted-foreground mb-1">Created</dt>
@@ -205,9 +324,15 @@ export function TasksTable({ tasks }: TasksTableProps) {
                   <dd>{selectedTask.progress ?? "N/A"}</dd>
                 </div>
                 <div className="rounded-lg border p-3">
-                  <dt className="font-medium text-muted-foreground mb-1">Cancellation Requested</dt>
+                  <dt className="font-medium text-muted-foreground mb-1">
+                    Cancellation Requested
+                  </dt>
                   <dd>
-                    <Badge variant={selectedTask.cancellation_requested ? "destructive" : "secondary"}>
+                    <Badge
+                      variant={
+                        selectedTask.cancellation_requested ? "destructive" : "secondary"
+                      }
+                    >
                       {selectedTask.cancellation_requested ? "Yes" : "No"}
                     </Badge>
                   </dd>

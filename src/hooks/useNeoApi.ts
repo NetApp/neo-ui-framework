@@ -624,6 +624,59 @@ export function useNeoApi() {
     }
   }, [token, clearSystemData])
 
+  const handleDeleteTask = useCallback(
+    async (taskId: string) => {
+      if (!token) {
+        appLogger.warn("Task deletion attempted without active token")
+        throw new AuthenticationError()
+      }
+
+      const api = apiRef.current
+
+      try {
+        appLogger.info("Cancelling task", undefined, { taskId })
+        const response = await api.deleteTask(token, taskId)
+        
+        // Refresh tasks after cancellation attempt
+        const [tasks, taskStats] = await Promise.all([
+          api.getTasks(token),
+          api.getTaskStatistics(token),
+        ])
+        
+        setMonitoring(prev => ({
+          ...prev,
+          tasks,
+          taskStats,
+        }))
+        
+        if (response.status === "cancelled") {
+          toast.success(`Task cancelled: ${response.message}`)
+        } else {
+          toast.warning(`Task cancellation: ${response.message}`)
+        }
+        
+        appLogger.info("Task cancellation response received", undefined, { 
+          taskId,
+          status: response.status,
+          graceful: response.graceful
+        })
+      } catch (error) {
+        if (error instanceof AuthenticationError) {
+          clearSystemData()
+          setToken(null)
+        }
+        toast.error("Task cancellation failed!")
+        appLogger.error(
+          "Task cancellation failed",
+          error instanceof Error ? error.message : "Unknown error",
+          { taskId }
+        )
+        throw error
+      }
+    },
+    [token, clearSystemData]
+  )
+
   const handleLogout = useCallback(async () => {
     appLogger.info("User logging out", undefined, { username: me?.username })
     
@@ -678,6 +731,7 @@ export function useNeoApi() {
       handleSearchFiles,
       handleFetchMonitoring,
       handleFetchTasks,
+      handleDeleteTask,
       handleLogout,
       handleFilesPageChange,
     },
