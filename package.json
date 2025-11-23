@@ -1,7 +1,7 @@
 {
   "name": "neo-ui-framework",
   "private": true,
-  "version": "3.0.4-1",
+  "version": "3.0.4-2",
   "type": "module",
   "scripts": {
     "dev": "vite",

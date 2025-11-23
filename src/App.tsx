@@ -9,6 +9,7 @@ import Dashboard from "@/components/pages/dashboard"
 import Shares from "@/components/pages/shares"
 import Files from "@/components/pages/files"
 import Operations from "@/components/pages/operations"
+import Tasks from "@/components/pages/tasks"
 import Users from "@/components/pages/users"
 import Help from "@/components/pages/help"
 import Logs from "@/components/pages/logs"
@@ -49,7 +50,7 @@ function App() {
                     health={state.health}
                     license={state.license}
                     version={state.version}
-                    helmChartVersion={state.helmChartVersion}  // Add this
+                    helmChartVersion={state.helmChartVersion}
                     databaseSize={state.databaseSize}
                     monitoring={state.monitoring}
                     onFetchMonitoring={handlers.handleFetchMonitoring}
@@ -63,7 +64,7 @@ function App() {
                     health={state.health}
                     license={state.license}
                     version={state.version}
-                    helmChartVersion={state.helmChartVersion}  // Add this
+                    helmChartVersion={state.helmChartVersion}
                     databaseSize={state.databaseSize}
                     monitoring={state.monitoring}
                     onFetchMonitoring={handlers.handleFetchMonitoring}
@@ -99,6 +100,16 @@ function App() {
               <Route
                 path="/operations"
                 element={<Operations operations={state.operations} />}
+              />
+              <Route
+                path="/tasks"
+                element={
+                  <Tasks
+                    tasks={state.monitoring.tasks}
+                    taskStats={state.monitoring.taskStats}
+                    onFetchTasks={handlers.handleFetchTasks}
+                  />
+                }
               />
               <Route path="/logs" element={<Logs />} />
               <Route path="/users" element={

@@ -585,6 +585,45 @@ export function useNeoApi() {
     }
   }, [token, clearSystemData])
 
+  const handleFetchTasks = useCallback(async () => {
+    if (!token) {
+      appLogger.warn("Fetch tasks attempted without active token")
+      throw new AuthenticationError()
+    }
+
+    const api = apiRef.current
+
+    try {
+      appLogger.debug("Fetching tasks data")
+      const [tasks, taskStats] = await Promise.all([
+        api.getTasks(token),
+        api.getTaskStatistics(token),
+      ])
+      
+      setMonitoring(prev => ({
+        ...prev,
+        tasks,
+        taskStats,
+      }))
+      
+      appLogger.info("Tasks data fetched successfully", undefined, {
+        total_tasks: taskStats.total_tasks,
+        running_tasks: taskStats.by_status.running,
+      })
+    } catch (error) {
+      if (error instanceof AuthenticationError) {
+        clearSystemData()
+        setToken(null)
+        appLogger.warn("Token expired during tasks fetch")
+      }
+      appLogger.error(
+        "Failed to fetch tasks data",
+        error instanceof Error ? error.message : "Unknown error"
+      )
+      throw error
+    }
+  }, [token, clearSystemData])
+
   const handleLogout = useCallback(async () => {
     appLogger.info("User logging out", undefined, { username: me?.username })
     
@@ -614,7 +653,7 @@ export function useNeoApi() {
       health,
       license,
       version,
-      helmChartVersion,  // Add this to state
+      helmChartVersion,
       databaseSize,
       users,
       me,
@@ -638,6 +677,7 @@ export function useNeoApi() {
       handleSelectFilesShare,
       handleSearchFiles,
       handleFetchMonitoring,
+      handleFetchTasks,
       handleLogout,
       handleFilesPageChange,
     },

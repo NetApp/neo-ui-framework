@@ -21,8 +21,8 @@ import type {
   MonitoringGraphRateLimitResponse,
   MonitoringFailedItemsResponse,
   TasksResponse,
+  TasksListResponse,
   TaskStatisticsResponse,
-  TaskResponse,
   HelmChartVersionResponse,
   TokenResponse,
 } from "./models"
@@ -60,8 +60,8 @@ export type {
   MonitoringGraphRateLimitResponse,
   MonitoringFailedItemsResponse,
   TasksResponse,
+  TasksListResponse,
   TaskStatisticsResponse,
-  TaskResponse,
   HelmChartVersionResponse,
   TokenResponse,
 }

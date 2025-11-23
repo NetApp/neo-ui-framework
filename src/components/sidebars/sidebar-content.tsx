@@ -8,6 +8,7 @@ import {
   IconHelp,
   IconListDetails,
   IconUsers,
+  IconListCheck,
 } from "@tabler/icons-react"
 
 import {
@@ -40,6 +41,11 @@ const data = {
       name: "Operations",
       url: "#/operations",
       icon: IconFolder,
+    },
+    {
+      name: "Tasks",
+      url: "#/tasks",
+      icon: IconListCheck,
     },
   ],
   navSecondary: [

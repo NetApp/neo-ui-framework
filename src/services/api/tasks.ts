@@ -1,11 +1,13 @@
 import { appLogger } from "@/services/app-logger"
 import { BaseApiClient } from "./base"
-import type { TasksResponse, TaskStatisticsResponse } from "@/services/models"
+import type { TasksListResponse, TaskStatisticsResponse } from "@/services/models"
 
 export class TasksApiClient extends BaseApiClient {
-  getTasks(token: string) {
+  async getTasks(token: string) {
     appLogger.debug("Fetching tasks")
-    return this.requestWithToken<TasksResponse[]>("/tasks", token)
+    const response = await this.requestWithToken<TasksListResponse>("/tasks", token)
+    // Return just the tasks array for backwards compatibility
+    return response.tasks
   }
 
   getTaskStatistics(token: string) {
