@@ -12,6 +12,14 @@ import {
   IconMenu2
 } from "@tabler/icons-react"
 
+import { 
+  CheckCircle2, 
+  XCircle, 
+  Clock, 
+  Loader2,
+  AlertCircle 
+} from "lucide-react"
+
 import type { 
   ShareDetailsResponse, 
   SharesResponse 
@@ -29,6 +37,10 @@ import {
 import { 
   Button 
 } from "@/components/ui/button"
+
+import { 
+  Badge 
+} from "@/components/ui/badge"
 
 import {
   Table,
@@ -61,6 +73,65 @@ interface SharesTableProps {
   onStartCrawl: (shareId: string) => Promise<boolean>
   onFetchShareDetails: (shareId: string) => Promise<ShareDetailsResponse>
   onEditShare: (shareId: string) => void
+}
+
+function getStatusIcon(status: string) {
+  switch (status.toLowerCase()) {
+    case "active":
+    case "ready":
+      return <CheckCircle2 className="size-4 text-green-600" />
+    case "error":
+    case "failed":
+      return <XCircle className="size-4 text-red-600" />
+    case "crawling":
+    case "processing":
+      return <Loader2 className="size-4 text-blue-600 animate-spin" />
+    case "pending":
+    case "scheduled":
+      return <Clock className="size-4 text-yellow-600" />
+    case "warning":
+      return <AlertCircle className="size-4 text-orange-600" />
+    default:
+      return null
+  }
+}
+
+function getStatusBadge(status: string) {
+  const statusLower = status.toLowerCase()
+
+  const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+    active: "default",
+    ready: "default",
+    error: "destructive",
+    failed: "destructive",
+    crawling: "secondary",
+    processing: "secondary",
+    pending: "outline",
+    scheduled: "outline",
+    warning: "outline",
+  }
+
+  const colors: Record<string, string> = {
+    active: "bg-green-500 hover:bg-green-600 text-white",
+    ready: "bg-green-500 hover:bg-green-600 text-white",
+    error: "bg-red-500 hover:bg-red-600 text-white",
+    failed: "bg-red-500 hover:bg-red-600 text-white",
+    crawling: "bg-blue-500 hover:bg-blue-600 text-white",
+    processing: "bg-blue-500 hover:bg-blue-600 text-white",
+    pending: "bg-yellow-500 hover:bg-yellow-600 text-white",
+    scheduled: "bg-yellow-500 hover:bg-yellow-600 text-white",
+    warning: "bg-orange-500 hover:bg-orange-600 text-white",
+  }
+
+  return (
+    <Badge
+      variant={variants[statusLower] || "outline"}
+      className={`gap-1 ${colors[statusLower] || ""}`}
+    >
+      {getStatusIcon(status)}
+      {status}
+    </Badge>
+  )
 }
 
 export function SharesTable({ shares, onDeleteShare, onStartCrawl, onFetchShareDetails, onEditShare }: SharesTableProps) {
@@ -142,7 +213,7 @@ export function SharesTable({ shares, onDeleteShare, onStartCrawl, onFetchShareD
                 <TableRow key={share.id}>
                   <TableCell>{share.share_path}</TableCell>
                   <TableCell>{share.username}</TableCell>
-                  <TableCell>{share.status}</TableCell>
+                  <TableCell>{getStatusBadge(share.status)}</TableCell>
                   <TableCell>
                     {share.last_crawled ? new Date(share.last_crawled).toLocaleString() : "—"}
                   </TableCell>
@@ -298,7 +369,7 @@ export function SharesTable({ shares, onDeleteShare, onStartCrawl, onFetchShareD
                 </div>
                 <div>
                   <dt className="font-medium text-foreground">Status</dt>
-                  <dd className="p-1 font-bold"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{detailsData.status}</pre></dd>
+                  <dd className="p-1 font-bold">{getStatusBadge(detailsData.status)}</dd>
                 </div>
                 <div>
                   <dt className="font-medium text-foreground">Created</dt>

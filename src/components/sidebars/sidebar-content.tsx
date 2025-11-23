@@ -33,6 +33,11 @@ const data = {
       icon: IconListDetails,
     },
     {
+      name: "Tasks",
+      url: "#/tasks",
+      icon: IconListCheck,
+    },    
+    {
       name: "Files",
       url: "#/files",
       icon: IconChartBar,
@@ -41,11 +46,6 @@ const data = {
       name: "Operations",
       url: "#/operations",
       icon: IconFolder,
-    },
-    {
-      name: "Tasks",
-      url: "#/tasks",
-      icon: IconListCheck,
     },
   ],
   navSecondary: [
