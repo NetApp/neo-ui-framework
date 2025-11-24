@@ -393,3 +393,24 @@ export interface TaskStatisticsResponse { // only for v3
   }
   running_task_ids: number[]
 }
+
+// Users Page Models
+export interface UserResponse {
+  id: number
+  username: string
+  email: string | null
+  is_active: boolean
+  is_admin: boolean
+  created_at: string
+  last_login: string | null
+}
+
+export interface MeResponse {
+  id: number
+  username: string
+  email: string | null
+  is_active: boolean
+  is_admin: boolean
+  created_at: string
+  last_login: string | null
+}

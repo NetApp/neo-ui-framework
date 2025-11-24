@@ -1,6 +1,6 @@
 import { appLogger } from "@/services/app-logger"
 
-type RequestOptions = {
+interface RequestOptions {
   expectAuth?: boolean
   parseJson?: boolean
 }
@@ -13,7 +13,11 @@ export class AuthenticationError extends Error {
 }
 
 export class BaseApiClient {
-  constructor(protected baseUrl: string = "/api") {}
+  protected baseUrl: string
+
+  constructor(baseUrl: string = "/api") {
+    this.baseUrl = baseUrl
+  }
 
   protected async request<T>(
     endpoint: string,
