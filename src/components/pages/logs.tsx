@@ -85,13 +85,13 @@ export default function Logs({ operations }: { operations: OperationResponse[] |
                 </p>
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={handleRefresh}>
-                  <IconRefresh className="mr-2 size-4" />
-                  Refresh
-                </Button>
                 <Button variant="outline" size="sm" onClick={onDownloadLogs}>
                   <IconDownload className="mr-2 size-4" />
                   Download
+                </Button>
+                <Button size="sm" onClick={handleRefresh}>
+                  <IconRefresh className="mr-2 size-4" />
+                  Refresh
                 </Button>
                 <Button
                   variant="outline"

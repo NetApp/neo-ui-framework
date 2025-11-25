@@ -1,12 +1,12 @@
 "use client"
 
 import { useEffect } from "react"
-import { 
-  IconRefresh, 
-  IconAlertTriangle, 
-  IconClock, 
-  IconUsers, 
-  IconActivity 
+import {
+  IconRefresh,
+  IconAlertTriangle,
+  IconClock,
+  IconUsers,
+  IconActivity
 } from "@tabler/icons-react"
 import {
   Card,
@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
-import type { 
+import type {
   MonitoringOverviewResponse,
   MonitoringWorkersResponse,
   MonitoringEnumerationResponse,
@@ -51,16 +51,16 @@ interface DashboardChartProps {
 }
 
 export function DashboardChart({ databaseSize, monitoring, onRefreshMonitoring }: DashboardChartProps) {
-  const { 
-    overview, 
-    workers, 
-    enumeration, 
-    graphRateLimit, 
-    failedItems, 
+  const {
+    overview,
+    workers,
+    enumeration,
+    graphRateLimit,
+    failedItems,
     // tasks, 
-    taskStats, 
-    fileAnalytics, 
-    sharesAnalytics 
+    taskStats,
+    fileAnalytics,
+    sharesAnalytics
   } = monitoring
 
   // Auto-refresh monitoring data every 60 seconds
@@ -82,7 +82,6 @@ export function DashboardChart({ databaseSize, monitoring, onRefreshMonitoring }
           <CardTitle className="flex items-center justify-between">
             Monitoring Overview
             <Button
-              variant="outline"
               size="sm"
               onClick={onRefreshMonitoring}
               className="h-8"
@@ -213,8 +212,8 @@ export function DashboardChart({ databaseSize, monitoring, onRefreshMonitoring }
             <div className="space-y-2">
               <div className="text-2xl font-bold">{graphRateLimit.requests_remaining}</div>
               <p className="text-xs text-muted-foreground">Requests remaining</p>
-              <Progress 
-                value={(graphRateLimit.requests_remaining / (graphRateLimit.requests_made + graphRateLimit.requests_remaining)) * 100} 
+              <Progress
+                value={(graphRateLimit.requests_remaining / (graphRateLimit.requests_made + graphRateLimit.requests_remaining)) * 100}
                 className="h-2"
               />
               <div className="flex items-center justify-between text-xs">
