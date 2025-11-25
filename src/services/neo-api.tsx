@@ -38,6 +38,7 @@ import { MonitoringApiClient } from "./api/monitoring"
 import { TasksApiClient, type TaskCancelResponse } from "./api/tasks"
 import { AnalyticsApiClient } from "./api/analytics"
 import { HelmApiClient } from "./api/helm"
+import { DataLoader } from "./data-loader"
 
 export type {
   HealthResponse,
@@ -80,6 +81,7 @@ export class NeoApiService extends BaseApiClient {
   private tasks: TasksApiClient
   private analytics: AnalyticsApiClient
   private helm: HelmApiClient
+  private dataLoader: DataLoader
 
   constructor(baseUrl = "/api") {
     super(baseUrl)
@@ -93,6 +95,11 @@ export class NeoApiService extends BaseApiClient {
     this.tasks = new TasksApiClient(baseUrl)
     this.analytics = new AnalyticsApiClient(baseUrl)
     this.helm = new HelmApiClient()
+    this.dataLoader = new DataLoader(30000) // 30 seconds default TTL
+  }
+
+  clearCache() {
+    this.dataLoader.clear()
   }
 
   authenticate(username: string, password: string) {
@@ -104,27 +111,27 @@ export class NeoApiService extends BaseApiClient {
   }
 
   getHealth(token: string) {
-    return this.system.getHealth(token)
+    return this.dataLoader.load(`health:${token}`, () => this.system.getHealth(token))
   }
 
   getLicenseStatus(token: string) {
-    return this.system.getLicenseStatus(token)
+    return this.dataLoader.load(`license:${token}`, () => this.system.getLicenseStatus(token))
   }
 
   getVersion(token: string) {
-    return this.system.getVersion(token)
+    return this.dataLoader.load(`version:${token}`, () => this.system.getVersion(token))
   }
 
   getDatabaseSize(token: string) {
-    return this.system.getDatabaseSize(token)
+    return this.dataLoader.load(`databaseSize:${token}`, () => this.system.getDatabaseSize(token))
   }
 
   getUsers(token: string) {
-    return this.users.getUsers(token)
+    return this.dataLoader.load(`users:${token}`, () => this.users.getUsers(token))
   }
 
   getMeUsers(token: string) {
-    return this.users.getMeUsers(token)
+    return this.dataLoader.load(`me:${token}`, () => this.users.getMeUsers(token))
   }
 
   createUser(
@@ -146,11 +153,11 @@ export class NeoApiService extends BaseApiClient {
   }
 
   getShares(token: string) {
-    return this.shares.getShares(token)
+    return this.dataLoader.load(`shares:${token}`, () => this.shares.getShares(token))
   }
 
   getShareDetails(token: string, shareId: string) {
-    return this.shares.getShareDetails(token, shareId)
+    return this.dataLoader.load(`shareDetails:${token}:${shareId}`, () => this.shares.getShareDetails(token, shareId))
   }
 
   createShare(token: string, payload: Parameters<SharesApiClient["createShare"]>[1]) {
@@ -170,47 +177,49 @@ export class NeoApiService extends BaseApiClient {
   }
 
   getFiles(token: string, shareId: string, page?: number, pageSize?: number) {
-    return this.files.getFiles(token, shareId, page, pageSize)
+    const key = `files:${token}:${shareId}:${page}:${pageSize}`
+    return this.dataLoader.load(key, () => this.files.getFiles(token, shareId, page, pageSize))
   }
 
   getFileMetadata(token: string, shareId: string, fileId: string) {
-    return this.files.getFileMetadata(token, shareId, fileId)
+    return this.dataLoader.load(`fileMetadata:${token}:${shareId}:${fileId}`, () => this.files.getFileMetadata(token, shareId, fileId))
   }
 
   searchFiles(token: string, params: FileSearchParams) {
-    return this.files.searchFiles(token, params)
+    const key = `searchFiles:${token}:${JSON.stringify(params)}`
+    return this.dataLoader.load(key, () => this.files.searchFiles(token, params))
   }
 
   getOperations(token: string) {
-    return this.operations.getOperations(token)
+    return this.dataLoader.load(`operations:${token}`, () => this.operations.getOperations(token))
   }
 
   getMonitoringOverview(token: string) {
-    return this.monitoring.getMonitoringOverview(token)
+    return this.dataLoader.load(`monitoringOverview:${token}`, () => this.monitoring.getMonitoringOverview(token), 3600000)
   }
 
   getMonitoringWorkers(token: string) {
-    return this.monitoring.getMonitoringWorkers(token)
+    return this.dataLoader.load(`monitoringWorkers:${token}`, () => this.monitoring.getMonitoringWorkers(token), 3600000)
   }
 
   getMonitoringEnumeration(token: string) {
-    return this.monitoring.getMonitoringEnumeration(token)
+    return this.dataLoader.load(`monitoringEnumeration:${token}`, () => this.monitoring.getMonitoringEnumeration(token), 3600000)
   }
 
   getMonitoringGraphRateLimit(token: string) {
-    return this.monitoring.getMonitoringGraphRateLimit(token)
+    return this.dataLoader.load(`monitoringGraphRateLimit:${token}`, () => this.monitoring.getMonitoringGraphRateLimit(token), 3600000)
   }
 
   getMonitoringFailedItems(token: string) {
-    return this.monitoring.getMonitoringFailedItems(token)
+    return this.dataLoader.load(`monitoringFailedItems:${token}`, () => this.monitoring.getMonitoringFailedItems(token), 3600000)
   }
 
   getTasks(token: string) {
-    return this.tasks.getTasks(token)
+    return this.dataLoader.load(`tasks:${token}`, () => this.tasks.getTasks(token), 3600000)
   }
 
   getTaskStatistics(token: string) {
-    return this.tasks.getTaskStatistics(token)
+    return this.dataLoader.load(`taskStatistics:${token}`, () => this.tasks.getTaskStatistics(token), 3600000)
   }
 
   deleteTask(token: string, taskId: string) {
@@ -218,15 +227,15 @@ export class NeoApiService extends BaseApiClient {
   }
 
   getFileAnalytics(token: string) {
-    return this.analytics.getFileAnalytics(token)
+    return this.dataLoader.load(`fileAnalytics:${token}`, () => this.analytics.getFileAnalytics(token), 3600000)
   }
 
   getSharesAnalytics(token: string) {
-    return this.analytics.getSharesAnalytics(token)
+    return this.dataLoader.load(`sharesAnalytics:${token}`, () => this.analytics.getSharesAnalytics(token), 3600000)
   }
 
   getLatestHelmVersion() {
-    return this.helm.getLatestHelmVersion()
+    return this.dataLoader.load(`latestHelmVersion`, () => this.helm.getLatestHelmVersion())
   }
 
   async fetchSystemData(token: string) {
