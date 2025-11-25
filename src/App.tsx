@@ -8,7 +8,6 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import Dashboard from "@/components/pages/dashboard"
 import Shares from "@/components/pages/shares"
 import Files from "@/components/pages/files"
-import Operations from "@/components/pages/operations"
 import Tasks from "@/components/pages/tasks"
 import Users from "@/components/pages/users"
 import Help from "@/components/pages/help"
@@ -30,11 +29,11 @@ function App() {
         }
       >
         <HashRouter>
-          <AppSidebar 
-            me={state.me} 
+          <AppSidebar
+            me={state.me}
             isConnected={!!state.token}
             onConnect={handlers.handleConnect}
-            onLogout={handlers.handleLogout} 
+            onLogout={handlers.handleLogout}
           />
           <SidebarInset>
             <SiteHeader
@@ -98,10 +97,6 @@ function App() {
                 }
               />
               <Route
-                path="/operations"
-                element={<Operations operations={state.operations} />}
-              />
-              <Route
                 path="/tasks"
                 element={
                   <Tasks
@@ -112,7 +107,7 @@ function App() {
                   />
                 }
               />
-              <Route path="/logs" element={<Logs />} />
+              <Route path="/logs" element={<Logs operations={state.operations} />} />
               <Route path="/users" element={
                 <Users
                   users={state.users}

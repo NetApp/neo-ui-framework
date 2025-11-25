@@ -4,7 +4,6 @@ import {
   IconChartBar,
   IconDashboard,
   IconFileText,
-  IconFolder,
   IconHelp,
   IconListDetails,
   IconUsers,
@@ -16,8 +15,8 @@ import {
 } from "@/components/ui/sidebar"
 
 // internal components
-import { 
-  NavMain 
+import {
+  NavMain
 } from "@/components/navs/main"
 
 const data = {
@@ -36,16 +35,11 @@ const data = {
       name: "Tasks",
       url: "#/tasks",
       icon: IconListCheck,
-    },    
+    },
     {
       name: "Files",
       url: "#/files",
       icon: IconChartBar,
-    },
-    {
-      name: "Operations",
-      url: "#/operations",
-      icon: IconFolder,
     },
   ],
   navSecondary: [
@@ -67,11 +61,11 @@ const data = {
   ],
 }
 
-export function AppSidebarContent({...props}: React.ComponentProps<typeof SidebarContent>) {
+export function AppSidebarContent({ ...props }: React.ComponentProps<typeof SidebarContent>) {
   return (
-      <SidebarContent {...props}>
-        <NavMain items={data.navMain} />
-        <NavMain items={data.navSecondary} className="mt-auto" />
-      </SidebarContent>
+    <SidebarContent {...props}>
+      <NavMain items={data.navMain} />
+      <NavMain items={data.navSecondary} className="mt-auto" />
+    </SidebarContent>
   )
 }

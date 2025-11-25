@@ -1,24 +1,25 @@
 "use client"
 
-import { 
-  useState 
+import {
+  useState
 } from "react"
 
-import { 
-  IconRefresh, 
-  IconTrash 
+import {
+  IconRefresh,
+  IconTrash,
+  IconDownload
 } from "@tabler/icons-react"
 
-import { 
-  useAppLogs 
+import {
+  useAppLogs
 } from "@/hooks/useAppLogs"
 
-import { 
+import {
   LogsTable
- } from "@/components/data-tables/logsT"
+} from "@/components/data-tables/logsT"
 
- import { 
-  Button 
+import {
+  Button
 } from "@/components/ui/button"
 
 import {
@@ -29,17 +30,19 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
-import type { 
-  LogLevel 
+import type {
+  LogLevel
 } from "@/services/app-logger"
+import type { OperationResponse } from "@/services/neo-api"
 
-const LEVEL_OPTIONS = ["all", "ERROR", "WARN", "INFO", "DEBUG"] as const
+const LEVEL_OPTIONS = ["all", "ERROR", "WARN", "INFO", "DEBUG", "OPERATION"] as const
 
-export default function Logs() {
+export default function Logs({ operations }: { operations: OperationResponse[] | null }) {
   const [selectedLevel, setSelectedLevel] = useState<(typeof LEVEL_OPTIONS)[number]>("all")
-  const { logs, currentPage, totalPages, totalCount, onPageChange, onClearLogs } = useAppLogs(
+  const { logs, currentPage, totalPages, totalCount, onPageChange, onClearLogs, onDownloadLogs } = useAppLogs(
     selectedLevel === "all" ? undefined : (selectedLevel as LogLevel),
-    50
+    50,
+    operations
   )
 
   const handleLevelChange = (value: (typeof LEVEL_OPTIONS)[number]) => {
@@ -85,6 +88,10 @@ export default function Logs() {
                 <Button variant="outline" size="sm" onClick={handleRefresh}>
                   <IconRefresh className="mr-2 size-4" />
                   Refresh
+                </Button>
+                <Button variant="outline" size="sm" onClick={onDownloadLogs}>
+                  <IconDownload className="mr-2 size-4" />
+                  Download
                 </Button>
                 <Button
                   variant="outline"
