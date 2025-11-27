@@ -96,7 +96,7 @@ export function SiteHeader({ onConnect, onRefresh, isConnected }: SiteHeaderProp
           </Button>
           <ConnectDialog onConnect={onConnect} onRefresh={onRefresh} isConnected={isConnected}>
             <Button
-              variant="outline"
+              variant="default"
               size="default"
               className="hidden sm:flex">
               {isConnected ? <><IconRefresh /> Refresh</> : <><IconLogin /> Connect</>}

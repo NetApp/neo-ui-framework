@@ -5,7 +5,6 @@ import {
 } from "react"
 
 import {
-  IconRefresh,
   IconTrash,
   IconDownload
 } from "@tabler/icons-react"
@@ -50,9 +49,7 @@ export default function Logs({ operations }: { operations: OperationResponse[] |
     onPageChange(0)
   }
 
-  const handleRefresh = () => {
-    onPageChange(currentPage)
-  }
+
 
   const handlePageChange = (nextPage: number) => {
     if (nextPage < 0 || nextPage >= totalPages) {
@@ -89,10 +86,7 @@ export default function Logs({ operations }: { operations: OperationResponse[] |
                   <IconDownload className="mr-2 size-4" />
                   Download
                 </Button>
-                <Button size="sm" onClick={handleRefresh}>
-                  <IconRefresh className="mr-2 size-4" />
-                  Refresh
-                </Button>
+
                 <Button
                   variant="outline"
                   size="sm"

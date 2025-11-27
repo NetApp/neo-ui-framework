@@ -1,13 +1,11 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { IconRefresh } from "@tabler/icons-react"
 import { CheckCircle2Icon, AlertCircleIcon } from "lucide-react"
 
 import type { TasksResponse, TaskStatisticsResponse } from "@/services/neo-api"
 
 import { TasksTable } from "@/components/data-tables/tasksT"
-import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
@@ -21,11 +19,9 @@ interface TasksProps {
 export default function Tasks({ tasks, taskStats, onFetchTasks, onDeleteTask }: TasksProps) {
   const [alertMessage, setAlertMessage] = useState<string | null>(null)
   const [alertVariant, setAlertVariant] = useState<"success" | "error">("success")
-  const [refreshing, setRefreshing] = useState(false)
   const [initialLoad, setInitialLoad] = useState(true)
 
   const handleRefresh = async () => {
-    setRefreshing(true)
     try {
       await onFetchTasks()
       if (!initialLoad) {
@@ -36,7 +32,6 @@ export default function Tasks({ tasks, taskStats, onFetchTasks, onDeleteTask }: 
       setAlertVariant("error")
       setAlertMessage(error instanceof Error ? error.message : "Failed to refresh tasks")
     } finally {
-      setRefreshing(false)
       setInitialLoad(false)
     }
   }
@@ -66,11 +61,7 @@ export default function Tasks({ tasks, taskStats, onFetchTasks, onDeleteTask }: 
         <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
           <div className="px-4 lg:px-6">
             <div className="mb-4 flex justify-between items-center">
-              <h1 className="text-2xl font-bold">Tasks</h1>
-              <Button onClick={handleRefresh} disabled={refreshing}>
-                <IconRefresh className={`mr-2 size-4 ${refreshing ? "animate-spin" : ""}`} />
-                Refresh
-              </Button>
+
             </div>
 
             {alertMessage ? (
