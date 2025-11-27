@@ -188,7 +188,7 @@ export default function Users({ users, me, onAddUser, onChangePassword, onRefres
                 description="Manage system users and access controls."
               />
             </div>
-            <div className="mb-4 flex justify-between items-center">
+            <div className="mb-4 flex justify-end items-center">
               <Button onClick={() => setAddDialogOpen(true)}>
                 <IconPlus className="mr-2 size-4" />
                 Add user
