@@ -110,8 +110,8 @@ export class NeoApiService extends BaseApiClient {
     return this.auth.logout(token)
   }
 
-  getHealth(token: string) {
-    return this.dataLoader.load(`health:${token}`, () => this.system.getHealth(token))
+  getHealth(token?: string) {
+    return this.dataLoader.load(`health:${token || "public"}`, () => this.system.getHealth(token))
   }
 
   getLicenseStatus(token?: string) {

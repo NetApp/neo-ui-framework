@@ -8,9 +8,12 @@ import type {
 } from "@/services/models"
 
 export class SystemApiClient extends BaseApiClient {
-  getHealth(token: string) {
+  getHealth(token?: string) {
     appLogger.debug("Fetching health status")
-    return this.requestWithToken<HealthResponse>("/health", token)
+    if (token) {
+      return this.requestWithToken<HealthResponse>("/health", token)
+    }
+    return this.request<HealthResponse>("/health")
   }
 
   getLicenseStatus(token?: string) {

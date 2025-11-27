@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from "react"
+import { useCallback, useRef, useState, useEffect } from "react"
 
 import { toast } from "sonner"
 
@@ -48,23 +48,33 @@ export function useNeoApi() {
       const api = apiRef.current
       try {
         appLogger.debug("Fetching public system data")
-        const [licenseData, versionData, helmData] = await Promise.all([
+        const results = await Promise.allSettled([
+          api.getHealth(),
           api.getLicenseStatus(),
           api.getVersion(),
           api.getLatestHelmVersion()
         ])
 
-        setLicense(licenseData)
-        setVersion(versionData)
-        setHelmChartVersion(helmData)
-        appLogger.info("Public system data fetched successfully")
+        const [healthResult, licenseResult, versionResult, helmResult] = results
+
+        if (healthResult.status === "fulfilled") setHealth(healthResult.value)
+        if (licenseResult.status === "fulfilled") setLicense(licenseResult.value)
+        if (versionResult.status === "fulfilled") setVersion(versionResult.value)
+        if (helmResult.status === "fulfilled") setHelmChartVersion(helmResult.value)
+
+        appLogger.info("Public system data fetched", undefined, {
+          health: healthResult.status,
+          license: licenseResult.status,
+          version: versionResult.status,
+          helm: helmResult.status
+        })
       } catch (error) {
-        appLogger.warn("Failed to fetch public system data", error instanceof Error ? error.message : "Unknown error")
+        appLogger.warn("Unexpected error fetching public system data", error instanceof Error ? error.message : "Unknown error")
       }
     }
 
     fetchPublicData()
-  }, [])  // Add this state
+  }, [])
   const [databaseSize, setDatabaseSize] = useState<DatabaseSizeResponse | null>(null)
   const [users, setUsers] = useState<UserResponse[] | null>(null)
   const [me, setMe] = useState<MeResponse | null>(null)
