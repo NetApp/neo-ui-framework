@@ -62,6 +62,7 @@ function App() {
                     license={state.license}
                     version={state.version}
                     helmChartVersion={state.helmChartVersion}
+                    monitoringOverview={state.monitoring.overview}
                   />
                 }
               />
@@ -86,6 +87,7 @@ function App() {
                     onStartCrawl={handlers.handleStartCrawl}
                     onFetchShareDetails={handlers.handleFetchShareDetails}
                     onRefresh={handlers.handleRefresh}
+                    monitoringOverview={state.monitoring.overview}
                   />
                 }
               />
@@ -100,6 +102,7 @@ function App() {
                     onSearchFiles={handlers.handleSearchFiles}
                     onPageChange={handlers.handleFilesPageChange}
                     onRefresh={handlers.handleRefresh}
+                    monitoringOverview={state.monitoring.overview}
                   />
                 }
               />
@@ -111,10 +114,11 @@ function App() {
                     taskStats={state.monitoring.taskStats}
                     onFetchTasks={handlers.handleFetchTasks}
                     onDeleteTask={handlers.handleDeleteTask}
+                    monitoringOverview={state.monitoring.overview}
                   />
                 }
               />
-              <Route path="/logs" element={<Logs operations={state.operations} />} />
+              <Route path="/logs" element={<Logs operations={state.operations} monitoringOverview={state.monitoring.overview} />} />
               <Route path="/users" element={
                 <Users
                   users={state.users}
@@ -122,6 +126,7 @@ function App() {
                   onAddUser={handlers.handleAddUser}
                   onChangePassword={handlers.handleChangePassword}
                   onRefresh={handlers.handleRefresh}
+                  monitoringOverview={state.monitoring.overview}
                 />
               } />
               <Route path="/help" element={<Help />} />

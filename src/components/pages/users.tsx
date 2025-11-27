@@ -22,9 +22,11 @@ import {
 } from "lucide-react"
 
 import type {
+  UserResponse,
   MeResponse,
-  UserResponse
+  MonitoringOverviewResponse
 } from "@/services/neo-api"
+import { MonitoringOverviewCard } from "@/components/cards/monitoring-overview-card"
 
 import {
   UsersTable
@@ -64,9 +66,10 @@ interface UsersProps {
   }) => Promise<void>
   onChangePassword: (payload: { current_password: string; new_password: string }) => Promise<void>
   onRefresh: () => Promise<void>
+  monitoringOverview: MonitoringOverviewResponse | null
 }
 
-export default function Users({ users, me, onAddUser, onChangePassword, onRefresh }: UsersProps) {
+export default function Users({ users, me, onAddUser, onChangePassword, onRefresh, monitoringOverview }: UsersProps) {
   const [alertMessage, setAlertMessage] = useState<string | null>(null)
   const [alertVariant, setAlertVariant] = useState<"success" | "error">("success")
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false)
@@ -178,7 +181,14 @@ export default function Users({ users, me, onAddUser, onChangePassword, onRefres
       <div className="@container/main flex flex-1 flex-col gap-2">
         <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
           <div className="px-4 lg:px-6">
-            <div className="mb-4 flex justify-end">
+            <div className="mb-4">
+              <MonitoringOverviewCard
+                overview={monitoringOverview}
+                title="Users Overview"
+                description="Manage system users and access controls."
+              />
+            </div>
+            <div className="mb-4 flex justify-between items-center">
               <Button onClick={() => setAddDialogOpen(true)}>
                 <IconPlus className="mr-2 size-4" />
                 Add user

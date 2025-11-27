@@ -19,9 +19,9 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 
-import type { 
-  HealthResponse, 
-  LicenseResponse, 
+import type {
+  HealthResponse,
+  LicenseResponse,
   VersionResponse,
   HelmChartVersionResponse,
   // DatabaseSizeResponse
@@ -35,9 +35,10 @@ interface SectionCardsProps {
   license: LicenseResponse | null
   version: VersionResponse | null
   helmChartVersion: HelmChartVersionResponse | null
+  className?: string
 }
 
-export function SectionCards({ health, license, version, helmChartVersion }: SectionCardsProps) {
+export function SectionCards({ health, license, version, helmChartVersion, className }: SectionCardsProps) {
   const [healthDialogOpen, setHealthDialogOpen] = useState(false)
 
   // Derive card values
@@ -50,16 +51,16 @@ export function SectionCards({ health, license, version, helmChartVersion }: Sec
   const latestChartVersion = helmChartVersion?.chart_version ?? "Checking..."
 
   const healthComponents = [
-    { key: "database", label: "Database"},
-    { key: "filesystem", label: "Filesystem"},
-    { key: "graph_connector", label: "Graph Connector"},
-    { key: "shares", label: "Shares"},
+    { key: "database", label: "Database" },
+    { key: "filesystem", label: "Filesystem" },
+    { key: "graph_connector", label: "Graph Connector" },
+    { key: "shares", label: "Shares" },
   ]
 
   return (
     <>
       {/* Existing top row cards */}
-      <div className="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
+      <div className={`*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs @xl/main:grid-cols-2 @5xl/main:grid-cols-4 ${className}`}>
         <Card className="@container/card">
           <CardHeader>
             <CardDescription>Neo Instance</CardDescription>
@@ -80,8 +81,8 @@ export function SectionCards({ health, license, version, helmChartVersion }: Sec
             {health && (
               <div className="flex items-center gap-1 text-sm text-muted-foreground">
                 <IconCpu className="text-muted-foreground" aria-hidden="true" />
-                <span> {health.metrics.cpu_percent.toFixed(1)}%</span> | 
-                <IconRuler3 className="text-muted-foreground" aria-hidden="true" /> 
+                <span> {health.metrics.cpu_percent.toFixed(1)}%</span> |
+                <IconRuler3 className="text-muted-foreground" aria-hidden="true" />
                 <span>{health.metrics.memory_percent.toFixed(1)}%</span> |
                 <HardDrive className="text-muted-foreground" aria-hidden="true" />
                 <span>{health.metrics.disk_percent.toFixed(1)}%</span>
@@ -155,11 +156,10 @@ export function SectionCards({ health, license, version, helmChartVersion }: Sec
                 </div>
                 <Badge
                   variant={health.status === "healthy" ? "default" : "destructive"}
-                  className={`text-base ${
-                    health.status === "healthy"
+                  className={`text-base ${health.status === "healthy"
                       ? "bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700"
                       : ""
-                  }`}
+                    }`}
                 >
                   {health.status}
                 </Badge>
@@ -172,7 +172,7 @@ export function SectionCards({ health, license, version, helmChartVersion }: Sec
                 <h3 className="text-sm font-semibold">Components</h3>
                 {healthComponents.map(({ key, label }) => {
                   const component = health.components[key as keyof typeof health.components]
-                  
+
                   // Handle shares component differently (has active_count and errors)
                   if (key === "shares" && component && 'active_count' in component) {
                     const isHealthy = component.errors.length === 0
@@ -189,11 +189,10 @@ export function SectionCards({ health, license, version, helmChartVersion }: Sec
                           </div>
                           <Badge
                             variant={isHealthy ? "default" : "destructive"}
-                            className={`gap-1 ${
-                              isHealthy
+                            className={`gap-1 ${isHealthy
                                 ? "bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700"
                                 : ""
-                            }`}
+                              }`}
                           >
                             {isHealthy ? (
                               <CheckIcon className="h-3 w-3" />
@@ -227,11 +226,10 @@ export function SectionCards({ health, license, version, helmChartVersion }: Sec
                           </div>
                           <Badge
                             variant={isHealthy ? "default" : "destructive"}
-                            className={`gap-1 ${
-                              isHealthy
+                            className={`gap-1 ${isHealthy
                                 ? "bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700"
                                 : ""
-                            }`}
+                              }`}
                           >
                             {isHealthy ? (
                               <CheckIcon className="h-3 w-3" />

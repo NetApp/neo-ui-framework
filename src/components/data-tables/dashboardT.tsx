@@ -10,7 +10,6 @@ import {
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
@@ -31,6 +30,7 @@ import { FileTypeChart } from "@/components/charts/filetype"
 import { SharesDistributionChart } from "@/components/charts/sharesdistribution"
 import { DatabaseSizeCard } from "@/components/charts/databasesize"
 import { ContentSavingsChart } from "@/components/charts/contentsavings"
+import { MonitoringOverviewCard } from "@/components/cards/monitoring-overview-card"
 
 interface DashboardChartProps {
   monitoring: {
@@ -75,22 +75,7 @@ export function DashboardChart({ databaseSize, monitoring, onRefreshMonitoring }
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       {/* Refresh Controls */}
-      <Card className="md:col-span-2 lg:col-span-4">
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            Monitoring Overview
-
-          </CardTitle>
-          <CardDescription>
-            Real-time monitoring data for NetApp Neo operations. Auto-refreshes every 60 seconds.
-            {overview?.timestamp && (
-              <span className="block mt-1">
-                Last updated (UTC): {new Date(overview.timestamp).toLocaleString()}
-              </span>
-            )}
-          </CardDescription>
-        </CardHeader>
-      </Card>
+      <MonitoringOverviewCard overview={overview} />
 
       {/* Database Size Card */}
       <DatabaseSizeCard databaseSize={databaseSize} />

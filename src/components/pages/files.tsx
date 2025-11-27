@@ -28,7 +28,9 @@ import type {
   SharesResponse,
   FileSearchParams,
   FileSearchResponse,
+  MonitoringOverviewResponse
 } from "@/services/neo-api"
+import { MonitoringOverviewCard } from "@/components/cards/monitoring-overview-card"
 
 import {
   FilesTable
@@ -75,6 +77,7 @@ interface FilesProps {
   onSearchFiles: (params: FileSearchParams) => Promise<FileSearchResponse>
   onPageChange?: (page: number) => Promise<void> // Add this if missing
   onRefresh: () => Promise<void>
+  monitoringOverview: MonitoringOverviewResponse | null
 }
 
 const NONE_VALUE = "__none__"
@@ -88,6 +91,7 @@ export default function Files({
   onSearchFiles,
   onPageChange, // Add this
   onRefresh,
+  monitoringOverview,
 }: FilesProps) {
   const [open, setOpen] = useState(false)
   const [value, setValue] = useState<string>(NONE_VALUE)
@@ -240,7 +244,14 @@ export default function Files({
       <div className="@container/main flex flex-1 flex-col gap-2">
         <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
           <div className="px-4 lg:px-6">
-            <div className="mb-4 flex flex-col items-stretch gap-2 sm:flex-row sm:justify-end sm:gap-3">
+            <div className="mb-4">
+              <MonitoringOverviewCard
+                overview={monitoringOverview}
+                title="Files Overview"
+                description="Search and explore files across all configured shares."
+              />
+            </div>
+            <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2">
                 <Popover open={open} onOpenChange={setOpen}>
                   <PopoverTrigger asChild>

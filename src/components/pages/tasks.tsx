@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react"
 import { CheckCircle2Icon, AlertCircleIcon } from "lucide-react"
 
-import type { TasksResponse, TaskStatisticsResponse } from "@/services/neo-api"
+import type { TasksResponse, TaskStatisticsResponse, MonitoringOverviewResponse } from "@/services/neo-api"
 
 import { TasksTable } from "@/components/data-tables/tasksT"
+import { MonitoringOverviewCard } from "@/components/cards/monitoring-overview-card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
@@ -14,9 +15,10 @@ interface TasksProps {
   taskStats: TaskStatisticsResponse | null
   onFetchTasks: () => Promise<void>
   onDeleteTask: (taskId: string) => Promise<void>
+  monitoringOverview: MonitoringOverviewResponse | null
 }
 
-export default function Tasks({ tasks, taskStats, onFetchTasks, onDeleteTask }: TasksProps) {
+export default function Tasks({ tasks, taskStats, onFetchTasks, onDeleteTask, monitoringOverview }: TasksProps) {
   const [alertMessage, setAlertMessage] = useState<string | null>(null)
   const [alertVariant, setAlertVariant] = useState<"success" | "error">("success")
   const [initialLoad, setInitialLoad] = useState(true)
@@ -60,6 +62,13 @@ export default function Tasks({ tasks, taskStats, onFetchTasks, onDeleteTask }: 
       <div className="@container/main flex flex-1 flex-col gap-2">
         <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
           <div className="px-4 lg:px-6">
+            <div className="mb-4">
+              <MonitoringOverviewCard
+                overview={monitoringOverview}
+                title="Tasks Overview"
+                description="Monitor background tasks and system operations."
+              />
+            </div>
             <div className="mb-4 flex justify-between items-center">
 
             </div>

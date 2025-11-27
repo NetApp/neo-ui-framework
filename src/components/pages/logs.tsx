@@ -32,11 +32,12 @@ import {
 import type {
   LogLevel
 } from "@/services/app-logger"
-import type { OperationResponse } from "@/services/neo-api"
+import type { OperationResponse, MonitoringOverviewResponse } from "@/services/neo-api"
+import { MonitoringOverviewCard } from "@/components/cards/monitoring-overview-card"
 
 const LEVEL_OPTIONS = ["all", "ERROR", "WARN", "INFO", "DEBUG", "OPERATION"] as const
 
-export default function Logs({ operations }: { operations: OperationResponse[] | null }) {
+export default function Logs({ operations, monitoringOverview }: { operations: OperationResponse[] | null; monitoringOverview: MonitoringOverviewResponse | null }) {
   const [selectedLevel, setSelectedLevel] = useState<(typeof LEVEL_OPTIONS)[number]>("all")
   const { logs, currentPage, totalPages, totalCount, onPageChange, onClearLogs, onDownloadLogs } = useAppLogs(
     selectedLevel === "all" ? undefined : (selectedLevel as LogLevel),
@@ -63,6 +64,13 @@ export default function Logs({ operations }: { operations: OperationResponse[] |
       <div className="@container/main flex flex-1 flex-col gap-2">
         <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
           <div className="px-4 lg:px-6">
+            <div className="mb-4">
+              <MonitoringOverviewCard
+                overview={monitoringOverview}
+                title="System Logs"
+                description="View and filter system logs for troubleshooting and auditing."
+              />
+            </div>
             <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div className="flex flex-wrap items-center gap-3">
                 <Select value={selectedLevel} onValueChange={handleLevelChange}>

@@ -17,8 +17,10 @@ import {
 
 import type {
   ShareDetailsResponse,
-  SharesResponse
+  SharesResponse,
+  MonitoringOverviewResponse
 } from "@/services/neo-api"
+import { MonitoringOverviewCard } from "@/components/cards/monitoring-overview-card"
 
 import {
   SharesTable
@@ -99,6 +101,7 @@ interface SharesProps {
   onStartCrawl: (shareId: string) => Promise<boolean>
   onFetchShareDetails: (shareId: string) => Promise<ShareDetailsResponse>
   onRefresh: () => Promise<void>
+  monitoringOverview: MonitoringOverviewResponse | null
 }
 
 const DEFAULT_RULES_JSON = `{
@@ -110,7 +113,7 @@ const DEFAULT_RULES_JSON = `{
   "enable_copilot_upload": true
 }`
 
-export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShare, onStartCrawl, onFetchShareDetails, onRefresh }: SharesProps) {
+export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShare, onStartCrawl, onFetchShareDetails, onRefresh, monitoringOverview }: SharesProps) {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [sharePath, setSharePath] = useState("")
   const [username, setUsername] = useState("")
@@ -275,6 +278,13 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
       <div className="@container/main flex flex-1 flex-col gap-2">
         <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
           <div className="px-4 lg:px-6">
+            <div className="mb-4">
+              <MonitoringOverviewCard
+                overview={monitoringOverview}
+                title="Shares Overview"
+                description="Manage and monitor network shares configured for scanning."
+              />
+            </div>
             <div className="mb-4 flex justify-end">
               <Button onClick={() => setDialogOpen(true)}>
                 <IconPlus className="mr-2 size-4" />
