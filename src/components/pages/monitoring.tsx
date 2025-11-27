@@ -2,8 +2,9 @@
 
 import { useEffect } from "react"
 import {
-    DashboardChart
-} from "@/components/data-tables/dashboardT"
+    MonitoringChart
+} from "@/components/data-tables/monitoringT"
+import { OverviewCard } from "@/components/cards/overview-card"
 import {
     Alert,
     AlertDescription,
@@ -85,7 +86,14 @@ export default function Monitoring({ databaseSize, monitoring, onFetchMonitoring
                                 <AlertDescription />
                             </Alert>
                         ) : null}
-                        <DashboardChart
+                        <div className="mb-4">
+                            <OverviewCard
+                                overview={monitoring.overview}
+                                title="Monitoring Overview"
+                                description="Real-time monitoring data for NetApp Neo operations. Auto-refreshes every 60 seconds."
+                            />
+                        </div>
+                        <MonitoringChart
                             databaseSize={databaseSize}
                             monitoring={monitoring}
                             onRefreshMonitoring={onFetchMonitoring}

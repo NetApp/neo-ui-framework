@@ -6,7 +6,7 @@ import { CheckCircle2Icon, AlertCircleIcon } from "lucide-react"
 import type { TasksResponse, TaskStatisticsResponse, MonitoringOverviewResponse } from "@/services/neo-api"
 
 import { TasksTable } from "@/components/data-tables/tasksT"
-import { MonitoringOverviewCard } from "@/components/cards/monitoring-overview-card"
+import { OverviewCard } from "@/components/cards/overview-card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
@@ -63,7 +63,7 @@ export default function Tasks({ tasks, taskStats, onFetchTasks, onDeleteTask, mo
         <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
           <div className="px-4 lg:px-6">
             <div className="mb-4">
-              <MonitoringOverviewCard
+              <OverviewCard
                 overview={monitoringOverview}
                 title="Tasks Overview"
                 description="Monitor background tasks and system operations."

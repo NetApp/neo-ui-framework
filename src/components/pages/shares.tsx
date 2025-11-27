@@ -20,7 +20,7 @@ import type {
   SharesResponse,
   MonitoringOverviewResponse
 } from "@/services/neo-api"
-import { MonitoringOverviewCard } from "@/components/cards/monitoring-overview-card"
+import { OverviewCard } from "@/components/cards/overview-card"
 
 import {
   SharesTable
@@ -279,7 +279,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
         <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
           <div className="px-4 lg:px-6">
             <div className="mb-4">
-              <MonitoringOverviewCard
+              <OverviewCard
                 overview={monitoringOverview}
                 title="Shares Overview"
                 description="Manage and monitor network shares configured for scanning."

@@ -6,17 +6,17 @@ import {
 } from "@/components/ui/card"
 import type { MonitoringOverviewResponse } from "@/services/neo-api"
 
-interface MonitoringOverviewCardProps {
+interface OverviewCardProps {
     overview: MonitoringOverviewResponse | null
     title?: string
     description?: string
 }
 
-export function MonitoringOverviewCard({
+export function OverviewCard({
     overview,
     title = "Monitoring Overview",
     description = "Real-time monitoring data for NetApp Neo operations. Auto-refreshes every 60 seconds."
-}: MonitoringOverviewCardProps) {
+}: OverviewCardProps) {
     return (
         <Card className="md:col-span-2 lg:col-span-4">
             <CardHeader>

@@ -33,7 +33,7 @@ import type {
   LogLevel
 } from "@/services/app-logger"
 import type { OperationResponse, MonitoringOverviewResponse } from "@/services/neo-api"
-import { MonitoringOverviewCard } from "@/components/cards/monitoring-overview-card"
+import { OverviewCard } from "@/components/cards/overview-card"
 
 const LEVEL_OPTIONS = ["all", "ERROR", "WARN", "INFO", "DEBUG", "OPERATION"] as const
 
@@ -65,7 +65,7 @@ export default function Logs({ operations, monitoringOverview }: { operations: O
         <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
           <div className="px-4 lg:px-6">
             <div className="mb-4">
-              <MonitoringOverviewCard
+              <OverviewCard
                 overview={monitoringOverview}
                 title="System Logs"
                 description="View and filter system logs for troubleshooting and auditing."

@@ -30,9 +30,8 @@ import { FileTypeChart } from "@/components/charts/filetype"
 import { SharesDistributionChart } from "@/components/charts/sharesdistribution"
 import { DatabaseSizeCard } from "@/components/charts/databasesize"
 import { ContentSavingsChart } from "@/components/charts/contentsavings"
-import { MonitoringOverviewCard } from "@/components/cards/monitoring-overview-card"
 
-interface DashboardChartProps {
+interface MonitoringChartProps {
   monitoring: {
     overview: MonitoringOverviewResponse | null
     workers: MonitoringWorkersResponse | null
@@ -48,7 +47,7 @@ interface DashboardChartProps {
   onRefreshMonitoring: () => Promise<void>
 }
 
-export function DashboardChart({ databaseSize, monitoring, onRefreshMonitoring }: DashboardChartProps) {
+export function MonitoringChart({ databaseSize, monitoring, onRefreshMonitoring }: MonitoringChartProps) {
   const {
     overview,
     workers,
@@ -74,9 +73,6 @@ export function DashboardChart({ databaseSize, monitoring, onRefreshMonitoring }
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-      {/* Refresh Controls */}
-      <MonitoringOverviewCard overview={overview} />
-
       {/* Database Size Card */}
       <DatabaseSizeCard databaseSize={databaseSize} />
 

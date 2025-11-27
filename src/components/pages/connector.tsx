@@ -2,7 +2,7 @@
 
 import {
   SectionCards
-} from "@/components/sections/cards"
+} from "@/components/cards/section-cards"
 import type {
   HealthResponse,
   LicenseResponse,
@@ -10,7 +10,7 @@ import type {
   HelmChartVersionResponse,
   MonitoringOverviewResponse,
 } from "@/services/neo-api"
-import { MonitoringOverviewCard } from "@/components/cards/monitoring-overview-card"
+import { OverviewCard } from "@/components/cards/overview-card"
 
 interface ConnectorProps {
   health: HealthResponse | null
@@ -27,7 +27,7 @@ export default function Connector({ health, license, version, helmChartVersion, 
         <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
           <div className="px-4 lg:px-6">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <MonitoringOverviewCard
+              <OverviewCard
                 overview={monitoringOverview}
                 title="Connector Status"
                 description="Overview of the connector health, license, and version information."
