@@ -1,23 +1,25 @@
 "use client"
 
-import { 
-  useEffect, 
-  useMemo, 
-  useState 
+import {
+  useEffect,
+  useMemo,
+  useState
 } from "react"
 
-import { 
-  Check, 
-  ChevronsUpDown, 
-  Loader2 
+import {
+  Check,
+  ChevronsUpDown,
+  Loader2,
+  CheckCircle2Icon,
+  AlertCircleIcon
 } from "lucide-react"
 
-import { 
-  IconFileSearch 
+import {
+  IconFileSearch
 } from "@tabler/icons-react"
 
-import { 
-  toast 
+import {
+  toast
 } from "sonner"
 
 import type {
@@ -28,20 +30,20 @@ import type {
   FileSearchResponse,
 } from "@/services/neo-api"
 
-import { 
-  FilesTable 
+import {
+  FilesTable
 } from "@/components/data-tables/filesT"
 
-import { 
-  SearchFilesDialog 
+import {
+  SearchFilesDialog
 } from "@/components/dialogs/search-files-dialog"
 
-import { 
-  cn 
+import {
+  cn
 } from "@/lib/utils"
 
-import { 
-  Button 
+import {
+  Button
 } from "@/components/ui/button"
 
 import {
@@ -53,10 +55,16 @@ import {
   CommandList,
 } from "@/components/ui/command"
 
-import { 
-  Popover, 
-  PopoverContent, 
-  PopoverTrigger 
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle
+} from "@/components/ui/alert"
+
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger
 } from "@/components/ui/popover"
 
 interface FilesProps {
@@ -66,6 +74,7 @@ interface FilesProps {
   onFetchFileMetadata: (shareId: string, fileId: string) => Promise<FileMetadataResponse> // Fix parameter order
   onSearchFiles: (params: FileSearchParams) => Promise<FileSearchResponse>
   onPageChange?: (page: number) => Promise<void> // Add this if missing
+  onRefresh: () => Promise<void>
 }
 
 const NONE_VALUE = "__none__"
@@ -78,6 +87,7 @@ export default function Files({
   onFetchFileMetadata,
   onSearchFiles,
   onPageChange, // Add this
+  onRefresh,
 }: FilesProps) {
   const [open, setOpen] = useState(false)
   const [value, setValue] = useState<string>(NONE_VALUE)
@@ -85,6 +95,8 @@ export default function Files({
   const [searchDialogOpen, setSearchDialogOpen] = useState(false)
   const [searchResults, setSearchResults] = useState<FileSearchResponse | null>(null)
   const [isSearchMode, setIsSearchMode] = useState(false)
+  const [alertMessage, setAlertMessage] = useState<string | null>(null)
+  const [alertVariant, setAlertVariant] = useState<"success" | "error">("success")
 
   const options = useMemo(
     () =>
@@ -94,6 +106,25 @@ export default function Files({
       })),
     [shares]
   )
+
+  useEffect(() => {
+    if (files === null) {
+      onRefresh().catch((error) => {
+        setAlertVariant("error")
+        setAlertMessage(error instanceof Error ? error.message : "Failed to refresh files")
+      })
+    }
+  }, [onRefresh, files])
+
+  useEffect(() => {
+    if (!alertMessage) return
+
+    const timer = window.setTimeout(() => {
+      setAlertMessage(null)
+    }, 5_000)
+
+    return () => window.clearTimeout(timer)
+  }, [alertMessage])
 
   useEffect(() => {
     if (!shares?.length) {
@@ -113,16 +144,16 @@ export default function Files({
     value === ALL_VALUE
       ? "All shares"
       : value === NONE_VALUE
-      ? "Select share…"
-      : options.find((option) => option.value === value)?.label ?? "Select share…"
+        ? "Select share…"
+        : options.find((option) => option.value === value)?.label ?? "Select share…"
 
   const emptyMessage = loading
     ? "Loading files…"
     : isSearchMode
-    ? "No files match the current search."
-    : value === NONE_VALUE
-    ? "Select a share to view files."
-    : "No files available."
+      ? "No files match the current search."
+      : value === NONE_VALUE
+        ? "Select a share to view files."
+        : "No files available."
 
   const hasShares = Boolean(options.length)
 
@@ -303,6 +334,16 @@ export default function Files({
               </p>
             ) : null}
 
+            {alertMessage ? (
+              <Alert
+                variant={alertVariant === "success" ? "default" : "destructive"}
+                className="mb-4"
+              >
+                {alertVariant === "success" ? <CheckCircle2Icon /> : <AlertCircleIcon />}
+                <AlertTitle>{alertMessage}</AlertTitle>
+                <AlertDescription />
+              </Alert>
+            ) : null}
             <FilesTable
               files={displayFiles}
               loading={loading}
@@ -320,6 +361,6 @@ export default function Files({
         onOpenChange={setSearchDialogOpen}
         onSearch={handleSearch}
       />
-    </div>
+    </div >
   )
 }

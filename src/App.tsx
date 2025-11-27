@@ -85,6 +85,7 @@ function App() {
                     onUpdateShare={handlers.handleUpdateShare}
                     onStartCrawl={handlers.handleStartCrawl}
                     onFetchShareDetails={handlers.handleFetchShareDetails}
+                    onRefresh={handlers.handleRefresh}
                   />
                 }
               />
@@ -98,6 +99,7 @@ function App() {
                     onFetchFileMetadata={handlers.handleFetchFileMetadata}
                     onSearchFiles={handlers.handleSearchFiles}
                     onPageChange={handlers.handleFilesPageChange}
+                    onRefresh={handlers.handleRefresh}
                   />
                 }
               />
@@ -119,6 +121,7 @@ function App() {
                   me={state.me}
                   onAddUser={handlers.handleAddUser}
                   onChangePassword={handlers.handleChangePassword}
+                  onRefresh={handlers.handleRefresh}
                 />
               } />
               <Route path="/help" element={<Help />} />

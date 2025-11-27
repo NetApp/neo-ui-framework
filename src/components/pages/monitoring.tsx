@@ -4,6 +4,18 @@ import { useEffect } from "react"
 import {
     DashboardChart
 } from "@/components/data-tables/dashboardT"
+import {
+    Alert,
+    AlertDescription,
+    AlertTitle
+} from "@/components/ui/alert"
+import {
+    CheckCircle2Icon,
+    AlertCircleIcon
+} from "lucide-react"
+import {
+    useState
+} from "react"
 import type {
     DatabaseSizeResponse,
     MonitoringOverviewResponse,
@@ -32,11 +44,30 @@ interface MonitoringProps {
 }
 
 export default function Monitoring({ databaseSize, monitoring, onFetchMonitoring }: MonitoringProps) {
+    const [alertMessage, setAlertMessage] = useState<string | null>(null)
+    const [alertVariant, setAlertVariant] = useState<"success" | "error">("success")
+
+    useEffect(() => {
+        if (!alertMessage) return
+
+        const timer = window.setTimeout(() => {
+            setAlertMessage(null)
+        }, 5_000)
+
+        return () => window.clearTimeout(timer)
+    }, [alertMessage])
+
     // Load monitoring data on mount
     useEffect(() => {
-        onFetchMonitoring().catch((error) => {
-            console.error("Failed to load monitoring data:", error)
-        })
+        const fetchData = async () => {
+            try {
+                await onFetchMonitoring()
+            } catch (error) {
+                setAlertVariant("error")
+                setAlertMessage(error instanceof Error ? error.message : "Failed to load monitoring data")
+            }
+        }
+        fetchData()
     }, [onFetchMonitoring])
 
     return (
@@ -44,6 +75,16 @@ export default function Monitoring({ databaseSize, monitoring, onFetchMonitoring
             <div className="@container/main flex flex-1 flex-col gap-2">
                 <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
                     <div className="px-4 lg:px-6">
+                        {alertMessage ? (
+                            <Alert
+                                variant={alertVariant === "success" ? "default" : "destructive"}
+                                className="mb-4"
+                            >
+                                {alertVariant === "success" ? <CheckCircle2Icon /> : <AlertCircleIcon />}
+                                <AlertTitle>{alertMessage}</AlertTitle>
+                                <AlertDescription />
+                            </Alert>
+                        ) : null}
                         <DashboardChart
                             databaseSize={databaseSize}
                             monitoring={monitoring}

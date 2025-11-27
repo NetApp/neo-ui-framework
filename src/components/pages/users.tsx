@@ -1,28 +1,40 @@
 "use client"
 
-import { 
-  useCallback, 
-  useState 
+import {
+  useCallback,
+  useState,
+  useEffect
 } from "react"
 
-import { 
-  IconPlus 
+import {
+  IconPlus
 } from "@tabler/icons-react"
 
-import type { 
-  MeResponse, 
-  UserResponse 
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle
+} from "@/components/ui/alert"
+
+import {
+  CheckCircle2Icon,
+  AlertCircleIcon
+} from "lucide-react"
+
+import type {
+  MeResponse,
+  UserResponse
 } from "@/services/neo-api"
 
-import { 
-  UsersTable 
+import {
+  UsersTable
 } from "@/components/data-tables/usersT"
 
 import {
-   Button 
-  } from "@/components/ui/button"
+  Button
+} from "@/components/ui/button"
 
-  import {
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -31,12 +43,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 
-import { 
-  Input 
+import {
+  Input
 } from "@/components/ui/input"
 
-import { 
-  Label 
+import {
+  Label
 } from "@/components/ui/label"
 
 interface UsersProps {
@@ -51,9 +63,12 @@ interface UsersProps {
     is_admin: boolean
   }) => Promise<void>
   onChangePassword: (payload: { current_password: string; new_password: string }) => Promise<void>
+  onRefresh: () => Promise<void>
 }
 
-export default function Users({ users, me, onAddUser, onChangePassword }: UsersProps) {
+export default function Users({ users, me, onAddUser, onChangePassword, onRefresh }: UsersProps) {
+  const [alertMessage, setAlertMessage] = useState<string | null>(null)
+  const [alertVariant, setAlertVariant] = useState<"success" | "error">("success")
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false)
   const [currentPassword, setCurrentPassword] = useState("")
   const [newPassword, setNewPassword] = useState("")
@@ -139,6 +154,25 @@ export default function Users({ users, me, onAddUser, onChangePassword }: UsersP
     [newEmail, newIsActive, newIsAdmin, newUserPassword, newUsername, onAddUser, resetAddForm]
   )
 
+
+  useEffect(() => {
+    if (users === null) {
+      onRefresh().catch((error) => {
+        setAlertVariant("error")
+        setAlertMessage(error instanceof Error ? error.message : "Failed to refresh users")
+      })
+    }
+  }, [onRefresh, users])
+
+  useEffect(() => {
+    if (!alertMessage) return
+
+    const timer = window.setTimeout(() => {
+      setAlertMessage(null)
+    }, 5_000)
+
+    return () => window.clearTimeout(timer)
+  }, [alertMessage])
   return (
     <div className="flex flex-1 flex-col">
       <div className="@container/main flex flex-1 flex-col gap-2">
@@ -150,6 +184,16 @@ export default function Users({ users, me, onAddUser, onChangePassword }: UsersP
                 Add user
               </Button>
             </div>
+            {alertMessage ? (
+              <Alert
+                variant={alertVariant === "success" ? "default" : "destructive"}
+                className="mb-4"
+              >
+                {alertVariant === "success" ? <CheckCircle2Icon /> : <AlertCircleIcon />}
+                <AlertTitle>{alertMessage}</AlertTitle>
+                <AlertDescription />
+              </Alert>
+            ) : null}
             <UsersTable users={users} me={me} onRequestPasswordChange={openPasswordDialog} />
           </div>
         </div>

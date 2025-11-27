@@ -1,31 +1,31 @@
 "use client"
 
-import { 
-  useCallback, 
-  useEffect, 
-  useState 
+import {
+  useCallback,
+  useEffect,
+  useState
 } from "react"
 
-import { 
-  IconPlus 
+import {
+  IconPlus
 } from "@tabler/icons-react"
 
-import { 
-  CheckCircle2Icon, 
-  AlertCircleIcon 
+import {
+  CheckCircle2Icon,
+  AlertCircleIcon
 } from "lucide-react"
 
-import type { 
-  ShareDetailsResponse, 
-  SharesResponse 
+import type {
+  ShareDetailsResponse,
+  SharesResponse
 } from "@/services/neo-api"
 
-import { 
-  SharesTable 
+import {
+  SharesTable
 } from "@/components/data-tables/sharesT"
 
-import { 
-  Button 
+import {
+  Button
 } from "@/components/ui/button"
 
 import {
@@ -37,26 +37,26 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 
-import { 
-  Input 
+import {
+  Input
 } from "@/components/ui/input"
 
-import { 
-  Label 
+import {
+  Label
 } from "@/components/ui/label"
 
-import { 
-  Textarea 
+import {
+  Textarea
 } from "@/components/ui/textarea"
 
-import { 
-  Alert, 
-  AlertDescription, 
-  AlertTitle 
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle
 } from "@/components/ui/alert"
 
-import { 
-  Switch 
+import {
+  Switch
 } from "@/components/ui/switch"
 
 interface ShareFormValues {
@@ -98,6 +98,7 @@ interface SharesProps {
   ) => Promise<void>
   onStartCrawl: (shareId: string) => Promise<boolean>
   onFetchShareDetails: (shareId: string) => Promise<ShareDetailsResponse>
+  onRefresh: () => Promise<void>
 }
 
 const DEFAULT_RULES_JSON = `{
@@ -109,7 +110,7 @@ const DEFAULT_RULES_JSON = `{
   "enable_copilot_upload": true
 }`
 
-export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShare, onStartCrawl, onFetchShareDetails }: SharesProps) {
+export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShare, onStartCrawl, onFetchShareDetails, onRefresh }: SharesProps) {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [sharePath, setSharePath] = useState("")
   const [username, setUsername] = useState("")
@@ -215,6 +216,15 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
   )
 
   useEffect(() => {
+    if (shares === null) {
+      onRefresh().catch((error) => {
+        setAlertVariant("error")
+        setAlertMessage(error instanceof Error ? error.message : "Failed to refresh shares")
+      })
+    }
+  }, [onRefresh, shares])
+
+  useEffect(() => {
     if (!alertMessage) return
 
     const timer = window.setTimeout(() => {
@@ -229,7 +239,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
     setUsername(details.username ?? "")
     setPassword("")
     setCrawlSchedule(details.crawl_schedule ?? "0 0 * * *")
-    
+
     // Convert rules object to formatted JSON string
     const rules = details.rules ?? {}
     try {
@@ -237,7 +247,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
     } catch (error) {
       setRulesJson(DEFAULT_RULES_JSON)
     }
-    
+
     setRealm(details.realm ?? "")
     setUseKerberos(details.use_kerberos ?? "required")
     setWorkgroup(details.workgroup ?? "")
