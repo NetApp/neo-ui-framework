@@ -114,12 +114,12 @@ export class NeoApiService extends BaseApiClient {
     return this.dataLoader.load(`health:${token}`, () => this.system.getHealth(token))
   }
 
-  getLicenseStatus(token: string) {
-    return this.dataLoader.load(`license:${token}`, () => this.system.getLicenseStatus(token))
+  getLicenseStatus(token?: string) {
+    return this.dataLoader.load(`license:${token || "public"}`, () => this.system.getLicenseStatus(token))
   }
 
-  getVersion(token: string) {
-    return this.dataLoader.load(`version:${token}`, () => this.system.getVersion(token))
+  getVersion(token?: string) {
+    return this.dataLoader.load(`version:${token || "public"}`, () => this.system.getVersion(token))
   }
 
   getDatabaseSize(token: string) {

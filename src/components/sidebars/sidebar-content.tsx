@@ -2,12 +2,13 @@
 
 import {
   IconChartBar,
-  IconDashboard,
+  IconServer,
   IconFileText,
   IconHelp,
   IconListDetails,
   IconUsers,
   IconListCheck,
+  IconActivity,
 } from "@tabler/icons-react"
 
 import {
@@ -22,9 +23,14 @@ import {
 const data = {
   navMain: [
     {
-      name: "Dashboard",
-      url: "#/dashboard",
-      icon: IconDashboard,
+      name: "Connector",
+      url: "#/connector",
+      icon: IconServer,
+    },
+    {
+      name: "Monitoring",
+      url: "#/monitoring",
+      icon: IconActivity,
     },
     {
       name: "Shares",

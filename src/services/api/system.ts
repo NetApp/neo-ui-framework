@@ -13,14 +13,20 @@ export class SystemApiClient extends BaseApiClient {
     return this.requestWithToken<HealthResponse>("/health", token)
   }
 
-  getLicenseStatus(token: string) {
+  getLicenseStatus(token?: string) {
     appLogger.debug("Fetching license status")
-    return this.requestWithToken<LicenseResponse>("/license/status", token)
+    if (token) {
+      return this.requestWithToken<LicenseResponse>("/license/status", token)
+    }
+    return this.request<LicenseResponse>("/license/status")
   }
 
-  getVersion(token: string) {
+  getVersion(token?: string) {
     appLogger.debug("Fetching version information")
-    return this.requestWithToken<VersionResponse>("/version", token)
+    if (token) {
+      return this.requestWithToken<VersionResponse>("/version", token)
+    }
+    return this.request<VersionResponse>("/version")
   }
 
   getDatabaseSize(token: string) {

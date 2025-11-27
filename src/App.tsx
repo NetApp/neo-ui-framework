@@ -5,7 +5,8 @@ import { AppSidebar } from "@/components/sidebars/sidebar"
 import { SiteHeader } from "@/components/sidebars/header"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 
-import Dashboard from "@/components/pages/dashboard"
+import Connector from "@/components/pages/connector"
+import Monitoring from "@/components/pages/monitoring"
 import Shares from "@/components/pages/shares"
 import Files from "@/components/pages/files"
 import Tasks from "@/components/pages/tasks"
@@ -45,25 +46,29 @@ function App() {
               <Route
                 path="/"
                 element={
-                  <Dashboard
+                  <Connector
                     health={state.health}
                     license={state.license}
                     version={state.version}
                     helmChartVersion={state.helmChartVersion}
-                    databaseSize={state.databaseSize}
-                    monitoring={state.monitoring}
-                    onFetchMonitoring={handlers.handleFetchMonitoring}
                   />
                 }
               />
               <Route
-                path="/dashboard"
+                path="/connector"
                 element={
-                  <Dashboard
+                  <Connector
                     health={state.health}
                     license={state.license}
                     version={state.version}
                     helmChartVersion={state.helmChartVersion}
+                  />
+                }
+              />
+              <Route
+                path="/monitoring"
+                element={
+                  <Monitoring
                     databaseSize={state.databaseSize}
                     monitoring={state.monitoring}
                     onFetchMonitoring={handlers.handleFetchMonitoring}

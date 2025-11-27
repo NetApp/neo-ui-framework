@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react"
+import { useState, useCallback, useRef, useEffect } from "react"
 
 import { toast } from "sonner"
 
@@ -40,7 +40,31 @@ export function useNeoApi() {
   const [health, setHealth] = useState<HealthResponse | null>(null)
   const [license, setLicense] = useState<LicenseResponse | null>(null)
   const [version, setVersion] = useState<VersionResponse | null>(null)
-  const [helmChartVersion, setHelmChartVersion] = useState<HelmChartVersionResponse | null>(null)  // Add this state
+  const [helmChartVersion, setHelmChartVersion] = useState<HelmChartVersionResponse | null>(null)
+
+  // Fetch public data on mount
+  useEffect(() => {
+    const fetchPublicData = async () => {
+      const api = apiRef.current
+      try {
+        appLogger.debug("Fetching public system data")
+        const [licenseData, versionData, helmData] = await Promise.all([
+          api.getLicenseStatus(),
+          api.getVersion(),
+          api.getLatestHelmVersion()
+        ])
+
+        setLicense(licenseData)
+        setVersion(versionData)
+        setHelmChartVersion(helmData)
+        appLogger.info("Public system data fetched successfully")
+      } catch (error) {
+        appLogger.warn("Failed to fetch public system data", error instanceof Error ? error.message : "Unknown error")
+      }
+    }
+
+    fetchPublicData()
+  }, [])  // Add this state
   const [databaseSize, setDatabaseSize] = useState<DatabaseSizeResponse | null>(null)
   const [users, setUsers] = useState<UserResponse[] | null>(null)
   const [me, setMe] = useState<MeResponse | null>(null)
@@ -143,7 +167,7 @@ export function useNeoApi() {
 
         applySystemData(data)
         setToken(newToken)
-        toast.success(`Welcome, ${data.me?.username}!`)
+        toast.success(`Welcome, ${data.me?.username} !`)
         appLogger.info("Successfully connected to NetApp Neo", undefined, {
           userId: data.me?.id,
           username: data.me?.username,
@@ -156,7 +180,7 @@ export function useNeoApi() {
         if (error instanceof AuthenticationError) {
           toast.error(error.message)
         } else if (error instanceof Error) {
-          toast.error(`Connection failed: ${error.message}`)
+          toast.error(`Connection failed: ${error.message} `)
         } else {
           toast.error("Connection failed. Please try again.")
         }
@@ -664,9 +688,9 @@ export function useNeoApi() {
         }))
 
         if (response.status === "cancelled") {
-          toast.success(`Task cancelled: ${response.message}`)
+          toast.success(`Task cancelled: ${response.message} `)
         } else {
-          toast.warning(`Task cancellation: ${response.message}`)
+          toast.warning(`Task cancellation: ${response.message} `)
         }
 
         appLogger.info("Task cancellation response received", undefined, {
