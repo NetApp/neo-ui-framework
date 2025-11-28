@@ -1,8 +1,7 @@
 "use client"
 
-import {
-  SectionCards
-} from "@/components/cards/section-cards"
+import { NeoInstanceCard } from "@/components/cards/neo-instance-card"
+import { VersioningCard } from "@/components/cards/versioning-card"
 import type {
   HealthResponse,
   LicenseResponse,
@@ -32,12 +31,15 @@ export default function Connector({ health, license, version, helmChartVersion, 
                 title="Connector Status"
                 description="Overview of the connector health, license, and version information."
               />
-              <SectionCards
+              <NeoInstanceCard
                 health={health}
                 license={license}
+                className="md:col-span-2 lg:col-span-2"
+              />
+              <VersioningCard
                 version={version}
                 helmChartVersion={helmChartVersion}
-                className="md:col-span-2 lg:col-span-4"
+                className="md:col-span-2 lg:col-span-2"
               />
             </div>
           </div>
