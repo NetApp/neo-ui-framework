@@ -94,17 +94,17 @@ export function NeoInstanceCard({ health, license, className }: NeoInstanceCardP
                     <div className="grid grid-cols-3 gap-4">
                         <div className="rounded-lg border p-3 text-center">
                             <IconCpu className="mx-auto mb-1 h-5 w-5 text-muted-foreground" />
-                            <p className="text-xl font-bold">{health?.metrics.cpu_percent.toFixed(1) ?? "0.0"}%</p>
+                            <p className="text-xl font-bold">{health?.metrics?.cpu_percent?.toFixed(1) ?? "0.0"}%</p>
                             <p className="text-xs text-muted-foreground">CPU</p>
                         </div>
                         <div className="rounded-lg border p-3 text-center">
                             <IconRuler3 className="mx-auto mb-1 h-5 w-5 text-muted-foreground" />
-                            <p className="text-xl font-bold">{health?.metrics.memory_percent.toFixed(1) ?? "0.0"}%</p>
+                            <p className="text-xl font-bold">{health?.metrics?.memory_percent?.toFixed(1) ?? "0.0"}%</p>
                             <p className="text-xs text-muted-foreground">Memory</p>
                         </div>
                         <div className="rounded-lg border p-3 text-center">
                             <HardDrive className="mx-auto mb-1 h-5 w-5 text-muted-foreground" />
-                            <p className="text-xl font-bold">{health?.metrics.disk_percent.toFixed(1) ?? "0.0"}%</p>
+                            <p className="text-xl font-bold">{health?.metrics?.disk_percent?.toFixed(1) ?? "0.0"}%</p>
                             <p className="text-xs text-muted-foreground">Disk</p>
                         </div>
                     </div>
@@ -117,7 +117,7 @@ export function NeoInstanceCard({ health, license, className }: NeoInstanceCardP
                     <h4 className="text-sm font-medium mb-3">Component Health</h4>
                     <div className="space-y-2 text-sm">
                         {healthComponents.map(({ key, label }) => {
-                            if (!health) return null
+                            if (!health || !health.components) return null
                             const component = health.components[key as keyof typeof health.components]
                             let isHealthy = false
                             let statusText = "Unknown"
