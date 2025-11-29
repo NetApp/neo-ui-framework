@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { IconInfoCircle, IconTrash, IconMenu2 } from "@tabler/icons-react"
-import { CheckCircle2, XCircle, Clock, Loader2 } from "lucide-react"
+import { CheckCircle2, XCircle, Clock, Loader2, Ban } from "lucide-react"
 
 import type { TasksResponse } from "@/services/neo-api"
 
@@ -50,6 +50,8 @@ function getStatusIcon(status: string) {
       return <Loader2 className="size-4 text-blue-600 animate-spin" />
     case "pending":
       return <Clock className="size-4 text-yellow-600" />
+    case "cancelled":
+      return <Ban className="size-4 text-gray-600" />
     default:
       return null
   }
@@ -63,6 +65,7 @@ function getStatusBadge(status: string) {
     failed: "destructive",
     running: "secondary",
     pending: "outline",
+    cancelled: "secondary",
   }
 
   const colors: Record<string, string> = {
@@ -70,6 +73,7 @@ function getStatusBadge(status: string) {
     failed: "bg-red-500 hover:bg-red-600 text-white",
     running: "bg-blue-500 hover:bg-blue-600 text-white",
     pending: "bg-yellow-500 hover:bg-yellow-600 text-white",
+    cancelled: "bg-gray-500 hover:bg-gray-600 text-white",
   }
 
   return (
@@ -89,6 +93,8 @@ function formatDuration(startedAt: string | null, completedAt: string | null): s
   const start = new Date(startedAt).getTime()
   const end = new Date(completedAt).getTime()
   const durationMs = end - start
+
+  if (isNaN(durationMs) || durationMs < 0) return "N/A"
 
   if (durationMs < 1000) return `${durationMs}ms`
   if (durationMs < 60000) return `${(durationMs / 1000).toFixed(2)}s`

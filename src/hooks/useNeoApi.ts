@@ -177,7 +177,7 @@ export function useNeoApi() {
 
         applySystemData(data)
         setToken(newToken)
-        toast.success(`Welcome, ${data.me?.username} !`)
+        toast.success(`Welcome, ${data.me?.username}`)
         appLogger.info("Successfully connected to NetApp Neo", undefined, {
           userId: data.me?.id,
           username: data.me?.username,
@@ -190,9 +190,9 @@ export function useNeoApi() {
         if (error instanceof AuthenticationError) {
           toast.error(error.message)
         } else if (error instanceof Error) {
-          toast.error(`Connection failed: ${error.message} `)
+          toast.error(`Connection failed: ${error.message}`)
         } else {
-          toast.error("Connection failed. Please try again.")
+          toast.error("Connection failed. Please try again")
         }
 
         appLogger.error(
@@ -248,14 +248,14 @@ export function useNeoApi() {
         api.clearCache()
         const data = await api.fetchSystemData(token)
         applySystemData(data)
-        toast.success("Share deleted!")
+        toast.success("Share deleted")
         appLogger.info("Share deleted successfully", undefined, { shareId })
       } catch (error) {
         if (error instanceof AuthenticationError) {
           clearSystemData()
           setToken(null)
         }
-        toast.error("Share deletion failed!")
+        toast.error("Share deletion failed")
         appLogger.error(
           "Share deletion failed",
           error instanceof Error ? error.message : "Unknown error",
@@ -298,14 +298,14 @@ export function useNeoApi() {
         api.clearCache()
         const data = await api.fetchSystemData(token)
         applySystemData(data)
-        toast.success("Share added!")
+        toast.success("Share added")
         appLogger.info("Share created successfully", undefined, { share_path: share.share_path })
       } catch (error) {
         if (error instanceof AuthenticationError) {
           clearSystemData()
           setToken(null)
         }
-        toast.error("Share creation failed!")
+        toast.error("Share creation failed")
         appLogger.error(
           "Share creation failed",
           error instanceof Error ? error.message : "Unknown error",
@@ -345,7 +345,7 @@ export function useNeoApi() {
         api.clearCache()
         const data = await api.fetchSystemData(token)
         applySystemData(data)
-        toast.success("Share updated!")
+        toast.success("Share updated")
         appLogger.info("Share updated successfully", undefined, {
           shareId,
           share_path: share.share_path,
@@ -355,7 +355,7 @@ export function useNeoApi() {
           clearSystemData()
           setToken(null)
         }
-        toast.error("Share update failed!")
+        toast.error("Share update failed")
         appLogger.error(
           "Share update failed",
           error instanceof Error ? error.message : "Unknown error",
@@ -436,14 +436,14 @@ export function useNeoApi() {
         api.clearCache()
         const data = await api.fetchSystemData(token)
         applySystemData(data)
-        toast.success("User created!")
+        toast.success("User created")
         appLogger.info("User created successfully", undefined, { username: user.username })
       } catch (error) {
         if (error instanceof AuthenticationError) {
           clearSystemData()
           setToken(null)
         }
-        toast.error("User creation failed!")
+        toast.error("User creation failed")
         appLogger.error(
           "User creation failed",
           error instanceof Error ? error.message : "Unknown error",
@@ -467,14 +467,14 @@ export function useNeoApi() {
       try {
         appLogger.info("Changing user password")
         await api.changeMyPassword(token, payload)
-        toast.success("Password updated!")
+        toast.success("Password updated")
         appLogger.info("Password changed successfully")
       } catch (error) {
         if (error instanceof AuthenticationError) {
           clearSystemData()
           setToken(null)
         }
-        toast.error("Password update failed!")
+        toast.error("Password update failed")
         appLogger.error(
           "Password change failed",
           error instanceof Error ? error.message : "Unknown error"
@@ -517,7 +517,7 @@ export function useNeoApi() {
     async (shareKey: string | "all" | null, page?: number) => {
       if (!token) {
         appLogger.warn("Select files share attempted without active token")
-        toast.error("Connect first to load files.")
+        toast.error("Connect first to load files")
         return
       }
 
@@ -584,7 +584,7 @@ export function useNeoApi() {
           error instanceof Error ? error.message : "Unknown error",
           { shareKey, page }
         )
-        toast.error("Failed to load files.")
+        toast.error("Failed to load files")
       }
     },
     [token, clearSystemData]

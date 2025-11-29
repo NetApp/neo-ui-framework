@@ -197,11 +197,11 @@ export default function Files({
       setSearchResults(results)
       setSearchDialogOpen(false)
       if (!results.total_count) {
-        toast.info("No files matched your search.")
+        toast.info("No files matched your search")
       }
     } catch (error) {
       console.error("Search failed", error)
-      toast.error(error instanceof Error ? error.message : "Failed to search files.")
+      toast.error(error instanceof Error ? error.message : "Failed to search files")
     } finally {
       setLoading(false)
     }

@@ -85,7 +85,7 @@ export default function Tasks({ tasks, taskStats, onFetchTasks, onDeleteTask, mo
             ) : null}
 
             {taskStats && (
-              <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+              <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
                 <Card>
                   <CardHeader className="pb-2">
                     <CardDescription>Total Tasks</CardDescription>
@@ -125,6 +125,15 @@ export default function Tasks({ tasks, taskStats, onFetchTasks, onDeleteTask, mo
                     <CardDescription>Failed</CardDescription>
                     <CardTitle className="text-3xl text-red-600">
                       {taskStats.by_status.failed}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent />
+                </Card>
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardDescription>Cancelled</CardDescription>
+                    <CardTitle className="text-3xl text-gray-600">
+                      {taskStats.by_status.cancelled}
                     </CardTitle>
                   </CardHeader>
                   <CardContent />

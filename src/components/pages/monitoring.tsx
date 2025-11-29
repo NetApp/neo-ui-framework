@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState, useCallback } from "react"
 import {
     MonitoringChart
 } from "@/components/data-tables/monitoringT"
@@ -14,9 +14,7 @@ import {
     CheckCircle2Icon,
     AlertCircleIcon
 } from "lucide-react"
-import {
-    useState
-} from "react"
+
 import type {
     DatabaseSizeResponse,
     MonitoringOverviewResponse,
@@ -58,18 +56,19 @@ export default function Monitoring({ databaseSize, monitoring, onFetchMonitoring
         return () => window.clearTimeout(timer)
     }, [alertMessage])
 
+    const handleFetchMonitoring = useCallback(async () => {
+        try {
+            await onFetchMonitoring()
+        } catch (error) {
+            setAlertVariant("error")
+            setAlertMessage(error instanceof Error ? error.message : "Failed to load monitoring data")
+        }
+    }, [onFetchMonitoring])
+
     // Load monitoring data on mount
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                await onFetchMonitoring()
-            } catch (error) {
-                setAlertVariant("error")
-                setAlertMessage(error instanceof Error ? error.message : "Failed to load monitoring data")
-            }
-        }
-        fetchData()
-    }, [onFetchMonitoring])
+        handleFetchMonitoring()
+    }, [handleFetchMonitoring])
 
     return (
         <div className="flex flex-1 flex-col">
