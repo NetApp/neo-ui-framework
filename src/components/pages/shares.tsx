@@ -1,31 +1,33 @@
 "use client"
 
-import { 
-  useCallback, 
-  useEffect, 
-  useState 
+import {
+  useCallback,
+  useEffect,
+  useState
 } from "react"
 
-import { 
-  IconPlus 
+import {
+  IconPlus
 } from "@tabler/icons-react"
 
-import { 
-  CheckCircle2Icon, 
-  AlertCircleIcon 
+import {
+  CheckCircle2Icon,
+  AlertCircleIcon
 } from "lucide-react"
 
-import type { 
-  ShareDetailsResponse, 
-  SharesResponse 
+import type {
+  ShareDetailsResponse,
+  SharesResponse,
+  MonitoringOverviewResponse
 } from "@/services/neo-api"
+import { OverviewCard } from "@/components/cards/overview-card"
 
-import { 
-  SharesTable 
+import {
+  SharesTable
 } from "@/components/data-tables/sharesT"
 
-import { 
-  Button 
+import {
+  Button
 } from "@/components/ui/button"
 
 import {
@@ -37,26 +39,26 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 
-import { 
-  Input 
+import {
+  Input
 } from "@/components/ui/input"
 
-import { 
-  Label 
+import {
+  Label
 } from "@/components/ui/label"
 
-import { 
-  Textarea 
+import {
+  Textarea
 } from "@/components/ui/textarea"
 
-import { 
-  Alert, 
-  AlertDescription, 
-  AlertTitle 
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle
 } from "@/components/ui/alert"
 
-import { 
-  Switch 
+import {
+  Switch
 } from "@/components/ui/switch"
 
 interface ShareFormValues {
@@ -98,6 +100,8 @@ interface SharesProps {
   ) => Promise<void>
   onStartCrawl: (shareId: string) => Promise<boolean>
   onFetchShareDetails: (shareId: string) => Promise<ShareDetailsResponse>
+  onRefresh: () => Promise<void>
+  monitoringOverview: MonitoringOverviewResponse | null
 }
 
 const DEFAULT_RULES_JSON = `{
@@ -109,7 +113,7 @@ const DEFAULT_RULES_JSON = `{
   "enable_copilot_upload": true
 }`
 
-export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShare, onStartCrawl, onFetchShareDetails }: SharesProps) {
+export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShare, onStartCrawl, onFetchShareDetails, onRefresh, monitoringOverview }: SharesProps) {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [sharePath, setSharePath] = useState("")
   const [username, setUsername] = useState("")
@@ -215,6 +219,15 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
   )
 
   useEffect(() => {
+    if (shares === null) {
+      onRefresh().catch((error) => {
+        setAlertVariant("error")
+        setAlertMessage(error instanceof Error ? error.message : "Failed to refresh shares")
+      })
+    }
+  }, [onRefresh, shares])
+
+  useEffect(() => {
     if (!alertMessage) return
 
     const timer = window.setTimeout(() => {
@@ -229,7 +242,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
     setUsername(details.username ?? "")
     setPassword("")
     setCrawlSchedule(details.crawl_schedule ?? "0 0 * * *")
-    
+
     // Convert rules object to formatted JSON string
     const rules = details.rules ?? {}
     try {
@@ -237,7 +250,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
     } catch (error) {
       setRulesJson(DEFAULT_RULES_JSON)
     }
-    
+
     setRealm(details.realm ?? "")
     setUseKerberos(details.use_kerberos ?? "required")
     setWorkgroup(details.workgroup ?? "")
@@ -265,6 +278,14 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
       <div className="@container/main flex flex-1 flex-col gap-2">
         <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
           <div className="px-4 lg:px-6">
+            <div className="mb-4">
+              <OverviewCard
+                overview={monitoringOverview}
+                title="Shares Overview"
+                description="Overview of configured shares and their status."
+                showCacheStats={false}
+              />
+            </div>
             <div className="mb-4 flex justify-end">
               <Button onClick={() => setDialogOpen(true)}>
                 <IconPlus className="mr-2 size-4" />

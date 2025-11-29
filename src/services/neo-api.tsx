@@ -3,7 +3,7 @@ import type {
   HealthResponse,
   LicenseResponse,
   VersionResponse,
-  DatabaseSizeResponse,  // Add this import
+  DatabaseSizeResponse,
   UserResponse,
   MeResponse,
   OperationResponse,
@@ -14,7 +14,6 @@ import type {
   FileEntry,
   FileSearchParams,
   FileSearchResponse,
-  TokenResponse,
   MonitoringOverviewResponse,
   MonitoringWorkerResponse,
   MonitoringEnumerationResponse,
@@ -22,17 +21,32 @@ import type {
   MonitoringGraphRateLimitResponse,
   MonitoringFailedItemsResponse,
   TasksResponse,
+  TasksListResponse,
   TaskStatisticsResponse,
-  TaskResponse,
   HelmChartVersionResponse,
+  TokenResponse,
+  // TaskCancelResponse,
 } from "./models"
+import { BaseApiClient, AuthenticationError } from "./api/base"
+import { AuthApiClient } from "./api/auth"
+import { SystemApiClient } from "./api/system"
+import { UsersApiClient } from "./api/users"
+import { SharesApiClient } from "./api/shares"
+import { FilesApiClient } from "./api/files"
+import { OperationsApiClient } from "./api/operations"
+import { MonitoringApiClient } from "./api/monitoring"
+import { TasksApiClient, type TaskCancelResponse } from "./api/tasks"
+import { AnalyticsApiClient } from "./api/analytics"
+import { HelmApiClient } from "./api/helm"
+import { DataLoader } from "./data-loader"
 
-// Also add to exports
+
+
 export type {
   HealthResponse,
   LicenseResponse,
   VersionResponse,
-  DatabaseSizeResponse,  // Add this export
+  DatabaseSizeResponse,
   UserResponse,
   MeResponse,
   OperationResponse,
@@ -50,385 +64,91 @@ export type {
   MonitoringGraphRateLimitResponse,
   MonitoringFailedItemsResponse,
   TasksResponse,
+  TasksListResponse,
   TaskStatisticsResponse,
-  TaskResponse,
   HelmChartVersionResponse,
+  TokenResponse,
+  TaskCancelResponse,
 }
+export { AuthenticationError }
 
-import * as yaml from "js-yaml"
+export class NeoApiService extends BaseApiClient {
+  private auth: AuthApiClient
+  private system: SystemApiClient
+  private users: UsersApiClient
+  private shares: SharesApiClient
+  private files: FilesApiClient
+  private operations: OperationsApiClient
+  private monitoring: MonitoringApiClient
+  private tasks: TasksApiClient
+  private analytics: AnalyticsApiClient
+  private helm: HelmApiClient
+  private dataLoader: DataLoader
+  private monitoringTtl: number = 10 * 60 * 1000
+  private filesTtl: number = 10 * 60 * 1000
 
-export class AuthenticationError extends Error {
-  constructor(message = "Authentication failed. Please log in again.") {
-    super(message)
-    this.name = "AuthenticationError"
-  }
-}
-
-export class NeoApiService {
-  private baseUrl: string
-
-  constructor() {
-    this.baseUrl = "/api"
-  }
-
-  async authenticate(username: string, password: string): Promise<string> {
-    appLogger.debug("Attempting authentication", undefined, { username })
-
-    try {
-      const response = await fetch(`${this.baseUrl}/token`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-          Accept: "application/json",
-        },
-        body: new URLSearchParams({
-          grant_type: "password",
-          username,
-          password,
-          scope: "",
-          client_id: "",
-          client_secret: "",
-        }),
-      })
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        appLogger.error(
-          "Authentication failed",
-          `Status: ${response.status}, Response: ${errorText}`,
-          { username, status: response.status }
-        )
-
-        if (response.status === 401 || response.status === 403) {
-          throw new AuthenticationError("Authentication failed. Please check your credentials.")
-        }
-        throw new Error(
-          `Authentication failed (${response.status} ${response.statusText})`
-        )
-      }
-
-      const data = (await response.json()) as TokenResponse
-
-      if (!data.access_token) {
-        appLogger.error("Authentication response missing access token", "Token response incomplete")
-        throw new Error("Token response missing access_token")
-      }
-
-      appLogger.info("User authenticated successfully", undefined, { username })
-      return data.access_token
-    } catch (error) {
-      if (error instanceof TypeError && error.message === "Failed to fetch") {
-        appLogger.error(
-          "Cannot connect to authentication server",
-          "Network connection failed",
-          { username }
-        )
-        throw new Error(
-          "Cannot connect to server. Check if the API is running and CORS is enabled."
-        )
-      }
-      throw error
-    }
+  constructor(baseUrl = "/api") {
+    super(baseUrl)
+    this.auth = new AuthApiClient(baseUrl)
+    this.system = new SystemApiClient(baseUrl)
+    this.users = new UsersApiClient(baseUrl)
+    this.shares = new SharesApiClient(baseUrl)
+    this.files = new FilesApiClient(baseUrl)
+    this.operations = new OperationsApiClient(baseUrl)
+    this.monitoring = new MonitoringApiClient(baseUrl)
+    this.tasks = new TasksApiClient(baseUrl)
+    this.analytics = new AnalyticsApiClient(baseUrl)
+    this.helm = new HelmApiClient()
+    this.dataLoader = new DataLoader(30000) // 30 seconds default TTL
   }
 
-  private async fetchWithToken<T>(endpoint: string, token: string): Promise<T> {
-    appLogger.debug(`Fetching from endpoint: ${endpoint}`)
-
-    try {
-      const response = await fetch(`${this.baseUrl}${endpoint}`, {
-        headers: {
-          Accept: "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      })
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        appLogger.error(
-          `API endpoint failed: ${endpoint}`,
-          `Status: ${response.status}, Response: ${errorText}`,
-          { endpoint, status: response.status }
-        )
-
-        if (response.status === 401 || response.status === 403) {
-          // Generic message for both authentication and authorization failures
-          throw new AuthenticationError()
-        }
-        
-        throw new Error(
-          `${endpoint} failed (${response.status} ${response.statusText})`
-        )
-      }
-
-      appLogger.debug(`Successfully fetched from endpoint: ${endpoint}`)
-      return response.json() as Promise<T>
-    } catch (error) {
-      if (error instanceof TypeError && error.message === "Failed to fetch") {
-        appLogger.error(
-          `Cannot connect to endpoint: ${endpoint}`,
-          "Network connection failed",
-          { endpoint }
-        )
-        throw new Error(
-          `Cannot connect to ${endpoint}. Check if the API is running and CORS is enabled.`
-        )
-      }
-      throw error
-    }
+  updateConfig(config: { monitoringTtl?: number; filesTtl?: number; cacheMaxSize?: number }) {
+    if (config.monitoringTtl) this.monitoringTtl = config.monitoringTtl * 60 * 1000
+    if (config.filesTtl) this.filesTtl = config.filesTtl * 60 * 1000
+    if (config.cacheMaxSize) this.dataLoader.setMaxSize(config.cacheMaxSize * 1024 * 1024)
   }
 
-  async getHealth(token: string): Promise<HealthResponse> {
-    appLogger.debug("Fetching health status")
-    return this.fetchWithToken<HealthResponse>("/health", token)
+  clearCache() {
+    this.dataLoader.clear()
   }
 
-  async getLicenseStatus(token: string): Promise<LicenseResponse> {
-    appLogger.debug("Fetching license status")
-    return this.fetchWithToken<LicenseResponse>("/license/status", token)
+  getCacheStats() {
+    return this.dataLoader.getStats()
   }
 
-  async getVersion(token: string): Promise<VersionResponse> {
-    appLogger.debug("Fetching version information")
-    return this.fetchWithToken<VersionResponse>("/version", token)
+  authenticate(username: string, password: string) {
+    return this.auth.authenticate(username, password)
   }
 
-  async getUsers(token: string): Promise<UserResponse[]> {
-    appLogger.debug("Fetching users list")
-    return this.fetchWithToken<UserResponse[]>("/users/", token)
+  logout(token: string) {
+    return this.auth.logout(token)
   }
 
-  async getMeUsers(token: string): Promise<MeResponse> {
-    appLogger.debug("Fetching current user information")
-    return this.fetchWithToken<MeResponse>("/users/me", token)
+  getHealth(token?: string) {
+    return this.dataLoader.load(`health:${token || "public"}`, () => this.system.getHealth(token))
   }
 
-  async getOperations(token: string): Promise<OperationResponse[]> {
-    appLogger.debug("Fetching operations list")
-    return this.fetchWithToken<OperationResponse[]>("/operations/", token)
+  getLicenseStatus(token?: string) {
+    return this.dataLoader.load(`license:${token || "public"}`, () => this.system.getLicenseStatus(token))
   }
 
-  async getShares(token: string): Promise<SharesResponse[]> {
-    appLogger.debug("Fetching shares list")
-    return this.fetchWithToken<SharesResponse[]>("/shares", token)
+  getVersion(token?: string) {
+    return this.dataLoader.load(`version:${token || "public"}`, () => this.system.getVersion(token))
   }
 
-  async deleteShare(token: string, shareId: string): Promise<void> {
-    appLogger.debug("Sending DELETE request to share", undefined, { shareId })
-
-    const response = await fetch(`${this.baseUrl}/shares/${shareId}`, {
-      method: "DELETE",
-      headers: {
-        Accept: "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-    })
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      appLogger.error(
-        `DELETE /shares/${shareId} failed`,
-        `Status: ${response.status}, Response: ${errorText}`,
-        { shareId, status: response.status }
-      )
-
-      if (response.status === 401 || response.status === 403) {
-        throw new AuthenticationError()
-      }
-      throw new Error(
-        `Share deletion failed (${response.status} ${response.statusText})`
-      )
-    }
-
-    appLogger.debug("Share deletion request successful", undefined, { shareId })
+  getDatabaseSize(token: string) {
+    return this.dataLoader.load(`databaseSize:${token}`, () => this.system.getDatabaseSize(token))
   }
 
-  async createShare(
-    token: string,
-    payload: {
-      share_path: string
-      username: string
-      password: string
-      crawl_schedule: string
-      rules: {
-        exclude_patterns: string[]
-        include_patterns: string[]
-        max_file_size: number
-        min_file_size: number
-        persist_file_content: boolean
-      }
-      realm: string
-      use_kerberos: string
-      workgroup: string
-      resolve_order: string
-    }
-  ): Promise<void> {
-    appLogger.debug("Sending POST request to create share", undefined, {
-      share_path: payload.share_path,
-    })
-
-    const response = await fetch(`${this.baseUrl}/shares`, {
-      method: "POST",
-      headers: {
-        Accept: "application/json",
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    })
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      appLogger.error(
-        "POST /shares failed",
-        `Status: ${response.status}, Response: ${errorText}`,
-        { share_path: payload.share_path, status: response.status }
-      )
-
-      if (response.status === 401 || response.status === 403) {
-        throw new AuthenticationError()
-      }
-      throw new Error(
-        `Share creation failed (${response.status} ${response.statusText})`
-      )
-    }
-
-    appLogger.debug("Share creation request successful", undefined, {
-      share_path: payload.share_path,
-    })
+  getUsers(token: string) {
+    return this.dataLoader.load(`users:${token}`, () => this.users.getUsers(token))
   }
 
-  async updateShare(
-    token: string,
-    shareId: string,
-    payload: {
-      share_path: string
-      username: string
-      password: string
-      crawl_schedule: string
-      rules: Record<string, unknown>
-      realm: string
-      use_kerberos: string
-      workgroup: string
-      resolve_order: string
-    }
-  ): Promise<void> {
-    appLogger.debug("Sending PATCH request to update share", undefined, {
-      shareId,
-      share_path: payload.share_path,
-    })
-
-    const response = await fetch(`${this.baseUrl}/shares/${shareId}`, {
-      method: "PATCH",
-      headers: {
-        Accept: "application/json",
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    })
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      appLogger.error(
-        `PATCH /shares/${shareId} failed`,
-        `Status: ${response.status}, Response: ${errorText}`,
-        { shareId, status: response.status }
-      )
-
-      if (response.status === 401 || response.status === 403) {
-        throw new AuthenticationError()
-      }
-      throw new Error(
-        `Share update failed (${response.status} ${response.statusText})`
-      )
-    }
-
-    appLogger.debug("Share update request successful", undefined, { shareId })
+  getMeUsers(token: string) {
+    return this.dataLoader.load(`me:${token}`, () => this.users.getMeUsers(token))
   }
 
-  async startShareCrawl(token: string, shareId: string): Promise<void> {
-    appLogger.debug("Sending POST request to start share crawl", undefined, { shareId })
-
-    const response = await fetch(`${this.baseUrl}/shares/${shareId}/crawl`, {
-      method: "POST",
-      headers: {
-        Accept: "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-    })
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      appLogger.error(
-        `POST /shares/${shareId}/crawl failed`,
-        `Status: ${response.status}, Response: ${errorText}`,
-        { shareId, status: response.status }
-      )
-
-      if (response.status === 401 || response.status === 403) {
-        throw new AuthenticationError()
-      }
-      throw new Error(
-        `Share crawl failed (${response.status} ${response.statusText})`
-      )
-    }
-
-    appLogger.debug("Share crawl request successful", undefined, { shareId })
-  }
-
-  async getShareDetails(token: string, shareId: string): Promise<ShareDetailsResponse> {
-    appLogger.debug("Fetching share details", undefined, { shareId })
-    return this.fetchWithToken<ShareDetailsResponse>(`/shares/${shareId}`, token)
-  }
-
-  async getFiles(token: string, shareId: string, page?: number, pageSize?: number): Promise<FilesResponse> {
-    const params = new URLSearchParams()
-    if (page !== undefined) params.append('page', page.toString())
-    if (pageSize !== undefined) params.append('page_size', pageSize.toString())
-    
-    const query = params.toString()
-    const endpoint = `/shares/${shareId}/files${query ? `?${query}` : ""}`
-    
-    appLogger.debug("Fetching files for share", undefined, { shareId, page, pageSize })
-    return this.fetchWithToken<FilesResponse>(endpoint, token)
-  }
-
-  async getFileMetadata(
-    token: string,
-    shareId: string,
-    fileId: string
-  ): Promise<FileMetadataResponse> {
-    appLogger.debug("Fetching file metadata", undefined, { shareId, fileId })
-    return this.fetchWithToken<FileMetadataResponse>(
-      `/shares/${shareId}/files/metadata?file_id=${encodeURIComponent(fileId)}`,
-      token
-    )
-  }
-
-  async searchFiles(token: string, params: FileSearchParams): Promise<FileSearchResponse> {
-    appLogger.debug("Searching files", undefined, {
-      query: params.query,
-      share_id: params.share_id,
-    })
-
-    const searchParams = new URLSearchParams()
-
-    Object.entries(params).forEach(([key, value]) => {
-      if (value === undefined || value === null || value === "") {
-        return
-      }
-      if (typeof value === "number") {
-        searchParams.append(key, value.toString())
-        return
-      }
-      searchParams.append(key, value)
-    })
-
-    const query = searchParams.toString()
-    return this.fetchWithToken<FileSearchResponse>(`/files${query ? `?${query}` : ""}`, token)
-  }
-
-  async createUser(
+  createUser(
     token: string,
     payload: {
       id: number
@@ -438,154 +158,115 @@ export class NeoApiService {
       is_active: boolean
       is_admin: boolean
     }
-  ): Promise<void> {
-    appLogger.debug("Sending POST request to create user", undefined, {
-      username: payload.username,
-    })
-
-    const response = await fetch(`${this.baseUrl}/users/`, {
-      method: "POST",
-      headers: {
-        Accept: "application/json",
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    })
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      appLogger.error(
-        "POST /users/ failed",
-        `Status: ${response.status}, Response: ${errorText}`,
-        { username: payload.username, status: response.status }
-      )
-
-      if (response.status === 401 || response.status === 403) {
-        throw new AuthenticationError()
-      }
-      throw new Error(`User creation failed (${response.status} ${response.statusText})`)
-    }
-
-    appLogger.debug("User creation request successful", undefined, {
-      username: payload.username,
-    })
+  ) {
+    return this.users.createUser(token, payload)
   }
 
-  async getLatestHelmVersion(): Promise<HelmChartVersionResponse> {
-    appLogger.debug("Fetching latest Helm chart version from index.yaml")
-    
-    try {
-      // Create an AbortController with a 5-second timeout
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 5000)
-      
-      const response = await fetch(
-        "https://netapp.github.io/Innovation-Labs/index.yaml",
-        {
-          headers: {
-            Accept: "application/x-yaml, text/yaml, */*",
-          },
-          signal: controller.signal,
-        }
-      )
-      
-      // Clear timeout if fetch succeeds
-      clearTimeout(timeoutId)
+  changeMyPassword(token: string, payload: { current_password: string; new_password: string }) {
+    return this.users.changeMyPassword(token, payload)
+  }
 
-      if (!response.ok) {
-        appLogger.warn("Failed to fetch Helm index.yaml", `Status: ${response.status}`)
-        return { 
-          chart_name: "netapp-connector",
-          app_version: "Unknown", 
-          chart_version: "Unknown" 
-        }
-      }
+  getShares(token: string) {
+    return this.dataLoader.load(`shares:${token}`, () => this.shares.getShares(token))
+  }
 
-      const yamlText = await response.text()
-      
-      // Parse YAML using js-yaml library
-      const indexData = yaml.load(yamlText) as {
-        apiVersion: string
-        entries: {
-          [chartName: string]: Array<{
-            apiVersion: string
-            appVersion: string
-            version: string
-            name: string
-            [key: string]: unknown
-          }>
-        }
-      }
+  getShareDetails(token: string, shareId: string) {
+    return this.dataLoader.load(`shareDetails:${token}:${shareId}`, () => this.shares.getShareDetails(token, shareId))
+  }
 
-      // Check if netapp-connector exists in entries
-      const netappConnectorEntries = indexData.entries?.['netapp-connector']
-      
-      if (!netappConnectorEntries || netappConnectorEntries.length === 0) {
-        appLogger.warn("No netapp-connector entries found in index.yaml")
-        return { 
-          chart_name: "netapp-connector",
-          app_version: "Unknown", 
-          chart_version: "Unknown" 
-        }
-      }
+  createShare(token: string, payload: Parameters<SharesApiClient["createShare"]>[1]) {
+    return this.shares.createShare(token, payload)
+  }
 
-      // Get the first entry (most recent version)
-      const latestEntry = netappConnectorEntries[0]
-      
-      const appVersion = latestEntry.appVersion || "Unknown"
-      const chartVersion = latestEntry.version || "Unknown"
+  updateShare(token: string, shareId: string, payload: Parameters<SharesApiClient["updateShare"]>[2]) {
+    return this.shares.updateShare(token, shareId, payload)
+  }
 
-      if (appVersion !== "Unknown" && chartVersion !== "Unknown") {
-        appLogger.info("Latest Helm versions fetched successfully", undefined, { 
-          appVersion, 
-          chartVersion,
-          source: "index.yaml",
-          chart_name: latestEntry.name
-        })
-        return { 
-          chart_name: latestEntry.name || "netapp-connector",
-          app_version: appVersion, 
-          chart_version: chartVersion 
-        }
-      }
+  deleteShare(token: string, shareId: string) {
+    return this.shares.deleteShare(token, shareId)
+  }
 
-      appLogger.warn("Could not extract versions from netapp-connector entry", undefined, {
-        entry: latestEntry
-      })
-      return { 
-        chart_name: "netapp-connector",
-        app_version: appVersion, 
-        chart_version: chartVersion 
-      }
-    } catch (error) {
-      // Handle timeout specifically
-      if (error instanceof Error && error.name === 'AbortError') {
-        appLogger.warn("Helm version fetch timed out after 5 seconds")
-        return { 
-          chart_name: "netapp-connector",
-          app_version: "Unknown", 
-          chart_version: "Unknown" 
-        }
-      }
-      
-      appLogger.error(
-        "Failed to fetch or parse latest Helm version",
-        error instanceof Error ? error.message : "Unknown error"
-      )
-      return { 
-        chart_name: "netapp-connector",
-        app_version: "Unknown", 
-        chart_version: "Unknown" 
-      }
-    }
+  startShareCrawl(token: string, shareId: string) {
+    return this.shares.startShareCrawl(token, shareId)
+  }
+
+  getFiles(token: string, shareId: string, page?: number, pageSize?: number) {
+    const key = `files:${token}:${shareId}:${page}:${pageSize}`
+    return this.dataLoader.load(key, () => this.files.getFiles(token, shareId, page, pageSize), this.filesTtl)
+  }
+
+  getFileMetadata(token: string, shareId: string, fileId: string) {
+    return this.dataLoader.load(`fileMetadata:${token}:${shareId}:${fileId}`, () => this.files.getFileMetadata(token, shareId, fileId), this.filesTtl)
+  }
+
+  searchFiles(token: string, params: FileSearchParams) {
+    const key = `searchFiles:${token}:${JSON.stringify(params)}`
+    return this.dataLoader.load(key, () => this.files.searchFiles(token, params), this.filesTtl)
+  }
+
+  getOperations(token: string) {
+    return this.dataLoader.load(`operations:${token}`, () => this.operations.getOperations(token))
+  }
+
+  getMonitoringOverview(token: string) {
+    return this.dataLoader.load(`monitoringOverview:${token}`, () => this.monitoring.getMonitoringOverview(token), this.monitoringTtl)
+  }
+
+  getMonitoringWorkers(token: string) {
+    return this.dataLoader.load(`monitoringWorkers:${token}`, () => this.monitoring.getMonitoringWorkers(token), this.monitoringTtl)
+  }
+
+  getMonitoringEnumeration(token: string) {
+    return this.dataLoader.load(`monitoringEnumeration:${token}`, () => this.monitoring.getMonitoringEnumeration(token), this.monitoringTtl)
+  }
+
+  getMonitoringGraphRateLimit(token: string) {
+    return this.dataLoader.load(`monitoringGraphRateLimit:${token}`, () => this.monitoring.getMonitoringGraphRateLimit(token), this.monitoringTtl)
+  }
+
+  getMonitoringFailedItems(token: string) {
+    return this.dataLoader.load(`monitoringFailedItems:${token}`, () => this.monitoring.getMonitoringFailedItems(token), this.monitoringTtl)
+  }
+
+  getTasks(token: string) {
+    return this.dataLoader.load(`tasks:${token}`, () => this.tasks.getTasks(token), this.monitoringTtl)
+  }
+
+  getTaskStatistics(token: string) {
+    return this.dataLoader.load(`taskStatistics:${token}`, () => this.tasks.getTaskStatistics(token), this.monitoringTtl)
+  }
+
+  deleteTask(token: string, taskId: string) {
+    return this.tasks.deleteTask(token, taskId)
+  }
+
+  getFileAnalytics(token: string) {
+    return this.dataLoader.load(`fileAnalytics:${token}`, () => this.analytics.getFileAnalytics(token), this.monitoringTtl)
+  }
+
+  getSharesAnalytics(token: string) {
+    return this.dataLoader.load(`sharesAnalytics:${token}`, () => this.analytics.getSharesAnalytics(token), this.monitoringTtl)
+  }
+
+  getLatestHelmVersion() {
+    return this.dataLoader.load(`latestHelmVersion`, () => this.helm.getLatestHelmVersion())
   }
 
   async fetchSystemData(token: string) {
     appLogger.info("Fetching system data")
 
     try {
-      const [health, license, version, users, me, operations, shares, databaseSize, helmChartVersion] = await Promise.all([
+      const [
+        health,
+        license,
+        version,
+        users,
+        me,
+        operations,
+        shares,
+        databaseSize,
+        helmChartVersion,
+      ] = await Promise.all([
         this.getHealth(token),
         this.getLicenseStatus(token),
         this.getVersion(token),
@@ -607,7 +288,18 @@ export class NeoApiService {
         latest_chart_version: helmChartVersion.chart_version,
       })
 
-      return { health, license, version, users, me, operations, shares, files: null, databaseSize, helmChartVersion }
+      return {
+        health,
+        license,
+        version,
+        users,
+        me,
+        operations,
+        shares,
+        files: null as FilesResponse | null,
+        databaseSize,
+        helmChartVersion,
+      }
     } catch (error) {
       appLogger.error(
         "Failed to fetch system data",
@@ -617,237 +309,21 @@ export class NeoApiService {
     }
   }
 
-  async changeMyPassword(
-    token: string,
-    payload: { current_password: string; new_password: string }
-  ): Promise<void> {
-    appLogger.debug("Sending PATCH request to change password")
-
-    const response = await fetch(`${this.baseUrl}/users/me/password`, {
-      method: "PATCH",
-      headers: {
-        Accept: "application/json",
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    })
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      appLogger.error(
-        "PATCH /users/me/password failed",
-        `Status: ${response.status}, Response: ${errorText}`,
-        { status: response.status }
-      )
-
-      if (response.status === 401 || response.status === 403) {
-        throw new AuthenticationError()
-      }
-      throw new Error(
-        `Password change failed (${response.status} ${response.statusText})`
-      )
-    }
-
-    appLogger.info("Password changed successfully")
-  }
-
-  // Monitoring API methods
-  async getMonitoringOverview(token: string): Promise<MonitoringOverviewResponse> {
-    appLogger.debug("Fetching monitoring overview")
-    return this.fetchWithToken<MonitoringOverviewResponse>("/monitoring/overview", token)
-  }
-
-  async getMonitoringWorkers(token: string): Promise<MonitoringWorkersResponse> {
-    appLogger.debug("Fetching monitoring workers")
-    return this.fetchWithToken<MonitoringWorkersResponse>("/monitoring/workers", token)
-  }
-
-  async getMonitoringEnumeration(token: string): Promise<MonitoringEnumerationResponse> {
-    appLogger.debug("Fetching monitoring enumeration")
-    return this.fetchWithToken<MonitoringEnumerationResponse>("/monitoring/enumeration", token)
-  }
-
-  async getMonitoringGraphRateLimit(token: string): Promise<MonitoringGraphRateLimitResponse> {
-    appLogger.debug("Fetching monitoring graph rate limit")
-    return this.fetchWithToken<MonitoringGraphRateLimitResponse>("/monitoring/graph-rate-limit", token)
-  }
-
-  async getMonitoringFailedItems(token: string): Promise<MonitoringFailedItemsResponse> {
-    appLogger.debug("Fetching monitoring failed items")
-    return this.fetchWithToken<MonitoringFailedItemsResponse>("/monitoring/failed-items", token)
-  }
-
-  async getTasks(token: string): Promise<TasksResponse[]> {
-    appLogger.debug("Fetching tasks")
-    return this.fetchWithToken<TasksResponse[]>("/tasks", token)
-  }
-
-  async getTaskStatistics(token: string): Promise<TaskStatisticsResponse> {
-    appLogger.debug("Fetching task statistics")
-    return this.fetchWithToken<TaskStatisticsResponse>("/tasks/statistics/summary", token)
-  }
-
-  async getFileAnalytics(token: string): Promise<{ file_type: string; count: number; total_size: number }[]> {
-    appLogger.debug("Fetching file analytics data")
-    
-    try {
-      // Get all files across all shares by fetching all pages
-      const allFiles: FileEntry[] = []
-      let page = 1
-      let hasNextPage = true
-      
-      while (hasNextPage) {
-        appLogger.debug(`Fetching files page ${page}`)
-        const response = await this.fetchWithToken<FileSearchResponse>(`/files?page=${page}&page_size=100`, token)
-        
-        allFiles.push(...response.files)
-        
-        // Check if there are more pages
-        hasNextPage = response.has_next
-        page += 1
-        
-        appLogger.debug(`Fetched page ${page - 1}: ${response.files.length} files, has_next: ${response.has_next}`)
-      }
-      
-      appLogger.info(`Fetched all files: ${allFiles.length} total files across ${page - 1} pages`)
-      
-      // Define specific file types we want to track
-      const targetTypes = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'txt']
-      
-      // Group files by type and calculate statistics
-      const fileTypeMap = new Map<string, { count: number; total_size: number }>()
-      
-      // Initialize target types with zero counts
-      targetTypes.forEach(type => {
-        fileTypeMap.set(type, { count: 0, total_size: 0 })
-      })
-      
-      // Add "Other" category for all non-target file types
-      fileTypeMap.set('other', { count: 0, total_size: 0 })
-      
-      allFiles.forEach(file => {
-        const fileType = file.file_type?.toLowerCase() || 'unknown'
-        
-        // Check if it's one of our target types
-        if (targetTypes.includes(fileType)) {
-          const current = fileTypeMap.get(fileType)!
-          fileTypeMap.set(fileType, {
-            count: current.count + 1,
-            total_size: current.total_size + file.size
-          })
-        } else {
-          // Add to "Other" category
-          const current = fileTypeMap.get('other')!
-          fileTypeMap.set('other', {
-            count: current.count + 1,
-            total_size: current.total_size + file.size
-          })
-        }
-      })
-      
-      // Convert to array and filter out types with zero counts, then sort by count
-      const analytics = Array.from(fileTypeMap.entries())
-        .map(([file_type, stats]) => ({
-          file_type,
-          count: stats.count,
-          total_size: stats.total_size
-        }))
-        .filter(item => item.count > 0) // Only include types that have files
-        .sort((a, b) => b.count - a.count)
-    
-      appLogger.info("File analytics data processed", undefined, {
-        total_file_types: analytics.length,
-        total_files: allFiles.length,
-        target_types_found: analytics.filter(a => targetTypes.includes(a.file_type)).length,
-        pages_fetched: page - 1
-      })
-      
-      return analytics
-    } catch (error) {
-      appLogger.error("Failed to fetch file analytics", error instanceof Error ? error.message : "Unknown error")
-      throw error
-    }
-  }
-
-  async getSharesAnalytics(token: string): Promise<{ share_id: string; share_name: string; share_path: string; count: number; total_size: number }[]> {
-    appLogger.debug("Fetching shares analytics data")
-    
-    try {
-      // Get all files across all shares by fetching all pages
-      const allFiles: FileEntry[] = []
-      let page = 1
-      let hasNextPage = true
-      
-      while (hasNextPage) {
-        appLogger.debug(`Fetching files page ${page} for shares analytics`)
-        const response = await this.fetchWithToken<FileSearchResponse>(`/files?page=${page}&page_size=1000`, token)
-        
-        allFiles.push(...response.files)
-        
-        // Check if there are more pages
-        hasNextPage = response.has_next
-        page += 1
-        
-        appLogger.debug(`Fetched page ${page - 1}: ${response.files.length} files, has_next: ${response.has_next}`)
-      }
-    
-      appLogger.info(`Fetched all files for shares analytics: ${allFiles.length} total files across ${page - 1} pages`)
-    
-      // Group files by share and calculate statistics
-      const shareFileMap = new Map<string, { share_name: string; share_path: string; count: number; total_size: number }>()
-    
-      allFiles.forEach(file => {
-        const shareId = file.share_id || 'unknown'
-        const shareName = file.share_name || 'Unknown Share'
-        const sharePath = file.share_path || 'Unknown Path'
-        
-        const current = shareFileMap.get(shareId) || { 
-          share_name: shareName, 
-          share_path: sharePath, 
-          count: 0, 
-          total_size: 0 
-        }
-        
-        shareFileMap.set(shareId, {
-          share_name: shareName,
-          share_path: sharePath,
-          count: current.count + 1,
-          total_size: current.total_size + file.size
-        })
-      })
-      
-      // Convert to array and sort by count
-      const analytics = Array.from(shareFileMap.entries())
-        .map(([share_id, stats]) => ({
-          share_id,
-          share_name: stats.share_name,
-          share_path: stats.share_path,
-          count: stats.count,
-          total_size: stats.total_size
-        }))
-        .filter(item => item.count > 0) // Only include shares that have files
-        .sort((a, b) => b.count - a.count)
-
-      appLogger.info("Shares analytics data processed", undefined, {
-        total_shares_with_files: analytics.length,
-        total_files: allFiles.length,
-        shares_breakdown: analytics.map(a => `${a.share_name}: ${a.count}`),
-        pages_fetched: page - 1
-      })
-
-      return analytics
-    } catch (error) {
-      appLogger.error("Failed to fetch shares analytics", error instanceof Error ? error.message : "Unknown error")
-      throw error
-    }
-  }
-
   async fetchMonitoringData(token: string) {
     appLogger.info("Fetching monitoring data")
 
     try {
-      const [overview, workers, enumeration, graphRateLimit, failedItems, tasks, taskStats, fileAnalytics, sharesAnalytics] = await Promise.all([
+      const [
+        overview,
+        workers,
+        enumeration,
+        graphRateLimit,
+        failedItems,
+        tasks,
+        taskStats,
+        fileAnalytics,
+        sharesAnalytics,
+      ] = await Promise.all([
         this.getMonitoringOverview(token),
         this.getMonitoringWorkers(token),
         this.getMonitoringEnumeration(token),
@@ -868,51 +344,23 @@ export class NeoApiService {
         shares_with_files: sharesAnalytics.length,
       })
 
-      return { overview, workers, enumeration, graphRateLimit, failedItems, tasks, taskStats, fileAnalytics, sharesAnalytics }
+      return {
+        overview,
+        workers,
+        enumeration,
+        graphRateLimit,
+        failedItems,
+        tasks,
+        taskStats,
+        fileAnalytics,
+        sharesAnalytics,
+      }
     } catch (error) {
       appLogger.error(
         "Failed to fetch monitoring data",
         error instanceof Error ? error.message : "Unknown error"
       )
       throw error
-    }
-  }
-
-  async getDatabaseSize(token: string): Promise<DatabaseSizeResponse> {
-    appLogger.debug("Fetching database size information")
-    return this.fetchWithToken<DatabaseSizeResponse>("/database/size", token)
-  }
-
-  async logout(token: string): Promise<void> {
-    appLogger.debug("Sending logout request to invalidate token")
-
-    try {
-      const response = await fetch(`${this.baseUrl}/logout`, {
-        method: "POST",
-        headers: {
-          Accept: "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      })
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        appLogger.warn(
-          "Logout request failed",
-          `Status: ${response.status}, Response: ${errorText}`,
-          { status: response.status }
-        )
-        // Don't throw error - we still want to clear local state even if server logout fails
-        return
-      }
-
-      appLogger.info("Token invalidated successfully on server")
-    } catch (error) {
-      appLogger.warn(
-        "Failed to invalidate token on server",
-        error instanceof Error ? error.message : "Unknown error"
-      )
-      // Don't throw error - we still want to clear local state even if server logout fails
     }
   }
 }

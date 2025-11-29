@@ -5,13 +5,15 @@ import { AppSidebar } from "@/components/sidebars/sidebar"
 import { SiteHeader } from "@/components/sidebars/header"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 
-import Dashboard from "@/components/pages/dashboard"
+import Connector from "@/components/pages/connector"
+import Monitoring from "@/components/pages/monitoring"
 import Shares from "@/components/pages/shares"
 import Files from "@/components/pages/files"
-import Operations from "@/components/pages/operations"
+import Tasks from "@/components/pages/tasks"
 import Users from "@/components/pages/users"
 import Help from "@/components/pages/help"
 import Logs from "@/components/pages/logs"
+import Settings from "@/components/pages/settings"
 
 import { useNeoApi } from "@/hooks/useNeoApi"
 
@@ -29,11 +31,11 @@ function App() {
         }
       >
         <HashRouter>
-          <AppSidebar 
-            me={state.me} 
+          <AppSidebar
+            me={state.me}
             isConnected={!!state.token}
             onConnect={handlers.handleConnect}
-            onLogout={handlers.handleLogout} 
+            onLogout={handlers.handleLogout}
           />
           <SidebarInset>
             <SiteHeader
@@ -45,28 +47,35 @@ function App() {
               <Route
                 path="/"
                 element={
-                  <Dashboard
+                  <Connector
                     health={state.health}
                     license={state.license}
                     version={state.version}
-                    helmChartVersion={state.helmChartVersion}  // Add this
-                    databaseSize={state.databaseSize}
-                    monitoring={state.monitoring}
-                    onFetchMonitoring={handlers.handleFetchMonitoring}
+                    helmChartVersion={state.helmChartVersion}
+                    monitoringOverview={state.monitoring.overview}
                   />
                 }
               />
               <Route
-                path="/dashboard"
+                path="/connector"
                 element={
-                  <Dashboard
+                  <Connector
                     health={state.health}
                     license={state.license}
                     version={state.version}
-                    helmChartVersion={state.helmChartVersion}  // Add this
+                    helmChartVersion={state.helmChartVersion}
+                    monitoringOverview={state.monitoring.overview}
+                  />
+                }
+              />
+              <Route
+                path="/monitoring"
+                element={
+                  <Monitoring
                     databaseSize={state.databaseSize}
                     monitoring={state.monitoring}
                     onFetchMonitoring={handlers.handleFetchMonitoring}
+                    cacheStats={state.cacheStats}
                   />
                 }
               />
@@ -80,6 +89,8 @@ function App() {
                     onUpdateShare={handlers.handleUpdateShare}
                     onStartCrawl={handlers.handleStartCrawl}
                     onFetchShareDetails={handlers.handleFetchShareDetails}
+                    onRefresh={handlers.handleRefresh}
+                    monitoringOverview={state.monitoring.overview}
                   />
                 }
               />
@@ -93,22 +104,36 @@ function App() {
                     onFetchFileMetadata={handlers.handleFetchFileMetadata}
                     onSearchFiles={handlers.handleSearchFiles}
                     onPageChange={handlers.handleFilesPageChange}
+                    onRefresh={handlers.handleRefresh}
+                    monitoringOverview={state.monitoring.overview}
+                    cacheStats={state.cacheStats}
                   />
                 }
               />
               <Route
-                path="/operations"
-                element={<Operations operations={state.operations} />}
+                path="/tasks"
+                element={
+                  <Tasks
+                    tasks={state.monitoring.tasks}
+                    taskStats={state.monitoring.taskStats}
+                    onFetchTasks={handlers.handleFetchTasks}
+                    onDeleteTask={handlers.handleDeleteTask}
+                    monitoringOverview={state.monitoring.overview}
+                  />
+                }
               />
-              <Route path="/logs" element={<Logs />} />
+              <Route path="/logs" element={<Logs operations={state.operations} monitoringOverview={state.monitoring.overview} />} />
               <Route path="/users" element={
                 <Users
                   users={state.users}
                   me={state.me}
                   onAddUser={handlers.handleAddUser}
                   onChangePassword={handlers.handleChangePassword}
+                  onRefresh={handlers.handleRefresh}
+                  monitoringOverview={state.monitoring.overview}
                 />
               } />
+              <Route path="/settings" element={<Settings />} />
               <Route path="/help" element={<Help />} />
             </Routes>
           </SidebarInset>

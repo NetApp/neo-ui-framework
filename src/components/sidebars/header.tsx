@@ -1,34 +1,34 @@
-import { 
-  useLocation 
+import {
+  useLocation
 } from "react-router-dom"
 
-import { 
-  Button 
+import {
+  Button
 } from "@/components/ui/button"
 
-import { 
-  Separator 
+import {
+  Separator
 } from "@/components/ui/separator"
 
-import { 
+import {
   SidebarTrigger
 } from "@/components/ui/sidebar"
 
-import { 
-  ModeToggle 
+import {
+  ModeToggle
 } from "@/components/navs/theme-toggle"
 
-import { 
-  IconBrandGithub, 
-  IconLogin, 
-  IconRefresh 
+import {
+  IconBrandGithub,
+  IconLogin,
+  IconRefresh
 } from "@tabler/icons-react"
 
-import type { 
+import type {
   ConnectionCredentials
 } from "@/services/models"
 
-import { 
+import {
   ConnectDialog
 } from "@/components/dialogs/connect-dialog"
 
@@ -43,17 +43,17 @@ interface SiteHeaderProps {
 export function SiteHeader({ onConnect, onRefresh, isConnected }: SiteHeaderProps) {
   const location = useLocation()
 
-  let title = "Welcome"
-  if (location.pathname.startsWith("/dashboard")) {
-    title = "Dashboard"
+  let title = "Connector"
+  if (location.pathname.startsWith("/connector")) {
+    title = "Connector"
+  } else if (location.pathname.startsWith("/monitoring")) {
+    title = "Monitoring"
   } else if (location.pathname.startsWith("/shares")) {
     title = "Shares"
   } else if (location.pathname.startsWith("/files")) {
     title = "Files"
   } else if (location.pathname.startsWith("/logs")) {
-    title = "App Logs"
-  } else if (location.pathname.startsWith("/operations")) {
-    title = "Operations"
+    title = "Logs"
   } else if (location.pathname.startsWith("/users")) {
     title = "Users"
   } else if (location.pathname.startsWith("/search")) {
@@ -64,6 +64,8 @@ export function SiteHeader({ onConnect, onRefresh, isConnected }: SiteHeaderProp
     title = "Settings"
   } else if (location.pathname.startsWith("/help")) {
     title = "Help"
+  } else if (location.pathname.startsWith("/tasks")) {
+    title = "Tasks"
   }
 
   return (
@@ -93,10 +95,10 @@ export function SiteHeader({ onConnect, onRefresh, isConnected }: SiteHeaderProp
             </a>
           </Button>
           <ConnectDialog onConnect={onConnect} onRefresh={onRefresh} isConnected={isConnected}>
-            <Button 
-            variant="outline" 
-            size="default" 
-            className="hidden sm:flex">
+            <Button
+              variant="default"
+              size="default"
+              className="hidden sm:flex">
               {isConnected ? <><IconRefresh /> Refresh</> : <><IconLogin /> Connect</>}
               <span className="sr-only">
                 {isConnected ? "Refresh data" : "Connect"}

@@ -2,12 +2,14 @@
 
 import {
   IconChartBar,
-  IconDashboard,
+  IconServer,
   IconFileText,
-  IconFolder,
   IconHelp,
   IconListDetails,
   IconUsers,
+  IconListCheck,
+  IconActivity,
+  IconSettings,
 } from "@tabler/icons-react"
 
 import {
@@ -15,16 +17,21 @@ import {
 } from "@/components/ui/sidebar"
 
 // internal components
-import { 
-  NavMain 
+import {
+  NavMain
 } from "@/components/navs/main"
 
 const data = {
   navMain: [
     {
-      name: "Dashboard",
-      url: "#/dashboard",
-      icon: IconDashboard,
+      name: "Connector",
+      url: "#/connector",
+      icon: IconServer,
+    },
+    {
+      name: "Monitoring",
+      url: "#/monitoring",
+      icon: IconActivity,
     },
     {
       name: "Shares",
@@ -32,14 +39,14 @@ const data = {
       icon: IconListDetails,
     },
     {
+      name: "Tasks",
+      url: "#/tasks",
+      icon: IconListCheck,
+    },
+    {
       name: "Files",
       url: "#/files",
       icon: IconChartBar,
-    },
-    {
-      name: "Operations",
-      url: "#/operations",
-      icon: IconFolder,
     },
   ],
   navSecondary: [
@@ -47,6 +54,11 @@ const data = {
       name: "Users",
       url: "#/users",
       icon: IconUsers,
+    },
+    {
+      name: "Settings",
+      url: "#/settings",
+      icon: IconSettings,
     },
     {
       name: "Logs",
@@ -61,11 +73,11 @@ const data = {
   ],
 }
 
-export function AppSidebarContent({...props}: React.ComponentProps<typeof SidebarContent>) {
+export function AppSidebarContent({ ...props }: React.ComponentProps<typeof SidebarContent>) {
   return (
-      <SidebarContent {...props}>
-        <NavMain items={data.navMain} />
-        <NavMain items={data.navSecondary} className="mt-auto" />
-      </SidebarContent>
+    <SidebarContent {...props}>
+      <NavMain items={data.navMain} />
+      <NavMain items={data.navSecondary} className="mt-auto" />
+    </SidebarContent>
   )
 }

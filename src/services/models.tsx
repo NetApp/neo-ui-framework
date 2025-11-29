@@ -26,21 +26,21 @@ export interface HealthResponse {
   version: string
   timestamp: string
   components: {
-    database: { 
-      status: string; 
-      error: string | null 
+    database: {
+      status: string;
+      error: string | null
     }
-    filesystem: { 
-      status: string; 
-      error: string | null 
+    filesystem: {
+      status: string;
+      error: string | null
     }
     graph_connector?: { // only for v3
       status: string
       error: string | null
     }
-    shares: { 
+    shares: {
       active_count: number
-      errors: string[] 
+      errors: string[]
     }
   }
   metrics: {
@@ -346,7 +346,7 @@ export interface MonitoringFailedItemsResponse { // only for v3
     additionalProp1: number
     additionalProp2: number
     additionalProp3: number
-  } 
+  }
 }
 
 export interface TasksResponse { // only for v3
@@ -354,21 +354,32 @@ export interface TasksResponse { // only for v3
   name: string
   status: string
   created_at: string
-  started_at: string
-  completed_at: string
+  started_at: string | null
+  completed_at: string | null
   error: string | null
-  results: {
-    status: string
+  result: {
+    status?: string
     share_id?: string
-    retry_result: string | null
-  }
+    retry_result?: string | null
+    total_shares?: number
+    scheduled_count?: number
+    reset_count?: number
+    connector_id?: string
+    [key: string]: unknown
+  } | null
   progress: string | null
-  share_id?: string
-  metadata: {
-    operation: string 
-    retry_failed: boolean
-  }
+  share_id?: string | null
+  metadata: Record<string, unknown>
   cancellation_requested: boolean
+}
+
+export interface TasksListResponse { // only for v3
+  tasks: TasksResponse[]
+  count: number
+  filter: {
+    status: string | null
+    limit: number
+  }
 }
 
 export interface TaskStatisticsResponse { // only for v3
@@ -380,48 +391,26 @@ export interface TaskStatisticsResponse { // only for v3
     failed: number
     cancelled: number
   }
-  running_task_ids: string[]
+  running_task_ids: number[]
 }
 
-export interface TaskResponse { // only for v3
-  id: string
-  name: string
-  status: string
-  created_at: string
-  started_at: string
-  completed_at: string
-  error: string | null
-  results: {
-    status: string
-    share_id?: string
-    retry_result: string | null
-  }
-  progress: string | null
-  share_id?: string
-  metadata: {
-    operation: string 
-    retry_failed: boolean
-  }
-  cancellation_requested: boolean
-} 
-
-// User Page models
+// Users Page Models
 export interface UserResponse {
   id: number
   username: string
-  email: string
+  email: string | null
   is_active: boolean
   is_admin: boolean
   created_at: string
-  last_login: string
+  last_login: string | null
 }
 
 export interface MeResponse {
   id: number
   username: string
-  email: string
+  email: string | null
   is_active: boolean
   is_admin: boolean
   created_at: string
-  last_login: string
+  last_login: string | null
 }

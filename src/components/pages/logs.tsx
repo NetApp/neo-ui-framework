@@ -1,24 +1,24 @@
 "use client"
 
-import { 
-  useState 
+import {
+  useState
 } from "react"
 
-import { 
-  IconRefresh, 
-  IconTrash 
+import {
+  IconTrash,
+  IconDownload
 } from "@tabler/icons-react"
 
-import { 
-  useAppLogs 
+import {
+  useAppLogs
 } from "@/hooks/useAppLogs"
 
-import { 
+import {
   LogsTable
- } from "@/components/data-tables/logsT"
+} from "@/components/data-tables/logsT"
 
- import { 
-  Button 
+import {
+  Button
 } from "@/components/ui/button"
 
 import {
@@ -29,17 +29,20 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
-import type { 
-  LogLevel 
+import type {
+  LogLevel
 } from "@/services/app-logger"
+import type { OperationResponse, MonitoringOverviewResponse } from "@/services/neo-api"
+import { OverviewCard } from "@/components/cards/overview-card"
 
-const LEVEL_OPTIONS = ["all", "ERROR", "WARN", "INFO", "DEBUG"] as const
+const LEVEL_OPTIONS = ["all", "ERROR", "WARN", "INFO", "DEBUG", "OPERATION"] as const
 
-export default function Logs() {
+export default function Logs({ operations, monitoringOverview }: { operations: OperationResponse[] | null; monitoringOverview: MonitoringOverviewResponse | null }) {
   const [selectedLevel, setSelectedLevel] = useState<(typeof LEVEL_OPTIONS)[number]>("all")
-  const { logs, currentPage, totalPages, totalCount, onPageChange, onClearLogs } = useAppLogs(
+  const { logs, currentPage, totalPages, totalCount, onPageChange, onClearLogs, onDownloadLogs } = useAppLogs(
     selectedLevel === "all" ? undefined : (selectedLevel as LogLevel),
-    50
+    50,
+    operations
   )
 
   const handleLevelChange = (value: (typeof LEVEL_OPTIONS)[number]) => {
@@ -47,9 +50,7 @@ export default function Logs() {
     onPageChange(0)
   }
 
-  const handleRefresh = () => {
-    onPageChange(currentPage)
-  }
+
 
   const handlePageChange = (nextPage: number) => {
     if (nextPage < 0 || nextPage >= totalPages) {
@@ -63,6 +64,14 @@ export default function Logs() {
       <div className="@container/main flex flex-1 flex-col gap-2">
         <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
           <div className="px-4 lg:px-6">
+            <div className="mb-4">
+              <OverviewCard
+                overview={monitoringOverview}
+                title="Logs Overview"
+                description="Recent system operations and audit logs."
+                showCacheStats={false}
+              />
+            </div>
             <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div className="flex flex-wrap items-center gap-3">
                 <Select value={selectedLevel} onValueChange={handleLevelChange}>
@@ -82,10 +91,11 @@ export default function Logs() {
                 </p>
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={handleRefresh}>
-                  <IconRefresh className="mr-2 size-4" />
-                  Refresh
+                <Button variant="outline" size="sm" onClick={onDownloadLogs}>
+                  <IconDownload className="mr-2 size-4" />
+                  Download
                 </Button>
+
                 <Button
                   variant="outline"
                   size="sm"

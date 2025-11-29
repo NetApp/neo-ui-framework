@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react"
+import { useCallback, useRef, useState, useEffect } from "react"
 
 import { toast } from "sonner"
 
@@ -31,16 +31,64 @@ import {
 } from "@/services/neo-api"
 
 
-import type { 
+import type {
   ConnectionCredentials,
   // FileEntry
 } from "@/services/models"
 
+import { useSettings } from "@/context/settings-context"
+
 export function useNeoApi() {
+  const { monitoringTtl, filesTtl, cacheMaxSize } = useSettings()
   const [health, setHealth] = useState<HealthResponse | null>(null)
   const [license, setLicense] = useState<LicenseResponse | null>(null)
   const [version, setVersion] = useState<VersionResponse | null>(null)
-  const [helmChartVersion, setHelmChartVersion] = useState<HelmChartVersionResponse | null>(null)  // Add this state
+  const [helmChartVersion, setHelmChartVersion] = useState<HelmChartVersionResponse | null>(null)
+
+  const apiRef = useRef(new NeoApiService())
+
+  // Update API config when settings change
+  useEffect(() => {
+    apiRef.current.updateConfig({
+      monitoringTtl,
+      filesTtl,
+      cacheMaxSize,
+    })
+  }, [monitoringTtl, filesTtl, cacheMaxSize])
+
+  // Fetch public data on mount
+  useEffect(() => {
+    const fetchPublicData = async () => {
+      const api = apiRef.current
+      try {
+        appLogger.debug("Fetching public system data")
+        const results = await Promise.allSettled([
+          api.getHealth(),
+          api.getLicenseStatus(),
+          api.getVersion(),
+          api.getLatestHelmVersion()
+        ])
+
+        const [healthResult, licenseResult, versionResult, helmResult] = results
+
+        if (healthResult.status === "fulfilled") setHealth(healthResult.value)
+        if (licenseResult.status === "fulfilled") setLicense(licenseResult.value)
+        if (versionResult.status === "fulfilled") setVersion(versionResult.value)
+        if (helmResult.status === "fulfilled") setHelmChartVersion(helmResult.value)
+
+        appLogger.info("Public system data fetched", undefined, {
+          health: healthResult.status,
+          license: licenseResult.status,
+          version: versionResult.status,
+          helm: helmResult.status
+        })
+      } catch (error) {
+        appLogger.warn("Unexpected error fetching public system data", error instanceof Error ? error.message : "Unknown error")
+      }
+    }
+
+    fetchPublicData()
+  }, [])
   const [databaseSize, setDatabaseSize] = useState<DatabaseSizeResponse | null>(null)
   const [users, setUsers] = useState<UserResponse[] | null>(null)
   const [me, setMe] = useState<MeResponse | null>(null)
@@ -48,7 +96,12 @@ export function useNeoApi() {
   const [shares, setShares] = useState<SharesResponse[] | null>(null)
   const [files, setFiles] = useState<FilesResponse | null>(null)
   const [token, setToken] = useState<string | null>(null)
-  const apiRef = useRef(new NeoApiService())
+
+  const [cacheStats, setCacheStats] = useState<{ sizeBytes: number; maxSizeBytes: number; items: number }>({
+    sizeBytes: 0,
+    maxSizeBytes: 0,
+    items: 0,
+  })
 
   const [monitoring, setMonitoring] = useState<{
     overview: MonitoringOverviewResponse | null
@@ -133,6 +186,7 @@ export function useNeoApi() {
 
       // Clear any existing state before attempting new connection
       clearSystemData()
+      apiRef.current.clearCache()
       setToken(null)
 
       try {
@@ -142,7 +196,8 @@ export function useNeoApi() {
 
         applySystemData(data)
         setToken(newToken)
-        toast.success(`Welcome, ${data.me?.username}!`)
+        setCacheStats(api.getCacheStats())
+        toast.success(`Welcome, ${data.me?.username}`)
         appLogger.info("Successfully connected to NetApp Neo", undefined, {
           userId: data.me?.id,
           username: data.me?.username,
@@ -150,16 +205,16 @@ export function useNeoApi() {
       } catch (error) {
         clearSystemData()
         setToken(null)
-        
+
         // Provide user-friendly error messages
         if (error instanceof AuthenticationError) {
           toast.error(error.message)
         } else if (error instanceof Error) {
           toast.error(`Connection failed: ${error.message}`)
         } else {
-          toast.error("Connection failed. Please try again.")
+          toast.error("Connection failed. Please try again")
         }
-        
+
         appLogger.error(
           "Connection to NetApp Neo failed",
           error instanceof Error ? error.message : "Unknown error"
@@ -180,8 +235,10 @@ export function useNeoApi() {
 
     try {
       appLogger.debug("Refreshing system data from Neo API")
+      api.clearCache()
       const data = await api.fetchSystemData(token)
       applySystemData(data)
+      setCacheStats(api.getCacheStats())
       appLogger.info("System data refreshed successfully")
     } catch (error) {
       if (error instanceof AuthenticationError) {
@@ -209,16 +266,17 @@ export function useNeoApi() {
       try {
         appLogger.info("Deleting share", undefined, { shareId })
         await api.deleteShare(token, shareId)
+        api.clearCache()
         const data = await api.fetchSystemData(token)
         applySystemData(data)
-        toast.success("Share deleted!")
+        toast.success("Share deleted")
         appLogger.info("Share deleted successfully", undefined, { shareId })
       } catch (error) {
         if (error instanceof AuthenticationError) {
           clearSystemData()
           setToken(null)
         }
-        toast.error("Share deletion failed!")
+        toast.error("Share deletion failed")
         appLogger.error(
           "Share deletion failed",
           error instanceof Error ? error.message : "Unknown error",
@@ -258,16 +316,17 @@ export function useNeoApi() {
       try {
         appLogger.info("Creating new share", undefined, { share_path: share.share_path })
         await api.createShare(token, share)
+        api.clearCache()
         const data = await api.fetchSystemData(token)
         applySystemData(data)
-        toast.success("Share added!")
+        toast.success("Share added")
         appLogger.info("Share created successfully", undefined, { share_path: share.share_path })
       } catch (error) {
         if (error instanceof AuthenticationError) {
           clearSystemData()
           setToken(null)
         }
-        toast.error("Share creation failed!")
+        toast.error("Share creation failed")
         appLogger.error(
           "Share creation failed",
           error instanceof Error ? error.message : "Unknown error",
@@ -304,9 +363,10 @@ export function useNeoApi() {
       try {
         appLogger.info("Updating share", undefined, { shareId, share_path: share.share_path })
         await api.updateShare(token, shareId, share)
+        api.clearCache()
         const data = await api.fetchSystemData(token)
         applySystemData(data)
-        toast.success("Share updated!")
+        toast.success("Share updated")
         appLogger.info("Share updated successfully", undefined, {
           shareId,
           share_path: share.share_path,
@@ -316,7 +376,7 @@ export function useNeoApi() {
           clearSystemData()
           setToken(null)
         }
-        toast.error("Share update failed!")
+        toast.error("Share update failed")
         appLogger.error(
           "Share update failed",
           error instanceof Error ? error.message : "Unknown error",
@@ -340,6 +400,7 @@ export function useNeoApi() {
       try {
         appLogger.info("Starting share crawl", undefined, { shareId })
         await api.startShareCrawl(token, shareId)
+        api.clearCache()
         const data = await api.fetchSystemData(token)
         applySystemData(data)
         appLogger.info("Share crawl started successfully", undefined, { shareId })
@@ -393,16 +454,17 @@ export function useNeoApi() {
       try {
         appLogger.info("Creating new user", undefined, { username: user.username })
         await api.createUser(token, user)
+        api.clearCache()
         const data = await api.fetchSystemData(token)
         applySystemData(data)
-        toast.success("User created!")
+        toast.success("User created")
         appLogger.info("User created successfully", undefined, { username: user.username })
       } catch (error) {
         if (error instanceof AuthenticationError) {
           clearSystemData()
           setToken(null)
         }
-        toast.error("User creation failed!")
+        toast.error("User creation failed")
         appLogger.error(
           "User creation failed",
           error instanceof Error ? error.message : "Unknown error",
@@ -426,14 +488,14 @@ export function useNeoApi() {
       try {
         appLogger.info("Changing user password")
         await api.changeMyPassword(token, payload)
-        toast.success("Password updated!")
+        toast.success("Password updated")
         appLogger.info("Password changed successfully")
       } catch (error) {
         if (error instanceof AuthenticationError) {
           clearSystemData()
           setToken(null)
         }
-        toast.error("Password update failed!")
+        toast.error("Password update failed")
         appLogger.error(
           "Password change failed",
           error instanceof Error ? error.message : "Unknown error"
@@ -453,7 +515,9 @@ export function useNeoApi() {
 
       const api = apiRef.current
       appLogger.debug("Fetching file metadata", undefined, { shareId, fileId })
-      return api.getFileMetadata(token, shareId, fileId)
+      const metadata = await api.getFileMetadata(token, shareId, fileId)
+      setCacheStats(api.getCacheStats())
+      return metadata
     },
     [token]
   )
@@ -467,7 +531,9 @@ export function useNeoApi() {
 
       const api = apiRef.current
       appLogger.debug("Searching files", undefined, { query: params.query, share_id: params.share_id })
-      return api.searchFiles(token, params)
+      const results = await api.searchFiles(token, params)
+      setCacheStats(api.getCacheStats())
+      return results
     },
     [token]
   )
@@ -476,7 +542,7 @@ export function useNeoApi() {
     async (shareKey: string | "all" | null, page?: number) => {
       if (!token) {
         appLogger.warn("Select files share attempted without active token")
-        toast.error("Connect first to load files.")
+        toast.error("Connect first to load files")
         return
       }
 
@@ -497,12 +563,12 @@ export function useNeoApi() {
         appLogger.info("Loading files", undefined, { shareKey, page })
         if (shareKey === "all") {
           // Use the /files endpoint to get ALL files across all shares with pagination
-          const searchParams: FileSearchParams = { 
-            page: page || 1, 
-            page_size: 100 
+          const searchParams: FileSearchParams = {
+            page: page || 1,
+            page_size: 100
           }
           const response = await api.searchFiles(token, searchParams)
-          
+
           const aggregated: FilesResponse = {
             share_id: "all",
             path: "All shares",
@@ -533,6 +599,9 @@ export function useNeoApi() {
             total_pages: response.total_pages
           })
         }
+        const stats = api.getCacheStats()
+        appLogger.info("Updating cache stats after file load", undefined, stats)
+        setCacheStats(stats)
       } catch (error) {
         if (error instanceof AuthenticationError) {
           clearSystemData()
@@ -543,7 +612,7 @@ export function useNeoApi() {
           error instanceof Error ? error.message : "Unknown error",
           { shareKey, page }
         )
-        toast.error("Failed to load files.")
+        toast.error("Failed to load files")
       }
     },
     [token, clearSystemData]
@@ -558,7 +627,7 @@ export function useNeoApi() {
     [currentShareId, handleSelectFilesShare]
   )
 
-  const handleFetchMonitoring = useCallback(async () => {
+  const handleFetchMonitoring = useCallback(async (force?: boolean) => {
     if (!token) {
       appLogger.warn("Fetch monitoring attempted without active token")
       throw new AuthenticationError()
@@ -567,7 +636,10 @@ export function useNeoApi() {
     const api = apiRef.current
 
     try {
-      appLogger.debug("Fetching monitoring data")
+      appLogger.debug("Fetching monitoring data", undefined, { force })
+      if (force) {
+        api.clearCache()
+      }
       const data = await api.fetchMonitoringData(token)
       setMonitoring(data)
       appLogger.info("Monitoring data fetched successfully")
@@ -585,9 +657,105 @@ export function useNeoApi() {
     }
   }, [token, clearSystemData])
 
+  const handleFetchTasks = useCallback(async (force?: boolean) => {
+    if (!token) {
+      appLogger.warn("Fetch tasks attempted without active token")
+      throw new AuthenticationError()
+    }
+
+    const api = apiRef.current
+
+    try {
+      appLogger.debug("Fetching tasks data", undefined, { force })
+      if (force) {
+        api.clearCache()
+      }
+      const [tasks, taskStats] = await Promise.all([
+        api.getTasks(token),
+        api.getTaskStatistics(token),
+      ])
+
+      setMonitoring(prev => ({
+        ...prev,
+        tasks,
+        taskStats,
+      }))
+
+      appLogger.info("Tasks data fetched successfully", undefined, {
+        total_tasks: taskStats.total_tasks,
+        running_tasks: taskStats.by_status.running,
+      })
+    } catch (error) {
+      if (error instanceof AuthenticationError) {
+        clearSystemData()
+        setToken(null)
+        appLogger.warn("Token expired during tasks fetch")
+      }
+      appLogger.error(
+        "Failed to fetch tasks data",
+        error instanceof Error ? error.message : "Unknown error"
+      )
+      throw error
+    }
+  }, [token, clearSystemData])
+
+  const handleDeleteTask = useCallback(
+    async (taskId: string) => {
+      if (!token) {
+        appLogger.warn("Task deletion attempted without active token")
+        throw new AuthenticationError()
+      }
+
+      const api = apiRef.current
+
+      try {
+        appLogger.info("Cancelling task", undefined, { taskId })
+        const response = await api.deleteTask(token, taskId)
+
+        // Refresh tasks after cancellation attempt
+        api.clearCache()
+        const [tasks, taskStats] = await Promise.all([
+          api.getTasks(token),
+          api.getTaskStatistics(token),
+        ])
+
+        setMonitoring(prev => ({
+          ...prev,
+          tasks,
+          taskStats,
+        }))
+
+        if (response.status === "cancelled") {
+          toast.success(`Task cancelled: ${response.message} `)
+        } else {
+          toast.warning(`Task cancellation: ${response.message} `)
+        }
+
+        appLogger.info("Task cancellation response received", undefined, {
+          taskId,
+          status: response.status,
+          graceful: response.graceful
+        })
+      } catch (error) {
+        if (error instanceof AuthenticationError) {
+          clearSystemData()
+          setToken(null)
+        }
+        toast.error("Task cancellation failed!")
+        appLogger.error(
+          "Task cancellation failed",
+          error instanceof Error ? error.message : "Unknown error",
+          { taskId }
+        )
+        throw error
+      }
+    },
+    [token, clearSystemData]
+  )
+
   const handleLogout = useCallback(async () => {
     appLogger.info("User logging out", undefined, { username: me?.username })
-    
+
     // If we have a token, try to invalidate it on the server first
     if (token) {
       const api = apiRef.current
@@ -601,9 +769,10 @@ export function useNeoApi() {
         )
       }
     }
-    
+
     // Always clear local state regardless of server response
     clearSystemData()
+    apiRef.current.clearCache()
     setToken(null)
     toast.success("Logged out successfully")
     appLogger.info("User logged out successfully")
@@ -614,7 +783,7 @@ export function useNeoApi() {
       health,
       license,
       version,
-      helmChartVersion,  // Add this to state
+      helmChartVersion,
       databaseSize,
       users,
       me,
@@ -623,6 +792,7 @@ export function useNeoApi() {
       files,
       monitoring,
       token,
+      cacheStats,
     },
     handlers: {
       handleConnect,
@@ -638,6 +808,8 @@ export function useNeoApi() {
       handleSelectFilesShare,
       handleSearchFiles,
       handleFetchMonitoring,
+      handleFetchTasks,
+      handleDeleteTask,
       handleLogout,
       handleFilesPageChange,
     },

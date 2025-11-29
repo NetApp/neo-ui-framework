@@ -1,11 +1,11 @@
 "use client"
 
-import { 
-    Database, 
-    HardDrive, 
-    FileText, 
-    // Users, 
-    Activity 
+import {
+  Database,
+  HardDrive,
+  FileText,
+  // Users, 
+  Activity
 } from "lucide-react"
 import {
   Card,
@@ -82,13 +82,13 @@ export function DatabaseSizeCard({ databaseSize }: DatabaseSizeCardProps) {
             <Activity className="h-4 w-4" />
             Table Statistics
           </h4>
-          
+
           <div className="grid grid-cols-2 gap-4 text-sm">
             {/* Shares */}
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">Shares:</span>
               <Badge variant="outline">
-                {databaseSize.table_statistics.shares.row_count}
+                {databaseSize.table_statistics?.shares?.row_count ?? 0}
               </Badge>
             </div>
 
@@ -96,7 +96,7 @@ export function DatabaseSizeCard({ databaseSize }: DatabaseSizeCardProps) {
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">Users:</span>
               <Badge variant="outline">
-                {databaseSize.table_statistics.users.row_count}
+                {databaseSize.table_statistics?.users?.row_count ?? 0}
               </Badge>
             </div>
 
@@ -104,7 +104,7 @@ export function DatabaseSizeCard({ databaseSize }: DatabaseSizeCardProps) {
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">File Metadata:</span>
               <Badge variant="outline">
-                {databaseSize.table_statistics.file_metadata.row_count}
+                {databaseSize.table_statistics?.file_metadata?.row_count ?? 0}
               </Badge>
             </div>
 
@@ -112,7 +112,7 @@ export function DatabaseSizeCard({ databaseSize }: DatabaseSizeCardProps) {
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">Operations Log:</span>
               <Badge variant="outline">
-                {databaseSize.table_statistics.operations_log.row_count}
+                {databaseSize.table_statistics?.operations_log?.row_count ?? 0}
               </Badge>
             </div>
           </div>
@@ -123,21 +123,21 @@ export function DatabaseSizeCard({ databaseSize }: DatabaseSizeCardProps) {
         {/* Content Size Breakdown */}
         <div>
           <h4 className="text-sm font-medium mb-3">Content Size Breakdown</h4>
-          
+
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Original Files:</span>
               <span className="font-mono">{databaseSize.total_original_file_size_mb.toFixed(2)} MB</span>
             </div>
-            
+
             <div className="flex justify-between">
               <span className="text-muted-foreground">Extracted Content:</span>
               <span className="font-mono">{databaseSize.total_file_content_size_mb.toFixed(2)} MB</span>
             </div>
-            
+
             <div className="flex justify-between">
               <span className="text-muted-foreground">Operations Log:</span>
-              <span className="font-mono">{databaseSize.table_statistics.operations_log.total_content_size_mb} MB</span>
+              <span className="font-mono">{databaseSize.table_statistics?.operations_log?.total_content_size_mb ?? "0.00"} MB</span>
             </div>
           </div>
         </div>

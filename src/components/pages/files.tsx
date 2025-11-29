@@ -1,23 +1,25 @@
 "use client"
 
-import { 
-  useEffect, 
-  useMemo, 
-  useState 
+import {
+  useEffect,
+  useMemo,
+  useState
 } from "react"
 
-import { 
-  Check, 
-  ChevronsUpDown, 
-  Loader2 
+import {
+  Check,
+  ChevronsUpDown,
+  Loader2,
+  CheckCircle2Icon,
+  AlertCircleIcon
 } from "lucide-react"
 
-import { 
-  IconFileSearch 
+import {
+  IconFileSearch
 } from "@tabler/icons-react"
 
-import { 
-  toast 
+import {
+  toast
 } from "sonner"
 
 import type {
@@ -26,22 +28,24 @@ import type {
   SharesResponse,
   FileSearchParams,
   FileSearchResponse,
+  MonitoringOverviewResponse
 } from "@/services/neo-api"
+import { OverviewCard } from "@/components/cards/overview-card"
 
-import { 
-  FilesTable 
+import {
+  FilesTable
 } from "@/components/data-tables/filesT"
 
-import { 
-  SearchFilesDialog 
+import {
+  SearchFilesDialog
 } from "@/components/dialogs/search-files-dialog"
 
-import { 
-  cn 
+import {
+  cn
 } from "@/lib/utils"
 
-import { 
-  Button 
+import {
+  Button
 } from "@/components/ui/button"
 
 import {
@@ -53,10 +57,16 @@ import {
   CommandList,
 } from "@/components/ui/command"
 
-import { 
-  Popover, 
-  PopoverContent, 
-  PopoverTrigger 
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle
+} from "@/components/ui/alert"
+
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger
 } from "@/components/ui/popover"
 
 interface FilesProps {
@@ -66,6 +76,12 @@ interface FilesProps {
   onFetchFileMetadata: (shareId: string, fileId: string) => Promise<FileMetadataResponse> // Fix parameter order
   onSearchFiles: (params: FileSearchParams) => Promise<FileSearchResponse>
   onPageChange?: (page: number) => Promise<void> // Add this if missing
+  onRefresh: () => Promise<void>
+  monitoringOverview: MonitoringOverviewResponse | null
+  cacheStats?: {
+    sizeBytes: number
+    items: number
+  }
 }
 
 const NONE_VALUE = "__none__"
@@ -78,6 +94,9 @@ export default function Files({
   onFetchFileMetadata,
   onSearchFiles,
   onPageChange, // Add this
+  onRefresh,
+  monitoringOverview,
+  cacheStats,
 }: FilesProps) {
   const [open, setOpen] = useState(false)
   const [value, setValue] = useState<string>(NONE_VALUE)
@@ -85,6 +104,8 @@ export default function Files({
   const [searchDialogOpen, setSearchDialogOpen] = useState(false)
   const [searchResults, setSearchResults] = useState<FileSearchResponse | null>(null)
   const [isSearchMode, setIsSearchMode] = useState(false)
+  const [alertMessage, setAlertMessage] = useState<string | null>(null)
+  const [alertVariant, setAlertVariant] = useState<"success" | "error">("success")
 
   const options = useMemo(
     () =>
@@ -94,6 +115,25 @@ export default function Files({
       })),
     [shares]
   )
+
+  useEffect(() => {
+    if (files === null && !loading) {
+      onRefresh().catch((error) => {
+        setAlertVariant("error")
+        setAlertMessage(error instanceof Error ? error.message : "Failed to refresh files")
+      })
+    }
+  }, [onRefresh, files, loading])
+
+  useEffect(() => {
+    if (!alertMessage) return
+
+    const timer = window.setTimeout(() => {
+      setAlertMessage(null)
+    }, 5_000)
+
+    return () => window.clearTimeout(timer)
+  }, [alertMessage])
 
   useEffect(() => {
     if (!shares?.length) {
@@ -113,16 +153,16 @@ export default function Files({
     value === ALL_VALUE
       ? "All shares"
       : value === NONE_VALUE
-      ? "Select share…"
-      : options.find((option) => option.value === value)?.label ?? "Select share…"
+        ? "Select share…"
+        : options.find((option) => option.value === value)?.label ?? "Select share…"
 
   const emptyMessage = loading
     ? "Loading files…"
     : isSearchMode
-    ? "No files match the current search."
-    : value === NONE_VALUE
-    ? "Select a share to view files."
-    : "No files available."
+      ? "No files match the current search."
+      : value === NONE_VALUE
+        ? "Select a share to view files."
+        : "No files available."
 
   const hasShares = Boolean(options.length)
 
@@ -162,11 +202,11 @@ export default function Files({
       setSearchResults(results)
       setSearchDialogOpen(false)
       if (!results.total_count) {
-        toast.info("No files matched your search.")
+        toast.info("No files matched your search")
       }
     } catch (error) {
       console.error("Search failed", error)
-      toast.error(error instanceof Error ? error.message : "Failed to search files.")
+      toast.error(error instanceof Error ? error.message : "Failed to search files")
     } finally {
       setLoading(false)
     }
@@ -204,12 +244,32 @@ export default function Files({
   // Fix: The parameter order should match what FilesTable expects
   const metadataHandler = (shareId: string, fileId: string) => onFetchFileMetadata(shareId, fileId)
 
+  const handlePageChange = async (page: number) => {
+    if (onPageChange) {
+      setLoading(true)
+      try {
+        await onPageChange(page)
+      } finally {
+        setLoading(false)
+      }
+    }
+  }
+
   return (
     <div className="flex flex-1 flex-col">
       <div className="@container/main flex flex-1 flex-col gap-2">
         <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
           <div className="px-4 lg:px-6">
-            <div className="mb-4 flex flex-col items-stretch gap-2 sm:flex-row sm:justify-end sm:gap-3">
+            <div className="mb-4">
+              <OverviewCard
+                overview={monitoringOverview}
+                title="Files Overview"
+                description="Browse and manage files across all shares."
+                variant="files"
+                cacheStats={cacheStats}
+              />
+            </div>
+            <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2">
                 <Popover open={open} onOpenChange={setOpen}>
                   <PopoverTrigger asChild>
@@ -303,13 +363,23 @@ export default function Files({
               </p>
             ) : null}
 
+            {alertMessage ? (
+              <Alert
+                variant={alertVariant === "success" ? "default" : "destructive"}
+                className="mb-4"
+              >
+                {alertVariant === "success" ? <CheckCircle2Icon /> : <AlertCircleIcon />}
+                <AlertTitle>{alertMessage}</AlertTitle>
+                <AlertDescription />
+              </Alert>
+            ) : null}
             <FilesTable
               files={displayFiles}
               loading={loading}
               emptyMessage={emptyMessage}
               onFetchFileMetadata={metadataHandler}
               shareId={selectedShareId}
-              onPageChange={onPageChange} // Use the prop instead of handlers.handleFilesPageChange
+              onPageChange={handlePageChange}
             />
           </div>
         </div>

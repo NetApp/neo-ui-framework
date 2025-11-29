@@ -59,7 +59,9 @@ export function UsersTable({ users, me, onRequestPasswordChange }: UsersTablePro
                   <TableCell>{user.is_active ? "Yes" : "No"}</TableCell>
                   <TableCell>{user.is_admin ? "Yes" : "No"}</TableCell>
                   <TableCell>{new Date(user.created_at).toLocaleString()}</TableCell>
-                  <TableCell>{new Date(user.last_login).toLocaleString()}</TableCell>
+                  <TableCell>
+                    {user.last_login ? new Date(user.last_login).toLocaleString() : "—"}
+                  </TableCell>
                   <TableCell className="text-right">
                     {isCurrent && onRequestPasswordChange ? (
                       <Button

@@ -1,25 +1,22 @@
 "use client"
 
 import { useEffect } from "react"
-import { 
-  IconRefresh, 
-  IconAlertTriangle, 
-  IconClock, 
-  IconUsers, 
-  IconActivity 
+import {
+  IconAlertTriangle,
+  IconClock,
+  IconUsers,
+  IconActivity
 } from "@tabler/icons-react"
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
-import type { 
+import type {
   MonitoringOverviewResponse,
   MonitoringWorkersResponse,
   MonitoringEnumerationResponse,
@@ -34,7 +31,7 @@ import { SharesDistributionChart } from "@/components/charts/sharesdistribution"
 import { DatabaseSizeCard } from "@/components/charts/databasesize"
 import { ContentSavingsChart } from "@/components/charts/contentsavings"
 
-interface DashboardChartProps {
+interface MonitoringChartProps {
   monitoring: {
     overview: MonitoringOverviewResponse | null
     workers: MonitoringWorkersResponse | null
@@ -50,17 +47,17 @@ interface DashboardChartProps {
   onRefreshMonitoring: () => Promise<void>
 }
 
-export function DashboardChart({ databaseSize, monitoring, onRefreshMonitoring }: DashboardChartProps) {
-  const { 
-    overview, 
-    workers, 
-    enumeration, 
-    graphRateLimit, 
-    failedItems, 
+export function MonitoringChart({ databaseSize, monitoring, onRefreshMonitoring }: MonitoringChartProps) {
+  const {
+    overview,
+    workers,
+    enumeration,
+    graphRateLimit,
+    failedItems,
     // tasks, 
-    taskStats, 
-    fileAnalytics, 
-    sharesAnalytics 
+    taskStats,
+    fileAnalytics,
+    sharesAnalytics
   } = monitoring
 
   // Auto-refresh monitoring data every 60 seconds
@@ -76,32 +73,6 @@ export function DashboardChart({ databaseSize, monitoring, onRefreshMonitoring }
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-      {/* Refresh Controls */}
-      <Card className="md:col-span-2 lg:col-span-4">
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            Monitoring Overview
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onRefreshMonitoring}
-              className="h-8"
-            >
-              <IconRefresh className="mr-2 h-4 w-4" />
-              Refresh
-            </Button>
-          </CardTitle>
-          <CardDescription>
-            Real-time monitoring data for NetApp Neo operations. Auto-refreshes every 60 seconds.
-            {overview?.timestamp && (
-              <span className="block mt-1">
-                Last updated (UTC): {new Date(overview.timestamp).toLocaleString()}
-              </span>
-            )}
-          </CardDescription>
-        </CardHeader>
-      </Card>
-
       {/* Database Size Card */}
       <DatabaseSizeCard databaseSize={databaseSize} />
 
@@ -123,16 +94,16 @@ export function DashboardChart({ databaseSize, monitoring, onRefreshMonitoring }
         <CardContent>
           {overview?.work_queue ? (
             <div className="space-y-2">
-              <div className="text-2xl font-bold">{overview.work_queue.total_items}</div>
+              <div className="text-2xl font-bold">{overview?.work_queue?.total_items ?? 0}</div>
               <p className="text-xs text-muted-foreground">Total items</p>
               <div className="space-y-1">
                 <div className="flex justify-between text-xs">
-                  <span>Pending: {overview.work_queue.pending_items}</span>
-                  <span>Processing: {overview.work_queue.processing_items}</span>
+                  <span>Pending: {overview?.work_queue?.pending_items ?? 0}</span>
+                  <span>Processing: {overview?.work_queue?.processing_items ?? 0}</span>
                 </div>
                 <div className="flex justify-between text-xs">
-                  <span>Claimed: {overview.work_queue.claimed_items}</span>
-                  <span className="text-destructive">Failed: {overview.work_queue.failed_items}</span>
+                  <span>Claimed: {overview?.work_queue?.claimed_items ?? 0}</span>
+                  <span className="text-destructive">Failed: {overview?.work_queue?.failed_items ?? 0}</span>
                 </div>
               </div>
             </div>
@@ -151,16 +122,16 @@ export function DashboardChart({ databaseSize, monitoring, onRefreshMonitoring }
         <CardContent>
           {enumeration ? (
             <div className="space-y-2">
-              <div className="text-2xl font-bold">{enumeration.completed_enumerations_last_24h}</div>
+              <div className="text-2xl font-bold">{enumeration?.completed_enumerations_last_24h ?? 0}</div>
               <p className="text-xs text-muted-foreground">Completed (24h)</p>
               <div className="space-y-1">
                 <div className="flex justify-between text-xs">
                   <span>Avg Duration:</span>
-                  <span>{enumeration.avg_enumeration_duration_seconds.toFixed(1)}s</span>
+                  <span>{enumeration?.avg_enumeration_duration_seconds?.toFixed(1) ?? "0.0"}s</span>
                 </div>
                 <div className="flex justify-between text-xs">
                   <span>Active:</span>
-                  <Badge variant="default">{enumeration.active_enumerations.length}</Badge>
+                  <Badge variant="default">{enumeration?.active_enumerations?.length ?? 0}</Badge>
                 </div>
               </div>
             </div>
@@ -179,20 +150,20 @@ export function DashboardChart({ databaseSize, monitoring, onRefreshMonitoring }
         <CardContent>
           {workers ? (
             <div className="space-y-2">
-              <div className="text-2xl font-bold">{workers.total_workers}</div>
+              <div className="text-2xl font-bold">{workers?.total_workers ?? 0}</div>
               <p className="text-xs text-muted-foreground">Total workers</p>
               <div className="space-y-1">
                 <div className="flex items-center justify-between">
                   <span className="text-xs">Active</span>
-                  <Badge variant="default">{workers.active_workers}</Badge>
+                  <Badge variant="default">{workers?.active_workers ?? 0}</Badge>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-xs">Stopping</span>
-                  <Badge variant="secondary">{workers.stopping_workers}</Badge>
+                  <Badge variant="secondary">{workers?.stopping_workers ?? 0}</Badge>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-xs">Stopped</span>
-                  <Badge variant="outline">{workers.stopped_workers}</Badge>
+                  <Badge variant="outline">{workers?.stopped_workers ?? 0}</Badge>
                 </div>
               </div>
             </div>
@@ -211,19 +182,19 @@ export function DashboardChart({ databaseSize, monitoring, onRefreshMonitoring }
         <CardContent>
           {graphRateLimit ? (
             <div className="space-y-2">
-              <div className="text-2xl font-bold">{graphRateLimit.requests_remaining}</div>
+              <div className="text-2xl font-bold">{graphRateLimit?.requests_remaining ?? 0}</div>
               <p className="text-xs text-muted-foreground">Requests remaining</p>
-              <Progress 
-                value={(graphRateLimit.requests_remaining / (graphRateLimit.requests_made + graphRateLimit.requests_remaining)) * 100} 
+              <Progress
+                value={((graphRateLimit?.requests_remaining ?? 0) / ((graphRateLimit?.requests_made ?? 0) + (graphRateLimit?.requests_remaining ?? 1))) * 100}
                 className="h-2"
               />
               <div className="flex items-center justify-between text-xs">
-                <span>Made: {graphRateLimit.requests_made}</span>
-                <Badge variant={graphRateLimit.rate_limited ? "destructive" : "default"}>
-                  {graphRateLimit.rate_limited ? "Limited" : "Active"}
+                <span>Made: {graphRateLimit?.requests_made ?? 0}</span>
+                <Badge variant={graphRateLimit?.rate_limited ? "destructive" : "default"}>
+                  {graphRateLimit?.rate_limited ? "Limited" : "Active"}
                 </Badge>
               </div>
-              {graphRateLimit.reset_time && (
+              {graphRateLimit?.reset_time && (
                 <p className="text-xs text-muted-foreground">
                   Resets: {new Date(graphRateLimit.reset_time).toLocaleTimeString()}
                 </p>
@@ -244,9 +215,9 @@ export function DashboardChart({ databaseSize, monitoring, onRefreshMonitoring }
         <CardContent>
           {failedItems ? (
             <div className="space-y-2">
-              <div className="text-2xl font-bold text-destructive">{failedItems.total_failed_items}</div>
+              <div className="text-2xl font-bold text-destructive">{failedItems?.total_failed_items ?? 0}</div>
               <p className="text-xs text-muted-foreground">Total failed</p>
-              {failedItems.failed_items.length > 0 && (
+              {failedItems?.failed_items && failedItems.failed_items.length > 0 && (
                 <div className="space-y-1">
                   <Separator />
                   <p className="text-xs font-medium">Recent failures:</p>
@@ -274,24 +245,24 @@ export function DashboardChart({ databaseSize, monitoring, onRefreshMonitoring }
         <CardContent>
           {taskStats ? (
             <div className="space-y-2">
-              <div className="text-2xl font-bold">{taskStats.total_tasks}</div>
+              <div className="text-2xl font-bold">{taskStats?.total_tasks ?? 0}</div>
               <p className="text-xs text-muted-foreground">Total tasks</p>
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <div className="flex justify-between">
                   <span>Pending:</span>
-                  <Badge variant="secondary">{taskStats.by_status.pending}</Badge>
+                  <Badge variant="secondary">{taskStats?.by_status?.pending ?? 0}</Badge>
                 </div>
                 <div className="flex justify-between">
                   <span>Running:</span>
-                  <Badge variant="default">{taskStats.by_status.running}</Badge>
+                  <Badge variant="default">{taskStats?.by_status?.running ?? 0}</Badge>
                 </div>
                 <div className="flex justify-between">
                   <span>Completed:</span>
-                  <Badge variant="outline">{taskStats.by_status.completed}</Badge>
+                  <Badge variant="outline">{taskStats?.by_status?.completed ?? 0}</Badge>
                 </div>
                 <div className="flex justify-between">
                   <span>Failed:</span>
-                  <Badge variant="destructive">{taskStats.by_status.failed}</Badge>
+                  <Badge variant="destructive">{taskStats?.by_status?.failed ?? 0}</Badge>
                 </div>
               </div>
             </div>
