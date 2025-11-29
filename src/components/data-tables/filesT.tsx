@@ -41,6 +41,26 @@ interface FilesTableProps {
   onPageChange?: (page: number) => Promise<void>
 }
 
+
+
+const dateTimeFormatter = new Intl.DateTimeFormat(undefined, {
+  year: 'numeric',
+  month: 'numeric',
+  day: 'numeric',
+  hour: 'numeric',
+  minute: 'numeric',
+  second: 'numeric',
+})
+
+const formatDate = (dateString?: string) => {
+  if (!dateString) return "—"
+  try {
+    return dateTimeFormatter.format(new Date(dateString))
+  } catch {
+    return "Invalid Date"
+  }
+}
+
 export function FilesTable({
   files,
   loading = false,
@@ -95,20 +115,37 @@ export function FilesTable({
     document.body.style.cursor = 'col-resize'
   }
 
+  const animationFrameRef = useRef<number | null>(null)
+
   const handleResizeMove = useCallback((e: MouseEvent) => {
     if (!resizingRef.current) return
 
-    const { column, startX, startWidth } = resizingRef.current
-    const diff = e.clientX - startX
-    const newWidth = Math.max(50, startWidth + diff)
+    // Use requestAnimationFrame to throttle resize updates
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current)
+    }
 
-    setColumnWidths(prev => ({
-      ...prev,
-      [column]: newWidth
-    }))
+    animationFrameRef.current = requestAnimationFrame(() => {
+      if (!resizingRef.current) return // Check again inside frame
+
+      const { column, startX, startWidth } = resizingRef.current
+      const diff = e.clientX - startX
+      const newWidth = Math.max(50, startWidth + diff)
+
+      setColumnWidths(prev => {
+        if (prev[column] === newWidth) return prev // Avoid update if unchanged
+        return {
+          ...prev,
+          [column]: newWidth
+        }
+      })
+    })
   }, [])
 
   const handleResizeEnd = useCallback(() => {
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current)
+    }
     resizingRef.current = null
     document.removeEventListener('mousemove', handleResizeMove)
     document.removeEventListener('mouseup', handleResizeEnd)
@@ -309,7 +346,7 @@ export function FilesTable({
                   <TableCell className="truncate" title={file.filename}>{file.filename}</TableCell>
                   <TableCell className="truncate" title={file.unc_path}>{file.unc_path}</TableCell>
                   <TableCell className="truncate">
-                    {file.indexed_at ? new Date(file.indexed_at).toLocaleString() : "—"}
+                    {formatDate(file.indexed_at)}
                   </TableCell>
                   <TableCell className="truncate">{file.size}</TableCell>
                   <TableCell className="truncate">{file.file_type}</TableCell>

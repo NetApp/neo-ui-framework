@@ -117,13 +117,13 @@ export default function Files({
   )
 
   useEffect(() => {
-    if (files === null) {
+    if (files === null && !loading) {
       onRefresh().catch((error) => {
         setAlertVariant("error")
         setAlertMessage(error instanceof Error ? error.message : "Failed to refresh files")
       })
     }
-  }, [onRefresh, files])
+  }, [onRefresh, files, loading])
 
   useEffect(() => {
     if (!alertMessage) return
@@ -243,6 +243,17 @@ export default function Files({
   // For "All shares" or search mode, the FilesTable will use the file's share_id
   // Fix: The parameter order should match what FilesTable expects
   const metadataHandler = (shareId: string, fileId: string) => onFetchFileMetadata(shareId, fileId)
+
+  const handlePageChange = async (page: number) => {
+    if (onPageChange) {
+      setLoading(true)
+      try {
+        await onPageChange(page)
+      } finally {
+        setLoading(false)
+      }
+    }
+  }
 
   return (
     <div className="flex flex-1 flex-col">
@@ -368,7 +379,7 @@ export default function Files({
               emptyMessage={emptyMessage}
               onFetchFileMetadata={metadataHandler}
               shareId={selectedShareId}
-              onPageChange={onPageChange} // Use the prop instead of handlers.handleFilesPageChange
+              onPageChange={handlePageChange}
             />
           </div>
         </div>
