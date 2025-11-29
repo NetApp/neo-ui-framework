@@ -120,6 +120,7 @@ export function NeoInstanceCard({ health, license, className }: NeoInstanceCardP
                             if (!health || !health.components) return null
                             const component = health.components[key as keyof typeof health.components]
                             let isHealthy = false
+                            let isNotConfigured = false
                             let statusText = "Unknown"
 
                             if (key === "shares" && component && 'active_count' in component) {
@@ -127,7 +128,19 @@ export function NeoInstanceCard({ health, license, className }: NeoInstanceCardP
                                 statusText = isHealthy ? "Healthy" : "Errors"
                             } else if (component && 'status' in component) {
                                 isHealthy = component.status === "healthy"
+                                isNotConfigured = component.status === "not_configured"
                                 statusText = component.status
+                            }
+
+                            let badgeClass = "text-destructive border-destructive/50"
+                            let Icon = AlertCircleIcon
+
+                            if (isHealthy) {
+                                badgeClass = "text-green-600 border-green-200 dark:text-green-400 dark:border-green-800"
+                                Icon = CheckIcon
+                            } else if (isNotConfigured) {
+                                badgeClass = "text-orange-600 border-orange-200 dark:text-orange-400 dark:border-orange-800"
+                                Icon = AlertCircleIcon
                             }
 
                             return (
@@ -135,9 +148,9 @@ export function NeoInstanceCard({ health, license, className }: NeoInstanceCardP
                                     <span className="text-muted-foreground">{label}:</span>
                                     <Badge
                                         variant="outline"
-                                        className={`gap-1 ${isHealthy ? "text-green-600 border-green-200 dark:text-green-400 dark:border-green-800" : "text-destructive border-destructive/50"}`}
+                                        className={`gap-1 ${badgeClass}`}
                                     >
-                                        {isHealthy ? <CheckIcon className="h-3 w-3" /> : <AlertCircleIcon className="h-3 w-3" />}
+                                        <Icon className="h-3 w-3" />
                                         {statusText}
                                     </Badge>
                                 </div>

@@ -26,21 +26,21 @@ export interface HealthResponse {
   version: string
   timestamp: string
   components: {
-    database: { 
-      status: string; 
-      error: string | null 
+    database: {
+      status: string;
+      error: string | null
     }
-    filesystem: { 
-      status: string; 
-      error: string | null 
+    filesystem: {
+      status: string;
+      error: string | null
     }
     graph_connector?: { // only for v3
       status: string
       error: string | null
     }
-    shares: { 
+    shares: {
       active_count: number
-      errors: string[] 
+      errors: string[]
     }
   }
   metrics: {
@@ -346,7 +346,7 @@ export interface MonitoringFailedItemsResponse { // only for v3
     additionalProp1: number
     additionalProp2: number
     additionalProp3: number
-  } 
+  }
 }
 
 export interface TasksResponse { // only for v3
