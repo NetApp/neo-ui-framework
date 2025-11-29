@@ -56,10 +56,10 @@ export function NeoInstanceCard({ health, license, className }: NeoInstanceCardP
                         <div className="flex items-center gap-2">
                             <Badge
                                 variant={health?.status === "healthy" ? "default" : "destructive"}
-                                className={health?.status === "healthy"
+                                className={`${health?.status === "healthy"
                                     ? "bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700"
                                     : ""
-                                }
+                                    } text-xl px-3 py-1`}
                             >
                                 {healthStatus}
                             </Badge>
@@ -74,8 +74,19 @@ export function NeoInstanceCard({ health, license, className }: NeoInstanceCardP
                             <CheckIcon className="h-4 w-4 text-muted-foreground" />
                             <span className="text-sm font-medium">License</span>
                         </div>
-                        <div className="text-2xl font-bold">
-                            {license?.details.days_remaining ?? "Unknown"} <span className="text-sm font-normal text-muted-foreground">days</span>
+                        <div className="flex items-center gap-2">
+                            <Badge
+                                variant="outline"
+                                className={`${(() => {
+                                    const days = license?.details.days_remaining
+                                    if (typeof days !== 'number') return ""
+                                    if (days < 10) return "text-destructive border-destructive/50"
+                                    if (days < 90) return "text-orange-600 border-orange-200 dark:text-orange-400 dark:border-orange-800"
+                                    return "text-green-600 border-green-200 dark:text-green-400 dark:border-green-800"
+                                })()} text-xl px-3 py-1`}
+                            >
+                                {license?.details.days_remaining ?? "Unknown"} days
+                            </Badge>
                         </div>
                         <p className="text-xs text-muted-foreground">
                             ID: {license?.details.connection_id ?? "Unknown"}
