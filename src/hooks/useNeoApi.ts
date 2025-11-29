@@ -36,11 +36,25 @@ import type {
   // FileEntry
 } from "@/services/models"
 
+import { useSettings } from "@/context/settings-context"
+
 export function useNeoApi() {
+  const { monitoringTtl, filesTtl, cacheMaxSize } = useSettings()
   const [health, setHealth] = useState<HealthResponse | null>(null)
   const [license, setLicense] = useState<LicenseResponse | null>(null)
   const [version, setVersion] = useState<VersionResponse | null>(null)
   const [helmChartVersion, setHelmChartVersion] = useState<HelmChartVersionResponse | null>(null)
+
+  const apiRef = useRef(new NeoApiService())
+
+  // Update API config when settings change
+  useEffect(() => {
+    apiRef.current.updateConfig({
+      monitoringTtl,
+      filesTtl,
+      cacheMaxSize,
+    })
+  }, [monitoringTtl, filesTtl, cacheMaxSize])
 
   // Fetch public data on mount
   useEffect(() => {
@@ -82,7 +96,12 @@ export function useNeoApi() {
   const [shares, setShares] = useState<SharesResponse[] | null>(null)
   const [files, setFiles] = useState<FilesResponse | null>(null)
   const [token, setToken] = useState<string | null>(null)
-  const apiRef = useRef(new NeoApiService())
+
+  const [cacheStats, setCacheStats] = useState<{ sizeBytes: number; maxSizeBytes: number; items: number }>({
+    sizeBytes: 0,
+    maxSizeBytes: 0,
+    items: 0,
+  })
 
   const [monitoring, setMonitoring] = useState<{
     overview: MonitoringOverviewResponse | null
@@ -177,6 +196,7 @@ export function useNeoApi() {
 
         applySystemData(data)
         setToken(newToken)
+        setCacheStats(api.getCacheStats())
         toast.success(`Welcome, ${data.me?.username}`)
         appLogger.info("Successfully connected to NetApp Neo", undefined, {
           userId: data.me?.id,
@@ -218,6 +238,7 @@ export function useNeoApi() {
       api.clearCache()
       const data = await api.fetchSystemData(token)
       applySystemData(data)
+      setCacheStats(api.getCacheStats())
       appLogger.info("System data refreshed successfully")
     } catch (error) {
       if (error instanceof AuthenticationError) {
@@ -494,7 +515,9 @@ export function useNeoApi() {
 
       const api = apiRef.current
       appLogger.debug("Fetching file metadata", undefined, { shareId, fileId })
-      return api.getFileMetadata(token, shareId, fileId)
+      const metadata = await api.getFileMetadata(token, shareId, fileId)
+      setCacheStats(api.getCacheStats())
+      return metadata
     },
     [token]
   )
@@ -508,7 +531,9 @@ export function useNeoApi() {
 
       const api = apiRef.current
       appLogger.debug("Searching files", undefined, { query: params.query, share_id: params.share_id })
-      return api.searchFiles(token, params)
+      const results = await api.searchFiles(token, params)
+      setCacheStats(api.getCacheStats())
+      return results
     },
     [token]
   )
@@ -574,6 +599,9 @@ export function useNeoApi() {
             total_pages: response.total_pages
           })
         }
+        const stats = api.getCacheStats()
+        appLogger.info("Updating cache stats after file load", undefined, stats)
+        setCacheStats(stats)
       } catch (error) {
         if (error instanceof AuthenticationError) {
           clearSystemData()
@@ -764,6 +792,7 @@ export function useNeoApi() {
       files,
       monitoring,
       token,
+      cacheStats,
     },
     handlers: {
       handleConnect,

@@ -40,6 +40,8 @@ import { AnalyticsApiClient } from "./api/analytics"
 import { HelmApiClient } from "./api/helm"
 import { DataLoader } from "./data-loader"
 
+
+
 export type {
   HealthResponse,
   LicenseResponse,
@@ -82,6 +84,8 @@ export class NeoApiService extends BaseApiClient {
   private analytics: AnalyticsApiClient
   private helm: HelmApiClient
   private dataLoader: DataLoader
+  private monitoringTtl: number = 10 * 60 * 1000
+  private filesTtl: number = 10 * 60 * 1000
 
   constructor(baseUrl = "/api") {
     super(baseUrl)
@@ -98,8 +102,18 @@ export class NeoApiService extends BaseApiClient {
     this.dataLoader = new DataLoader(30000) // 30 seconds default TTL
   }
 
+  updateConfig(config: { monitoringTtl?: number; filesTtl?: number; cacheMaxSize?: number }) {
+    if (config.monitoringTtl) this.monitoringTtl = config.monitoringTtl * 60 * 1000
+    if (config.filesTtl) this.filesTtl = config.filesTtl * 60 * 1000
+    if (config.cacheMaxSize) this.dataLoader.setMaxSize(config.cacheMaxSize * 1024 * 1024)
+  }
+
   clearCache() {
     this.dataLoader.clear()
+  }
+
+  getCacheStats() {
+    return this.dataLoader.getStats()
   }
 
   authenticate(username: string, password: string) {
@@ -178,16 +192,16 @@ export class NeoApiService extends BaseApiClient {
 
   getFiles(token: string, shareId: string, page?: number, pageSize?: number) {
     const key = `files:${token}:${shareId}:${page}:${pageSize}`
-    return this.dataLoader.load(key, () => this.files.getFiles(token, shareId, page, pageSize))
+    return this.dataLoader.load(key, () => this.files.getFiles(token, shareId, page, pageSize), this.filesTtl)
   }
 
   getFileMetadata(token: string, shareId: string, fileId: string) {
-    return this.dataLoader.load(`fileMetadata:${token}:${shareId}:${fileId}`, () => this.files.getFileMetadata(token, shareId, fileId))
+    return this.dataLoader.load(`fileMetadata:${token}:${shareId}:${fileId}`, () => this.files.getFileMetadata(token, shareId, fileId), this.filesTtl)
   }
 
   searchFiles(token: string, params: FileSearchParams) {
     const key = `searchFiles:${token}:${JSON.stringify(params)}`
-    return this.dataLoader.load(key, () => this.files.searchFiles(token, params))
+    return this.dataLoader.load(key, () => this.files.searchFiles(token, params), this.filesTtl)
   }
 
   getOperations(token: string) {
@@ -195,31 +209,31 @@ export class NeoApiService extends BaseApiClient {
   }
 
   getMonitoringOverview(token: string) {
-    return this.dataLoader.load(`monitoringOverview:${token}`, () => this.monitoring.getMonitoringOverview(token), 3600000)
+    return this.dataLoader.load(`monitoringOverview:${token}`, () => this.monitoring.getMonitoringOverview(token), this.monitoringTtl)
   }
 
   getMonitoringWorkers(token: string) {
-    return this.dataLoader.load(`monitoringWorkers:${token}`, () => this.monitoring.getMonitoringWorkers(token), 3600000)
+    return this.dataLoader.load(`monitoringWorkers:${token}`, () => this.monitoring.getMonitoringWorkers(token), this.monitoringTtl)
   }
 
   getMonitoringEnumeration(token: string) {
-    return this.dataLoader.load(`monitoringEnumeration:${token}`, () => this.monitoring.getMonitoringEnumeration(token), 3600000)
+    return this.dataLoader.load(`monitoringEnumeration:${token}`, () => this.monitoring.getMonitoringEnumeration(token), this.monitoringTtl)
   }
 
   getMonitoringGraphRateLimit(token: string) {
-    return this.dataLoader.load(`monitoringGraphRateLimit:${token}`, () => this.monitoring.getMonitoringGraphRateLimit(token), 3600000)
+    return this.dataLoader.load(`monitoringGraphRateLimit:${token}`, () => this.monitoring.getMonitoringGraphRateLimit(token), this.monitoringTtl)
   }
 
   getMonitoringFailedItems(token: string) {
-    return this.dataLoader.load(`monitoringFailedItems:${token}`, () => this.monitoring.getMonitoringFailedItems(token), 3600000)
+    return this.dataLoader.load(`monitoringFailedItems:${token}`, () => this.monitoring.getMonitoringFailedItems(token), this.monitoringTtl)
   }
 
   getTasks(token: string) {
-    return this.dataLoader.load(`tasks:${token}`, () => this.tasks.getTasks(token), 3600000)
+    return this.dataLoader.load(`tasks:${token}`, () => this.tasks.getTasks(token), this.monitoringTtl)
   }
 
   getTaskStatistics(token: string) {
-    return this.dataLoader.load(`taskStatistics:${token}`, () => this.tasks.getTaskStatistics(token), 3600000)
+    return this.dataLoader.load(`taskStatistics:${token}`, () => this.tasks.getTaskStatistics(token), this.monitoringTtl)
   }
 
   deleteTask(token: string, taskId: string) {
@@ -227,11 +241,11 @@ export class NeoApiService extends BaseApiClient {
   }
 
   getFileAnalytics(token: string) {
-    return this.dataLoader.load(`fileAnalytics:${token}`, () => this.analytics.getFileAnalytics(token), 3600000)
+    return this.dataLoader.load(`fileAnalytics:${token}`, () => this.analytics.getFileAnalytics(token), this.monitoringTtl)
   }
 
   getSharesAnalytics(token: string) {
-    return this.dataLoader.load(`sharesAnalytics:${token}`, () => this.analytics.getSharesAnalytics(token), 3600000)
+    return this.dataLoader.load(`sharesAnalytics:${token}`, () => this.analytics.getSharesAnalytics(token), this.monitoringTtl)
   }
 
   getLatestHelmVersion() {

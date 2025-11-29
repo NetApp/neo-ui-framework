@@ -39,12 +39,32 @@ interface MonitoringProps {
         fileAnalytics: { file_type: string; count: number; total_size: number }[] | null
         sharesAnalytics: { share_id: string; share_name: string; share_path: string; count: number; total_size: number }[] | null
     }
-    onFetchMonitoring: () => Promise<void>
+    onFetchMonitoring: (force?: boolean) => Promise<void>
+    cacheStats?: {
+        sizeBytes: number
+        items: number
+    }
 }
 
-export default function Monitoring({ databaseSize, monitoring, onFetchMonitoring }: MonitoringProps) {
+export default function Monitoring({
+    databaseSize,
+    monitoring,
+    onFetchMonitoring,
+    cacheStats,
+}: MonitoringProps) {
     const [alertMessage, setAlertMessage] = useState<string | null>(null)
     const [alertVariant, setAlertVariant] = useState<"success" | "error">("success")
+
+    const handleFetchMonitoring = useCallback(async (force?: boolean) => {
+        try {
+            await onFetchMonitoring(force)
+            setAlertVariant("success")
+            setAlertMessage("Monitoring data refreshed successfully")
+        } catch (error) {
+            setAlertVariant("error")
+            setAlertMessage(error instanceof Error ? error.message : "Failed to refresh monitoring data")
+        }
+    }, [onFetchMonitoring])
 
     useEffect(() => {
         if (!alertMessage) return
@@ -55,15 +75,6 @@ export default function Monitoring({ databaseSize, monitoring, onFetchMonitoring
 
         return () => window.clearTimeout(timer)
     }, [alertMessage])
-
-    const handleFetchMonitoring = useCallback(async () => {
-        try {
-            await onFetchMonitoring()
-        } catch (error) {
-            setAlertVariant("error")
-            setAlertMessage(error instanceof Error ? error.message : "Failed to load monitoring data")
-        }
-    }, [onFetchMonitoring])
 
     // Load monitoring data on mount
     useEffect(() => {
@@ -90,6 +101,7 @@ export default function Monitoring({ databaseSize, monitoring, onFetchMonitoring
                                 overview={monitoring.overview}
                                 title="Monitoring Overview"
                                 description="Real-time monitoring data for NetApp Neo operations. Auto-refreshes every 60 seconds."
+                                cacheStats={cacheStats}
                             />
                         </div>
                         <MonitoringChart

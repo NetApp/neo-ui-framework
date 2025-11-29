@@ -4,15 +4,59 @@ interface CacheEntry<T> {
   data: T
   timestamp: number
   expiresAt: number
+  size: number
 }
 
 export class DataLoader {
   private cache: Map<string, CacheEntry<any>> = new Map()
   private pendingRequests: Map<string, Promise<any>> = new Map()
   private defaultTtl: number
+  private maxSizeBytes: number
+  private currentSizeBytes: number = 0
 
-  constructor(defaultTtlMs: number = 30000) {
+  constructor(defaultTtlMs: number = 30000, maxSizeBytes: number = 100 * 1024 * 1024) { // Default 100MB
     this.defaultTtl = defaultTtlMs
+    this.maxSizeBytes = maxSizeBytes
+  }
+
+  /**
+   * Calculates approximate size of data in bytes.
+   */
+  private calculateSize(data: any): number {
+    try {
+      const json = JSON.stringify(data)
+      return new TextEncoder().encode(json).length
+    } catch (e) {
+      // Fallback for non-serializable data or errors
+      return 1024 // Assume 1KB minimum
+    }
+  }
+
+  /**
+   * Evicts least recently used items until there is space for new data.
+   */
+  private evict(requiredSize: number) {
+    if (requiredSize > this.maxSizeBytes) {
+      appLogger.warn(`[DataLoader] Item size ${requiredSize} exceeds max cache size ${this.maxSizeBytes}. It will not be cached.`)
+      return false
+    }
+
+    // Map iterates in insertion order. Re-inserting an item (get/set) moves it to the end.
+    // So the first item in the iterator is the least recently used.
+    const iterator = this.cache.keys()
+
+    while (this.currentSizeBytes + requiredSize > this.maxSizeBytes) {
+      const key = iterator.next().value
+      if (!key) break // Should not happen if size tracking is correct
+
+      const entry = this.cache.get(key)
+      if (entry) {
+        this.cache.delete(key)
+        this.currentSizeBytes -= entry.size
+        appLogger.debug(`[DataLoader] Evicted ${key} to free ${entry.size} bytes`)
+      }
+    }
+    return true
   }
 
   /**
@@ -30,6 +74,9 @@ export class DataLoader {
     // Return cached data if valid
     if (cached && now < cached.expiresAt) {
       appLogger.debug(`[DataLoader] Cache hit for ${key}`)
+      // Refresh LRU order by deleting and re-inserting
+      this.cache.delete(key)
+      this.cache.set(key, cached)
       return cached.data as T
     }
 
@@ -43,11 +90,19 @@ export class DataLoader {
     const promise = fetcher()
       .then((data) => {
         const ttl = ttlMs ?? this.defaultTtl
-        this.cache.set(key, {
-          data,
-          timestamp: now,
-          expiresAt: now + ttl,
-        })
+        const size = this.calculateSize(data)
+
+        // Try to evict space for new item
+        if (this.evict(size)) {
+          this.cache.set(key, {
+            data,
+            timestamp: now,
+            expiresAt: now + ttl,
+            size,
+          })
+          this.currentSizeBytes += size
+        }
+
         this.pendingRequests.delete(key)
         return data
       })
@@ -65,10 +120,15 @@ export class DataLoader {
    */
   clear(key?: string) {
     if (key) {
-      this.cache.delete(key)
-      appLogger.debug(`[DataLoader] Cleared cache for ${key}`)
+      const entry = this.cache.get(key)
+      if (entry) {
+        this.cache.delete(key)
+        this.currentSizeBytes -= entry.size
+        appLogger.debug(`[DataLoader] Cleared cache for ${key}`)
+      }
     } else {
       this.cache.clear()
+      this.currentSizeBytes = 0
       appLogger.debug("[DataLoader] Cleared all cache")
     }
   }
@@ -77,10 +137,31 @@ export class DataLoader {
    * Invalidates cache entries matching a prefix
    */
   invalidatePrefix(prefix: string) {
-    for (const key of this.cache.keys()) {
+    for (const [key, entry] of this.cache.entries()) {
       if (key.startsWith(prefix)) {
         this.cache.delete(key)
+        this.currentSizeBytes -= entry.size
       }
     }
+  }
+
+  /**
+   * Returns current cache stats
+   */
+  getStats() {
+    return {
+      sizeBytes: this.currentSizeBytes,
+      maxSizeBytes: this.maxSizeBytes,
+      items: this.cache.size
+    }
+  }
+
+  /**
+   * Updates max size configuration
+   */
+  setMaxSize(bytes: number) {
+    this.maxSizeBytes = bytes
+    // Trigger eviction if new size is smaller
+    this.evict(0)
   }
 }

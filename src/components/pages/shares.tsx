@@ -282,7 +282,8 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
               <OverviewCard
                 overview={monitoringOverview}
                 title="Shares Overview"
-                description="Manage and monitor network shares configured for scanning."
+                description="Overview of configured shares and their status."
+                showCacheStats={false}
               />
             </div>
             <div className="mb-4 flex justify-end">

@@ -9,6 +9,7 @@ import {
   IconUsers,
   IconListCheck,
   IconActivity,
+  IconSettings,
 } from "@tabler/icons-react"
 
 import {
@@ -53,6 +54,11 @@ const data = {
       name: "Users",
       url: "#/users",
       icon: IconUsers,
+    },
+    {
+      name: "Settings",
+      url: "#/settings",
+      icon: IconSettings,
     },
     {
       name: "Logs",

@@ -13,6 +13,7 @@ import Tasks from "@/components/pages/tasks"
 import Users from "@/components/pages/users"
 import Help from "@/components/pages/help"
 import Logs from "@/components/pages/logs"
+import Settings from "@/components/pages/settings"
 
 import { useNeoApi } from "@/hooks/useNeoApi"
 
@@ -51,6 +52,7 @@ function App() {
                     license={state.license}
                     version={state.version}
                     helmChartVersion={state.helmChartVersion}
+                    monitoringOverview={state.monitoring.overview}
                   />
                 }
               />
@@ -73,6 +75,7 @@ function App() {
                     databaseSize={state.databaseSize}
                     monitoring={state.monitoring}
                     onFetchMonitoring={handlers.handleFetchMonitoring}
+                    cacheStats={state.cacheStats}
                   />
                 }
               />
@@ -103,6 +106,7 @@ function App() {
                     onPageChange={handlers.handleFilesPageChange}
                     onRefresh={handlers.handleRefresh}
                     monitoringOverview={state.monitoring.overview}
+                    cacheStats={state.cacheStats}
                   />
                 }
               />
@@ -129,6 +133,7 @@ function App() {
                   monitoringOverview={state.monitoring.overview}
                 />
               } />
+              <Route path="/settings" element={<Settings />} />
               <Route path="/help" element={<Help />} />
             </Routes>
           </SidebarInset>

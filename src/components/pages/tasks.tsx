@@ -66,7 +66,8 @@ export default function Tasks({ tasks, taskStats, onFetchTasks, onDeleteTask, mo
               <OverviewCard
                 overview={monitoringOverview}
                 title="Tasks Overview"
-                description="Monitor background tasks and system operations."
+                description="Overview of background tasks and their execution status."
+                showCacheStats={false}
               />
             </div>
             <div className="mb-4 flex justify-between items-center">

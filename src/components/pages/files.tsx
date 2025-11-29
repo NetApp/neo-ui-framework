@@ -78,6 +78,10 @@ interface FilesProps {
   onPageChange?: (page: number) => Promise<void> // Add this if missing
   onRefresh: () => Promise<void>
   monitoringOverview: MonitoringOverviewResponse | null
+  cacheStats?: {
+    sizeBytes: number
+    items: number
+  }
 }
 
 const NONE_VALUE = "__none__"
@@ -92,6 +96,7 @@ export default function Files({
   onPageChange, // Add this
   onRefresh,
   monitoringOverview,
+  cacheStats,
 }: FilesProps) {
   const [open, setOpen] = useState(false)
   const [value, setValue] = useState<string>(NONE_VALUE)
@@ -248,7 +253,9 @@ export default function Files({
               <OverviewCard
                 overview={monitoringOverview}
                 title="Files Overview"
-                description="Search and explore files across all configured shares."
+                description="Browse and manage files across all shares."
+                variant="files"
+                cacheStats={cacheStats}
               />
             </div>
             <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">

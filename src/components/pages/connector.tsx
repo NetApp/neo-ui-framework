@@ -28,8 +28,9 @@ export default function Connector({ health, license, version, helmChartVersion, 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               <OverviewCard
                 overview={monitoringOverview}
-                title="Connector Status"
-                description="Overview of the connector health, license, and version information."
+                title="System Overview"
+                description="Overview of the NetApp Neo system status and health."
+                showCacheStats={false}
               />
               <NeoInstanceCard
                 health={health}

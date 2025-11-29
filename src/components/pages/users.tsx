@@ -185,7 +185,8 @@ export default function Users({ users, me, onAddUser, onChangePassword, onRefres
               <OverviewCard
                 overview={monitoringOverview}
                 title="Users Overview"
-                description="Manage system users and access controls."
+                description="Overview of system users and their roles."
+                showCacheStats={false}
               />
             </div>
             <div className="mb-4 flex justify-end items-center">
