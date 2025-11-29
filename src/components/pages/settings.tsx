@@ -6,28 +6,39 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
 import { toast } from "sonner"
 import { Save } from "lucide-react"
+import type { LogLevel } from "@/services/app-logger"
 
 export default function Settings() {
-    const { monitoringTtl, filesTtl, cacheMaxSize, updateSettings } = useSettings()
+    const { monitoringTtl, filesTtl, cacheMaxSize, logLevel, updateSettings } = useSettings()
 
     const [localMonitoringTtl, setLocalMonitoringTtl] = useState(monitoringTtl)
     const [localFilesTtl, setLocalFilesTtl] = useState(filesTtl)
     const [localCacheMaxSize, setLocalCacheMaxSize] = useState(cacheMaxSize)
+    const [localLogLevel, setLocalLogLevel] = useState<LogLevel>(logLevel)
 
     // Sync local state with context when context changes (e.g. initial load)
     useEffect(() => {
         setLocalMonitoringTtl(monitoringTtl)
         setLocalFilesTtl(filesTtl)
         setLocalCacheMaxSize(cacheMaxSize)
-    }, [monitoringTtl, filesTtl, cacheMaxSize])
+        setLocalLogLevel(logLevel)
+    }, [monitoringTtl, filesTtl, cacheMaxSize, logLevel])
 
     const handleSave = () => {
         updateSettings({
             monitoringTtl: Number(localMonitoringTtl),
             filesTtl: Number(localFilesTtl),
             cacheMaxSize: Number(localCacheMaxSize),
+            logLevel: localLogLevel,
         })
         toast.success("Settings saved successfully")
     }
@@ -87,6 +98,38 @@ export default function Settings() {
                                         />
                                         <p className="text-sm text-muted-foreground">
                                             Maximum approximate memory usage for the cache before eviction starts.
+                                        </p>
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Logging Configuration</CardTitle>
+                                    <CardDescription>
+                                        Control the verbosity of application logs.
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="log-level">Minimum Log Level</Label>
+                                        <Select
+                                            value={localLogLevel}
+                                            onValueChange={(value) => setLocalLogLevel(value as LogLevel)}
+                                        >
+                                            <SelectTrigger id="log-level">
+                                                <SelectValue placeholder="Select log level" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="DEBUG">DEBUG (All logs)</SelectItem>
+                                                <SelectItem value="INFO">INFO (Standard logs)</SelectItem>
+                                                <SelectItem value="WARN">WARN (Warnings only)</SelectItem>
+                                                <SelectItem value="ERROR">ERROR (Errors only)</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        <p className="text-sm text-muted-foreground">
+                                            Set the minimum severity level for logs to be recorded and displayed.
+                                            Higher levels reduce console noise and memory usage.
                                         </p>
                                     </div>
 
