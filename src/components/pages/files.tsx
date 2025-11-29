@@ -372,6 +372,6 @@ export default function Files({
         onOpenChange={setSearchDialogOpen}
         onSearch={handleSearch}
       />
-    </div >
+    </div>
   )
 }
