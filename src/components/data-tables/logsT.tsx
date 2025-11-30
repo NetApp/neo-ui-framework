@@ -21,6 +21,7 @@ const levelVariant: Record<AppLogEntry["level"], "default" | "secondary" | "dest
   WARN: "secondary",
   INFO: "default",
   DEBUG: "outline",
+  OPERATION: "default",
 }
 
 export function LogsTable({ logs, loading = false }: LogsTableProps) {
