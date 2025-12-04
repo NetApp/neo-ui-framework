@@ -157,7 +157,11 @@ export function TasksTable({ tasks, onDeleteTask }: TasksTableProps) {
           <TableBody>
             {rows.length ? (
               rows.map((task) => (
-                <TableRow key={task.id}>
+                <TableRow
+                  key={task.id}
+                  onClick={() => setSelectedTask(task)}
+                  className="cursor-pointer hover:bg-muted/50"
+                >
                   <TableCell className="font-medium">{task.name}</TableCell>
                   <TableCell>{getStatusBadge(task.status)}</TableCell>
                   <TableCell className="text-sm">
@@ -171,7 +175,7 @@ export function TasksTable({ tasks, onDeleteTask }: TasksTableProps) {
                   </TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu modal={false}>
-                      <DropdownMenuTrigger asChild>
+                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                         <Button
                           variant="outline"
                           size="icon"

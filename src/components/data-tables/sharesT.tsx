@@ -1,28 +1,28 @@
 "use client"
 
-import { 
-  useState 
+import {
+  useState
 } from "react"
 
-import { 
-  IconTrash, 
-  IconDatabaseExport, 
-  IconInfoCircle, 
+import {
+  IconTrash,
+  IconDatabaseExport,
+  IconInfoCircle,
   IconEdit,
   IconMenu2
 } from "@tabler/icons-react"
 
-import { 
-  CheckCircle2, 
-  XCircle, 
-  Clock, 
+import {
+  CheckCircle2,
+  XCircle,
+  Clock,
   Loader2,
-  AlertCircle 
+  AlertCircle
 } from "lucide-react"
 
-import type { 
-  ShareDetailsResponse, 
-  SharesResponse 
+import type {
+  ShareDetailsResponse,
+  SharesResponse
 } from "@/services/neo-api"
 
 import {
@@ -34,12 +34,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 
-import { 
-  Button 
+import {
+  Button
 } from "@/components/ui/button"
 
-import { 
-  Badge 
+import {
+  Badge
 } from "@/components/ui/badge"
 
 import {
@@ -60,11 +60,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
-import { 
-  Spinner 
+import {
+  Spinner
 } from "@/components/ui/spinner"
-import { 
-  Separator 
+import {
+  Separator
 } from "@/components/ui/separator"
 
 interface SharesTableProps {
@@ -210,7 +210,11 @@ export function SharesTable({ shares, onDeleteShare, onStartCrawl, onFetchShareD
           <TableBody>
             {rows.length ? (
               rows.map((share) => (
-                <TableRow key={share.id}>
+                <TableRow
+                  key={share.id}
+                  onClick={() => handleShowDetails(share.id)}
+                  className="cursor-pointer hover:bg-muted/50"
+                >
                   <TableCell>{share.share_path}</TableCell>
                   <TableCell>{share.username}</TableCell>
                   <TableCell>{getStatusBadge(share.status)}</TableCell>
@@ -220,9 +224,9 @@ export function SharesTable({ shares, onDeleteShare, onStartCrawl, onFetchShareD
                   <TableCell>{share.last_crawl_file_count}</TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu modal={false}>
-                      <DropdownMenuTrigger asChild>
-                        <Button 
-                          variant="outline" 
+                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                        <Button
+                          variant="outline"
                           size="icon"
                           aria-label="Share actions"
                           disabled={isShareBusy(share.id)}
@@ -283,8 +287,8 @@ export function SharesTable({ shares, onDeleteShare, onStartCrawl, onFetchShareD
         </Table>
       </div>
 
-      <Dialog 
-        open={confirmOpen} 
+      <Dialog
+        open={confirmOpen}
         onOpenChange={(open) => {
           if (!submitting) {
             setConfirmOpen(open)
@@ -304,16 +308,16 @@ export function SharesTable({ shares, onDeleteShare, onStartCrawl, onFetchShareD
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button 
-              variant="outline" 
-              onClick={() => setConfirmOpen(false)} 
+            <Button
+              variant="outline"
+              onClick={() => setConfirmOpen(false)}
               disabled={submitting}
             >
               Cancel
             </Button>
-            <Button 
-              variant="destructive" 
-              onClick={handleConfirm} 
+            <Button
+              variant="destructive"
+              onClick={handleConfirm}
               disabled={submitting}
               aria-busy={submitting}
             >

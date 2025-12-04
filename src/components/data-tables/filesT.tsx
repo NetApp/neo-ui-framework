@@ -342,7 +342,11 @@ export function FilesTable({
               </TableRow>
             ) : sortedRows.length ? (
               sortedRows.map((file) => (
-                <TableRow key={file.id}>
+                <TableRow
+                  key={file.id}
+                  onClick={() => handleShowMetadata(file)}
+                  className="cursor-pointer hover:bg-muted/50"
+                >
                   <TableCell className="truncate" title={file.filename}>{file.filename}</TableCell>
                   <TableCell className="truncate" title={file.unc_path}>{file.unc_path}</TableCell>
                   <TableCell className="truncate">
@@ -360,7 +364,10 @@ export function FilesTable({
                       <Button
                         variant="outline"
                         size="icon"
-                        onClick={() => handleShowMetadata(file)}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleShowMetadata(file)
+                        }}
                         aria-label={`File details for ${file.filename}`}
                         title={`View details for ${file.filename} (Share: ${shareId ?? file.share_id})`}
                       >
