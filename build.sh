@@ -49,7 +49,7 @@ done
 echo "--- Prerequisites Check 🔍 ---"
 
 # Check if podman is available
-echo -n "Checking for podman... "
+printf "%-80s" "Checking for podman... "
 if ! command -v podman &> /dev/null; then
     echo "❌"
     echo "Error: podman is not installed or not in PATH"
