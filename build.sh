@@ -49,7 +49,7 @@ done
 echo "--- Prerequisites Check 🔍 ---"
 
 # Check if podman is available
-echo -n "Checking for podman... "
+printf "%-80s" "Checking for podman... "
 if ! command -v podman &> /dev/null; then
     echo "❌"
     echo "Error: podman is not installed or not in PATH"
@@ -66,7 +66,7 @@ echo "✅"
 
 # Check if npm is available (only if --build-app flag is set)
 if [ "$BUILD_APP" = true ]; then
-    echo -n "Checking for npm... "
+    printf "%-80s" "Checking for npm... "
     if ! command -v npm &> /dev/null; then
         echo "❌"
         echo "Error: npm is not installed or not in PATH"
@@ -82,7 +82,7 @@ if [ "$BUILD_APP" = true ]; then
     echo "✅"
     
     # Check if package.json exists
-    echo -n "Checking for package.json... "
+    printf "%-80s" "Checking for package.json... "
     if [ ! -f "package.json" ]; then
         echo "❌"
         echo "Error: package.json not found in current directory"
@@ -92,7 +92,7 @@ if [ "$BUILD_APP" = true ]; then
 fi
 
 # Check if Dockerfile exists
-echo -n "Checking for Dockerfile... "
+printf "%-80s" "Checking for Dockerfile... "
 if [ ! -f "Dockerfile" ]; then
     echo "❌"
     echo "Error: Dockerfile not found in current directory"
@@ -154,7 +154,7 @@ if [ "$BUILD_APP" = true ]; then
     
     # Delete dist directory if it exists
     if [ -d "dist" ]; then
-        echo -n "Removing 'dist' directory... "
+        printf "%-80s" "Removing 'dist' directory... "
         if rm -rf dist 2>/dev/null; then
             echo "✅"
         else
@@ -164,7 +164,7 @@ if [ "$BUILD_APP" = true ]; then
     fi
     
     # Run npm build
-    echo -n "Running 'npm run build'... "
+    printf "%-80s" "Running 'npm run build'... "
     if npm run build > /tmp/neo-ui-framework-build.log 2>&1; then
         echo "✅"
     else
@@ -179,17 +179,17 @@ fi
 ## 1. Authenticating to Registry
 
 echo "--- 1. Authenticating to Registry 🔑 ---"
-echo -n "Checking authentication... "
+printf "%-80s" "Checking authentication... "
 if LOGGED_IN_USER=$(podman login --get-login "${REGISTRY}" 2>/dev/null); then
     echo "✅ (${LOGGED_IN_USER})"
 else
     echo ""
-    echo -n "Attempting login... "
-    if podman login "${REGISTRY}" > /tmp/neo-ui-framework-build.log 2>&1; then
+    printf "%-80s" "Attempting login... "
+    echo ""
+    if podman login "${REGISTRY}"; then
         echo "✅"
     else
         echo "❌ Authentication failed"
-        cat /tmp/neo-ui-framework-build.log
         exit 1
     fi
 fi
@@ -201,7 +201,7 @@ echo ""
 echo "--- 2. Building Architecture-Specific Images 🏗️ ---"
 
 # Build AMD64 image locally
-echo -n "Building AMD64 image... "
+printf "%-80s" "Building AMD64 image... "
 if podman build --platform linux/amd64 -t "${IMAGE_NAME}:amd64-local" . > /tmp/neo-ui-framework-build.log 2>&1; then
     echo "✅"
 else
@@ -212,7 +212,7 @@ else
 fi
 
 # Build ARM64 image locally
-echo -n "Building ARM64 image... "
+printf "%-80s" "Building ARM64 image... "
 if podman build --platform linux/arm64 -t "${IMAGE_NAME}:arm64-local" . > /tmp/neo-ui-framework-build.log 2>&1; then
     echo "✅"
 else
@@ -228,7 +228,7 @@ echo ""
 echo "--- 3. Tagging and Pushing Images 📤 ---"
 
 # Tag and Push AMD64
-echo -n "Tagging AMD64... "
+printf "%-80s" "Tagging AMD64... "
 if podman tag "${IMAGE_NAME}:amd64-local" "${AMD64_FQN}" 2>/dev/null; then
     echo "✅"
 else
@@ -236,7 +236,7 @@ else
     exit 1
 fi
 
-echo -n "Pushing ${AMD64_FQN}... "
+printf "%-80s" "Pushing ${AMD64_FQN}... "
 if podman push "${AMD64_FQN}" > /tmp/neo-ui-framework-build.log 2>&1; then
     echo "✅"
 else
@@ -246,7 +246,7 @@ else
 fi
 
 # Tag and Push ARM64
-echo -n "Tagging ARM64... "
+printf "%-80s" "Tagging ARM64... "
 if podman tag "${IMAGE_NAME}:arm64-local" "${ARM64_FQN}" 2>/dev/null; then
     echo "✅"
 else
@@ -254,7 +254,7 @@ else
     exit 1
 fi
 
-echo -n "Pushing ${ARM64_FQN}... "
+printf "%-80s" "Pushing ${ARM64_FQN}... "
 if podman push "${ARM64_FQN}" > /tmp/neo-ui-framework-build.log 2>&1; then
     echo "✅"
 else
@@ -269,7 +269,7 @@ if [ "$TAG_LATEST" = true ]; then
     echo "--- Tagging and Pushing as 'latest' 🏷️ ---"
     
     # Tag and Push AMD64 as latest
-    echo -n "Tagging AMD64 as latest... "
+    printf "%-80s" "Tagging AMD64 as latest... "
     if podman tag "${IMAGE_NAME}:amd64-local" "${AMD64_LATEST_FQN}" 2>/dev/null; then
         echo "✅"
     else
@@ -277,7 +277,7 @@ if [ "$TAG_LATEST" = true ]; then
         exit 1
     fi
     
-    echo -n "Pushing ${AMD64_LATEST_FQN}... "
+    printf "%-80s" "Pushing ${AMD64_LATEST_FQN}... "
     if podman push "${AMD64_LATEST_FQN}" > /tmp/neo-ui-framework-build.log 2>&1; then
         echo "✅"
     else
@@ -287,7 +287,7 @@ if [ "$TAG_LATEST" = true ]; then
     fi
     
     # Tag and Push ARM64 as latest
-    echo -n "Tagging ARM64 as latest... "
+    printf "%-80s" "Tagging ARM64 as latest... "
     if podman tag "${IMAGE_NAME}:arm64-local" "${ARM64_LATEST_FQN}" 2>/dev/null; then
         echo "✅"
     else
@@ -295,7 +295,7 @@ if [ "$TAG_LATEST" = true ]; then
         exit 1
     fi
     
-    echo -n "Pushing ${ARM64_LATEST_FQN}... "
+    printf "%-80s" "Pushing ${ARM64_LATEST_FQN}... "
     if podman push "${ARM64_LATEST_FQN}" > /tmp/neo-ui-framework-build.log 2>&1; then
         echo "✅"
     else
@@ -312,7 +312,7 @@ echo "--- 4. Creating and Pushing Manifest List 📝 ---"
 
 # Remove existing manifest if it exists
 if podman manifest exists "${MANIFEST_FQN}" 2>/dev/null; then
-    echo -n "Removing existing manifest... "
+    printf "%-80s" "Removing existing manifest... "
     if podman manifest rm "${MANIFEST_FQN}" > /dev/null 2>&1; then
         echo "✅"
     else
@@ -320,7 +320,7 @@ if podman manifest exists "${MANIFEST_FQN}" 2>/dev/null; then
     fi
 fi
 
-echo -n "Creating manifest ${MANIFEST_FQN}... "
+printf "%-80s" "Creating manifest ${MANIFEST_FQN}... "
 if podman manifest create "${MANIFEST_FQN}" > /dev/null 2>&1; then
     echo "✅"
 else
@@ -328,7 +328,7 @@ else
     exit 1
 fi
 
-echo -n "Adding AMD64 to manifest... "
+printf "%-80s" "Adding AMD64 to manifest... "
 if podman manifest add "${MANIFEST_FQN}" "docker://${AMD64_FQN}" > /dev/null 2>&1; then
     echo "✅"
 else
@@ -336,7 +336,7 @@ else
     exit 1
 fi
 
-echo -n "Adding ARM64 to manifest... "
+printf "%-80s" "Adding ARM64 to manifest... "
 if podman manifest add "${MANIFEST_FQN}" "docker://${ARM64_FQN}" > /dev/null 2>&1; then
     echo "✅"
 else
@@ -344,7 +344,7 @@ else
     exit 1
 fi
 
-echo -n "Pushing manifest ${MANIFEST_FQN}... "
+printf "%-80s" "Pushing manifest ${MANIFEST_FQN}... "
 if podman manifest push "${MANIFEST_FQN}" "docker://${MANIFEST_FQN}" > /tmp/neo-ui-framework-build.log 2>&1; then
     echo "✅"
 else
@@ -360,7 +360,7 @@ if [ "$TAG_LATEST" = true ]; then
 
     # Remove existing latest manifest if it exists
     if podman manifest exists "${MANIFEST_LATEST_FQN}" 2>/dev/null; then
-        echo -n "Removing existing latest manifest... "
+        printf "%-80s" "Removing existing latest manifest... "
         if podman manifest rm "${MANIFEST_LATEST_FQN}" > /dev/null 2>&1; then
             echo "✅"
         else
@@ -370,7 +370,7 @@ if [ "$TAG_LATEST" = true ]; then
     
     # Also check for any image with the same name
     if podman image exists "${MANIFEST_LATEST_FQN}" 2>/dev/null; then
-        echo -n "Removing existing latest image... "
+        printf "%-80s" "Removing existing latest image... "
         if podman rmi "${MANIFEST_LATEST_FQN}" > /dev/null 2>&1; then
             echo "✅"
         else
@@ -378,7 +378,7 @@ if [ "$TAG_LATEST" = true ]; then
         fi
     fi
     
-    echo -n "Creating latest manifest... "
+    printf "%-80s" "Creating latest manifest... "
     if podman manifest create "${MANIFEST_LATEST_FQN}" > /dev/null 2>&1; then
         echo "✅"
     else
@@ -386,7 +386,7 @@ if [ "$TAG_LATEST" = true ]; then
         exit 1
     fi
     
-    echo -n "Adding AMD64 to latest manifest... "
+    printf "%-80s" "Adding AMD64 to latest manifest... "
     if podman manifest add "${MANIFEST_LATEST_FQN}" "docker://${AMD64_LATEST_FQN}" > /dev/null 2>&1; then
         echo "✅"
     else
@@ -394,7 +394,7 @@ if [ "$TAG_LATEST" = true ]; then
         exit 1
     fi
     
-    echo -n "Adding ARM64 to latest manifest... "
+    printf "%-80s" "Adding ARM64 to latest manifest... "
     if podman manifest add "${MANIFEST_LATEST_FQN}" "docker://${ARM64_LATEST_FQN}" > /dev/null 2>&1; then
         echo "✅"
     else
@@ -402,7 +402,7 @@ if [ "$TAG_LATEST" = true ]; then
         exit 1
     fi
     
-    echo -n "Pushing latest manifest... "
+    printf "%-80s" "Pushing latest manifest... "
     if podman manifest push "${MANIFEST_LATEST_FQN}" "docker://${MANIFEST_LATEST_FQN}" > /tmp/neo-ui-framework-build.log 2>&1; then
         echo "✅"
     else
@@ -423,5 +423,6 @@ if [ "$TAG_LATEST" = true ]; then
 fi
 echo "-----------------------------"
 # Cleanup temporary log file
-echo "Cleaning up temporary log file..."
+printf "%-80s" "Cleaning up temporary log file... "
 rm -f /tmp/neo-ui-framework-build.log
+echo "✅"
