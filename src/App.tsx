@@ -91,6 +91,7 @@ function App() {
                     onFetchShareDetails={handlers.handleFetchShareDetails}
                     onRefresh={handlers.handleRefresh}
                     monitoringOverview={state.monitoring.overview}
+                    isAdmin={state.me?.is_admin ?? false}
                   />
                 }
               />

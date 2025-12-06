@@ -73,6 +73,7 @@ interface SharesTableProps {
   onStartCrawl: (shareId: string) => Promise<boolean>
   onFetchShareDetails: (shareId: string) => Promise<ShareDetailsResponse>
   onEditShare: (shareId: string) => void
+  isAdmin: boolean
 }
 
 function getStatusIcon(status: string) {
@@ -134,7 +135,7 @@ function getStatusBadge(status: string) {
   )
 }
 
-export function SharesTable({ shares, onDeleteShare, onStartCrawl, onFetchShareDetails, onEditShare }: SharesTableProps) {
+export function SharesTable({ shares, onDeleteShare, onStartCrawl, onFetchShareDetails, onEditShare, isAdmin }: SharesTableProps) {
   const rows = shares ?? []
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [pendingId, setPendingId] = useState<string | null>(null)
@@ -254,9 +255,10 @@ export function SharesTable({ shares, onDeleteShare, onStartCrawl, onFetchShareD
                             <IconInfoCircle className="mr-2 size-4" />
                             Details
                           </DropdownMenuItem>
+
                           <DropdownMenuItem
                             onSelect={() => onEditShare(share.id)}
-                            disabled={deletingId === share.id}
+                            disabled={deletingId === share.id || !isAdmin}
                           >
                             <IconEdit className="mr-2 size-4" />
                             Edit
@@ -270,11 +272,11 @@ export function SharesTable({ shares, onDeleteShare, onStartCrawl, onFetchShareD
                             <IconTrash className="mr-2 size-4" />
                             {deletingId === share.id ? "Deleting..." : "Delete"}
                           </DropdownMenuItem>
-                        </DropdownMenuGroup>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
+                        </DropdownMenuGroup >
+                      </DropdownMenuContent >
+                    </DropdownMenu >
+                  </TableCell >
+                </TableRow >
               ))
             ) : (
               <TableRow>
@@ -282,10 +284,11 @@ export function SharesTable({ shares, onDeleteShare, onStartCrawl, onFetchShareD
                   No shares available.
                 </TableCell>
               </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+            )
+            }
+          </TableBody >
+        </Table >
+      </div >
 
       <Dialog
         open={confirmOpen}

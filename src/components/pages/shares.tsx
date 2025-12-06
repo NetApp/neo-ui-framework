@@ -102,6 +102,7 @@ interface SharesProps {
   onFetchShareDetails: (shareId: string) => Promise<ShareDetailsResponse>
   onRefresh: () => Promise<void>
   monitoringOverview: MonitoringOverviewResponse | null
+  isAdmin: boolean
 }
 
 const DEFAULT_RULES_JSON = `{
@@ -113,7 +114,7 @@ const DEFAULT_RULES_JSON = `{
   "enable_copilot_upload": true
 }`
 
-export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShare, onStartCrawl, onFetchShareDetails, onRefresh, monitoringOverview }: SharesProps) {
+export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShare, onStartCrawl, onFetchShareDetails, onRefresh, monitoringOverview, isAdmin }: SharesProps) {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [sharePath, setSharePath] = useState("")
   const [username, setUsername] = useState("")
@@ -287,7 +288,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
               />
             </div>
             <div className="mb-4 flex justify-end">
-              <Button onClick={() => setDialogOpen(true)}>
+              <Button onClick={() => setDialogOpen(true)} disabled={!isAdmin}>
                 <IconPlus className="mr-2 size-4" />
                 Add share
               </Button>
@@ -308,6 +309,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
               onStartCrawl={handleCrawl}
               onFetchShareDetails={onFetchShareDetails}
               onEditShare={handleEditShare}
+              isAdmin={isAdmin}
             />
           </div>
         </div>

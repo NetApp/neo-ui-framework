@@ -27,7 +27,7 @@ import type {
   TokenResponse,
   // TaskCancelResponse,
 } from "./models"
-import { BaseApiClient, AuthenticationError } from "./api/base"
+import { BaseApiClient, AuthenticationError, AuthorizationError } from "./api/base"
 import { AuthApiClient } from "./api/auth"
 import { SystemApiClient } from "./api/system"
 import { UsersApiClient } from "./api/users"
@@ -70,7 +70,7 @@ export type {
   TokenResponse,
   TaskCancelResponse,
 }
-export { AuthenticationError }
+export { AuthenticationError, AuthorizationError }
 
 export class NeoApiService extends BaseApiClient {
   private auth: AuthApiClient
@@ -255,6 +255,24 @@ export class NeoApiService extends BaseApiClient {
   async fetchSystemData(token: string) {
     appLogger.info("Fetching system data")
 
+    // Helper to fetch data that might be restricted for non-admins
+    const fetchOptional = async <T,>(
+      promise: Promise<T>,
+      defaultValue: T | null = null
+    ): Promise<T | null> => {
+      try {
+        return await promise
+      } catch (error) {
+        if (error instanceof AuthorizationError) {
+          appLogger.warn("Access denied for optional resource", undefined, {
+            error: error.message,
+          })
+          return defaultValue
+        }
+        throw error
+      }
+    }
+
     try {
       const [
         health,
@@ -267,35 +285,35 @@ export class NeoApiService extends BaseApiClient {
         databaseSize,
         helmChartVersion,
       ] = await Promise.all([
-        this.getHealth(token),
-        this.getLicenseStatus(token),
-        this.getVersion(token),
-        this.getUsers(token),
-        this.getMeUsers(token),
-        this.getOperations(token),
-        this.getShares(token),
-        this.getDatabaseSize(token),
-        this.getLatestHelmVersion(),
+        fetchOptional(this.getHealth(token), null),
+        fetchOptional(this.getLicenseStatus(token), null),
+        fetchOptional(this.getVersion(token), null),
+        fetchOptional(this.getUsers(token), []),
+        fetchOptional(this.getMeUsers(token), null),
+        fetchOptional(this.getOperations(token), []),
+        fetchOptional(this.getShares(token), []),
+        fetchOptional(this.getDatabaseSize(token), null),
+        fetchOptional(this.getLatestHelmVersion(), null),
       ])
 
       appLogger.info("System data fetched successfully", undefined, {
-        users_count: users.length,
-        shares_count: shares.length,
-        operations_count: operations.length,
-        database_size_mb: databaseSize.database_file_size_mb,
-        total_files_tracked: databaseSize.total_files_tracked,
-        latest_app_version: helmChartVersion.app_version,
-        latest_chart_version: helmChartVersion.chart_version,
+        users_count: users?.length ?? 0,
+        shares_count: shares?.length ?? 0,
+        operations_count: operations?.length ?? 0,
+        database_size_mb: databaseSize?.database_file_size_mb ?? 0,
+        total_files_tracked: databaseSize?.total_files_tracked ?? 0,
+        latest_app_version: helmChartVersion?.app_version ?? "unknown",
+        latest_chart_version: helmChartVersion?.chart_version ?? "unknown",
       })
 
       return {
         health,
         license,
         version,
-        users,
+        users: (users && users.length > 0) ? users : (me ? [me] : []),
         me,
-        operations,
-        shares,
+        operations: operations || [],
+        shares: shares || [],
         files: null as FilesResponse | null,
         databaseSize,
         helmChartVersion,

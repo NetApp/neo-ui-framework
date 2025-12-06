@@ -12,6 +12,13 @@ export class AuthenticationError extends Error {
   }
 }
 
+export class AuthorizationError extends Error {
+  constructor(message = "You do not have permission to access this resource.") {
+    super(message)
+    this.name = "AuthorizationError"
+  }
+}
+
 export class BaseApiClient {
   protected baseUrl: string
 
@@ -38,8 +45,13 @@ export class BaseApiClient {
           `Status: ${response.status}, Body: ${body}`
         )
 
-        if (expectAuth && (response.status === 401 || response.status === 403)) {
-          throw new AuthenticationError()
+        if (expectAuth) {
+          if (response.status === 401) {
+            throw new AuthenticationError()
+          }
+          if (response.status === 403) {
+            throw new AuthorizationError()
+          }
         }
 
         throw new Error(`${endpoint} failed (${response.status} ${response.statusText})`)

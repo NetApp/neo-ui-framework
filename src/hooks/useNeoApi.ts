@@ -129,13 +129,13 @@ export function useNeoApi() {
 
   const applySystemData = useCallback(
     (data: {
-      health: HealthResponse
-      license: LicenseResponse
-      version: VersionResponse
-      helmChartVersion: HelmChartVersionResponse  // Add this
-      databaseSize: DatabaseSizeResponse
+      health: HealthResponse | null
+      license: LicenseResponse | null
+      version: VersionResponse | null
+      helmChartVersion: HelmChartVersionResponse | null // Add this
+      databaseSize: DatabaseSizeResponse | null
       users: UserResponse[]
-      me: MeResponse
+      me: MeResponse | null
       operations: OperationResponse[]
       shares: SharesResponse[]
       files: FilesResponse | null
@@ -197,7 +197,11 @@ export function useNeoApi() {
         applySystemData(data)
         setToken(newToken)
         setCacheStats(api.getCacheStats())
-        toast.success(`Welcome, ${data.me?.username}`)
+        if (data.me) {
+          toast.success(`Welcome, ${data.me.username}`)
+        } else {
+          toast.success("Welcome")
+        }
         appLogger.info("Successfully connected to NetApp Neo", undefined, {
           userId: data.me?.id,
           username: data.me?.username,

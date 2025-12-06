@@ -190,7 +190,7 @@ export default function Users({ users, me, onAddUser, onChangePassword, onRefres
               />
             </div>
             <div className="mb-4 flex justify-end items-center">
-              <Button onClick={() => setAddDialogOpen(true)}>
+              <Button onClick={() => setAddDialogOpen(true)} disabled={!me?.is_admin}>
                 <IconPlus className="mr-2 size-4" />
                 Add user
               </Button>
