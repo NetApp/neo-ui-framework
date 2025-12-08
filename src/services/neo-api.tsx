@@ -204,6 +204,11 @@ export class NeoApiService extends BaseApiClient {
     return this.dataLoader.load(key, () => this.files.searchFiles(token, params), this.filesTtl)
   }
 
+  getMyDocuments(token: string, page: number = 1, pageSize: number = 100) {
+    const key = `myDocuments:${token}:${page}:${pageSize}`
+    return this.dataLoader.load(key, () => this.files.getMyDocuments(token, page, pageSize), this.filesTtl)
+  }
+
   getOperations(token: string) {
     return this.dataLoader.load(`operations:${token}`, () => this.operations.getOperations(token))
   }

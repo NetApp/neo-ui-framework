@@ -39,6 +39,7 @@ interface FilesTableProps {
   onFetchFileMetadata?: (shareId: string, fileId: string) => Promise<FileMetadataResponse>
   shareId?: string
   onPageChange?: (page: number) => Promise<void>
+  onFileClick?: (file: FileEntry) => void
 }
 
 
@@ -67,7 +68,8 @@ export function FilesTable({
   emptyMessage,
   onFetchFileMetadata,
   shareId,
-  onPageChange
+  onPageChange,
+  onFileClick
 }: FilesTableProps) {
   const rows = files?.files ?? []
   const message = emptyMessage ?? (loading ? "Loading files…" : "No files available.")
@@ -344,7 +346,13 @@ export function FilesTable({
               sortedRows.map((file) => (
                 <TableRow
                   key={file.id}
-                  onClick={() => handleShowMetadata(file)}
+                  onClick={() => {
+                    if (onFileClick) {
+                      onFileClick(file)
+                    } else {
+                      handleShowMetadata(file)
+                    }
+                  }}
                   className="cursor-pointer hover:bg-muted/50"
                 >
                   <TableCell className="truncate" title={file.filename}>{file.filename}</TableCell>

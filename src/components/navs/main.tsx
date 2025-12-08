@@ -1,12 +1,13 @@
 "use client"
 
-import { 
-  type Icon 
+import {
+  type Icon
 } from "@tabler/icons-react"
 
 import {
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -14,6 +15,7 @@ import {
 
 export function NavMain({
   items,
+  label,
   ...props
 }: {
   items: {
@@ -21,10 +23,12 @@ export function NavMain({
     url: string
     icon: Icon
   }[]
+  label?: string
 } & React.ComponentPropsWithoutRef<typeof SidebarGroup>) {
 
   return (
     <SidebarGroup {...props}>
+      {label && <SidebarGroupLabel>{label}</SidebarGroupLabel>}
       <SidebarGroupContent className="flex flex-col gap-2">
         <SidebarMenu>
           {items.map((item) => (

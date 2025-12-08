@@ -1,3 +1,4 @@
+import React from "react"
 import { HashRouter, Routes, Route } from "react-router-dom"
 
 import { ThemeProvider } from "@/components/navs/theme-provider"
@@ -14,6 +15,8 @@ import Users from "@/components/pages/users"
 import Help from "@/components/pages/help"
 import Logs from "@/components/pages/logs"
 import Settings from "@/components/pages/settings"
+const MyDatasets = React.lazy(() => import("@/components/pages/my-datasets"))
+const DatasetPage = React.lazy(() => import("@/components/pages/dataset-page"))
 
 import { useNeoApi } from "@/hooks/useNeoApi"
 
@@ -36,6 +39,7 @@ function App() {
             isConnected={!!state.token}
             onConnect={handlers.handleConnect}
             onLogout={handlers.handleLogout}
+            datasets={state.datasets}
           />
           <SidebarInset>
             <SiteHeader
@@ -105,7 +109,31 @@ function App() {
                     onFetchFileMetadata={handlers.handleFetchFileMetadata}
                     onSearchFiles={handlers.handleSearchFiles}
                     onPageChange={handlers.handleFilesPageChange}
+                    onCreateDataset={handlers.handleCreateDataset}
                     onRefresh={handlers.handleRefresh}
+                    monitoringOverview={state.monitoring.overview}
+                    cacheStats={state.cacheStats}
+                  />
+                }
+              />
+              <Route
+                path="/my-datasets/my-datasets"
+                element={
+                  <MyDatasets
+                    datasets={state.datasets}
+                    onDeleteDataset={handlers.handleDeleteDataset}
+                    monitoringOverview={state.monitoring.overview}
+                    cacheStats={state.cacheStats}
+                  />
+                }
+              />
+              <Route
+                path="/my-datasets/:datasetId"
+                element={
+                  <DatasetPage
+                    datasets={state.datasets}
+                    onFetchFileMetadata={handlers.handleFetchFileMetadata}
+                    onDeleteDataset={handlers.handleDeleteDataset}
                     monitoringOverview={state.monitoring.overview}
                     cacheStats={state.cacheStats}
                   />

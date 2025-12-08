@@ -15,7 +15,8 @@ import {
 } from "lucide-react"
 
 import {
-  IconFileSearch
+  IconFileSearch,
+  IconPlus
 } from "@tabler/icons-react"
 
 import {
@@ -28,7 +29,8 @@ import type {
   SharesResponse,
   FileSearchParams,
   FileSearchResponse,
-  MonitoringOverviewResponse
+  MonitoringOverviewResponse,
+  FileEntry
 } from "@/services/neo-api"
 import { OverviewCard } from "@/components/cards/overview-card"
 
@@ -39,6 +41,10 @@ import {
 import {
   SearchFilesDialog
 } from "@/components/dialogs/search-files-dialog"
+
+import {
+  CreateDatasetDialog
+} from "@/components/dialogs/create-dataset-dialog"
 
 import {
   cn
@@ -75,7 +81,8 @@ interface FilesProps {
   onSelectShare: (shareId: string | null) => Promise<void> // Update type to accept null
   onFetchFileMetadata: (shareId: string, fileId: string) => Promise<FileMetadataResponse> // Fix parameter order
   onSearchFiles: (params: FileSearchParams) => Promise<FileSearchResponse>
-  onPageChange?: (page: number) => Promise<void> // Add this if missing
+  onPageChange?: (page: number) => Promise<void>
+  onCreateDataset: (name: string, files: FileEntry[]) => void
   onRefresh: () => Promise<void>
   monitoringOverview: MonitoringOverviewResponse | null
   cacheStats?: {
@@ -93,7 +100,8 @@ export default function Files({
   onSelectShare,
   onFetchFileMetadata,
   onSearchFiles,
-  onPageChange, // Add this
+  onPageChange,
+  onCreateDataset,
   onRefresh,
   monitoringOverview,
   cacheStats,
@@ -102,6 +110,7 @@ export default function Files({
   const [value, setValue] = useState<string>(NONE_VALUE)
   const [loading, setLoading] = useState(false)
   const [searchDialogOpen, setSearchDialogOpen] = useState(false)
+  const [createDatasetDialogOpen, setCreateDatasetDialogOpen] = useState(false)
   const [searchResults, setSearchResults] = useState<FileSearchResponse | null>(null)
   const [isSearchMode, setIsSearchMode] = useState(false)
   const [alertMessage, setAlertMessage] = useState<string | null>(null)
@@ -215,6 +224,13 @@ export default function Files({
   const handleClearSearch = () => {
     setIsSearchMode(false)
     setSearchResults(null)
+  }
+
+  const handleCreateDataset = async (name: string) => {
+    if (searchResults?.files) {
+      onCreateDataset(name, searchResults.files)
+      toast.success(`Dataset "${name}" created`)
+    }
   }
 
   const displayFiles = useMemo<FilesResponse | null>(() => {
@@ -338,9 +354,15 @@ export default function Files({
                   </PopoverContent>
                 </Popover>
                 {isSearchMode ? (
-                  <Button variant="outline" size="sm" onClick={handleClearSearch}>
-                    Clear search
-                  </Button>
+                  <>
+                    <Button variant="outline" size="sm" onClick={handleClearSearch}>
+                      Clear search
+                    </Button>
+                    <Button variant="default" size="sm" onClick={() => setCreateDatasetDialogOpen(true)}>
+                      <IconPlus className="mr-2 size-4" />
+                      Create dataset
+                    </Button>
+                  </>
                 ) : null}
               </div>
 
@@ -389,6 +411,12 @@ export default function Files({
         open={searchDialogOpen}
         onOpenChange={setSearchDialogOpen}
         onSearch={handleSearch}
+      />
+
+      <CreateDatasetDialog
+        open={createDatasetDialogOpen}
+        onOpenChange={setCreateDatasetDialogOpen}
+        onSave={handleCreateDataset}
       />
     </div>
   )

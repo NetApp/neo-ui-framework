@@ -405,6 +405,13 @@ export interface UserResponse {
   last_login: string | null
 }
 
+export interface Dataset {
+  id: string
+  name: string
+  files: FileEntry[]
+  createdAt: string
+}
+
 export interface MeResponse {
   id: number
   username: string

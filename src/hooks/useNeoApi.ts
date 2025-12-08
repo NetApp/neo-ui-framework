@@ -33,7 +33,8 @@ import {
 
 import type {
   ConnectionCredentials,
-  // FileEntry
+  FileEntry,
+  Dataset
 } from "@/services/models"
 
 import { useSettings } from "@/context/settings-context"
@@ -95,6 +96,8 @@ export function useNeoApi() {
   const [operations, setOperations] = useState<OperationResponse[] | null>(null)
   const [shares, setShares] = useState<SharesResponse[] | null>(null)
   const [files, setFiles] = useState<FilesResponse | null>(null)
+  const [myDocuments, setMyDocuments] = useState<FilesResponse | null>(null)
+  const [datasets, setDatasets] = useState<Dataset[]>([])
   const [token, setToken] = useState<string | null>(null)
 
   const [cacheStats, setCacheStats] = useState<{ sizeBytes: number; maxSizeBytes: number; items: number }>({
@@ -165,6 +168,9 @@ export function useNeoApi() {
     setOperations(null)
     setShares(null)
     setFiles(null)
+    setFiles(null)
+    setMyDocuments(null)
+    setDatasets([])
     setMonitoring({
       overview: null,
       workers: null,
@@ -622,6 +628,70 @@ export function useNeoApi() {
     [token, clearSystemData]
   )
 
+  const handleFetchMyDocuments = useCallback(
+    async (page: number = 1, pageSize: number = 100) => {
+      if (!token) {
+        appLogger.warn("Fetch my documents attempted without active token")
+        throw new AuthenticationError()
+      }
+
+      const api = apiRef.current
+
+      try {
+        appLogger.info("Fetching my documents", undefined, { page })
+        const response = await api.getMyDocuments(token, page, pageSize)
+
+        // Adapt FileSearchResponse to FilesResponse for consistency if needed, 
+        // or just return it. The FilesTable expects FilesResponse structure mostly.
+        // Let's return it as is, but we might need to adapt it in the component or here.
+        // FilesTable expects: share_id, path, files, total_count, etc.
+        // FileSearchResponse has: files, total_count, etc.
+        // We'll construct a pseudo-FilesResponse.
+
+        const result: FilesResponse = {
+          share_id: "my-documents",
+          path: "My Documents",
+          files: response.files,
+          total_count: response.total_count,
+          total_size: response.total_size,
+          page: response.page,
+          page_size: response.page_size,
+          total_pages: response.total_pages,
+          has_next: response.has_next,
+          has_previous: response.has_previous,
+        }
+
+        setMyDocuments(result)
+        return result
+      } catch (error) {
+        if (error instanceof AuthenticationError) {
+          setToken(null)
+        }
+        appLogger.error(
+          "Failed to fetch my documents",
+          error instanceof Error ? error.message : "Unknown error"
+        )
+        throw error
+      }
+    },
+    [token, clearSystemData]
+  )
+
+  const handleCreateDataset = useCallback((name: string, files: FileEntry[]) => {
+    const newDataset: Dataset = {
+      id: crypto.randomUUID(),
+      name,
+      files,
+      createdAt: new Date().toISOString(),
+    }
+    setDatasets((prev) => [...prev, newDataset])
+    return newDataset
+  }, [])
+
+  const handleDeleteDataset = useCallback((id: string) => {
+    setDatasets((prev) => prev.filter((d) => d.id !== id))
+  }, [])
+
   const handleFilesPageChange = useCallback(
     async (page: number) => {
       if (currentShareId !== null) {
@@ -794,6 +864,8 @@ export function useNeoApi() {
       operations,
       shares,
       files,
+      myDocuments,
+      datasets,
       monitoring,
       token,
       cacheStats,
@@ -816,6 +888,9 @@ export function useNeoApi() {
       handleDeleteTask,
       handleLogout,
       handleFilesPageChange,
+      handleFetchMyDocuments,
+      handleCreateDataset,
+      handleDeleteDataset,
     },
   }
 }

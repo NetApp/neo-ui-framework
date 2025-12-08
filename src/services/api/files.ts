@@ -47,4 +47,14 @@ export class FilesApiClient extends BaseApiClient {
     const query = searchParams.toString()
     return this.requestWithToken<FileSearchResponse>(`/files${query ? `?${query}` : ""}`, token)
   }
+
+  getMyDocuments(token: string, page: number = 1, pageSize: number = 100) {
+    const params = new URLSearchParams()
+    params.append("page", page.toString())
+    params.append("page_size", pageSize.toString())
+
+    appLogger.debug("Fetching my documents", undefined, { page, pageSize })
+    // Using /files endpoint which returns files accessible to the user
+    return this.requestWithToken<FileSearchResponse>(`/files?${params}`, token)
+  }
 }

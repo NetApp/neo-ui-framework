@@ -49,6 +49,13 @@ const data = {
       icon: IconChartBar,
     },
   ],
+  navDatasets: [
+    {
+      name: "My Datasets",
+      url: "#/my-datasets/my-datasets",
+      icon: IconFileText,
+    },
+  ],
   navSecondary: [
     {
       name: "Users",
@@ -73,10 +80,28 @@ const data = {
   ],
 }
 
-export function AppSidebarContent({ ...props }: React.ComponentProps<typeof SidebarContent>) {
+import type { Dataset } from "@/services/models"
+
+interface AppSidebarContentProps extends React.ComponentProps<typeof SidebarContent> {
+  datasets?: Dataset[]
+}
+
+export function AppSidebarContent({ datasets = [], ...props }: AppSidebarContentProps) {
+  const datasetItems = datasets.map((dataset) => ({
+    name: dataset.name,
+    url: `#/my-datasets/${dataset.id}`,
+    icon: IconFileText,
+  }))
+
+  const navDatasets = [
+    ...data.navDatasets,
+    ...datasetItems
+  ]
+
   return (
     <SidebarContent {...props}>
       <NavMain items={data.navMain} />
+      <NavMain items={navDatasets} label="My Datasets" />
       <NavMain items={data.navSecondary} className="mt-auto" />
     </SidebarContent>
   )
