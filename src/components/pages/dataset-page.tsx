@@ -6,7 +6,7 @@ import Markdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import { OverviewCard } from "@/components/cards/overview-card"
 import { FilesTable } from "@/components/data-tables/filesT"
-import type { FilesResponse, MonitoringOverviewResponse, FileMetadataResponse, FileEntry } from "@/services/neo-api"
+import type { FilesResponse, FileMetadataResponse, FileEntry } from "@/services/neo-api"
 import type { Dataset } from "@/services/models"
 import { toast } from "sonner"
 import {
@@ -24,11 +24,6 @@ interface DatasetPageProps {
     datasets: Dataset[]
     onFetchFileMetadata: (shareId: string, fileId: string) => Promise<FileMetadataResponse>
     onDeleteDataset: (id: string) => void
-    monitoringOverview: MonitoringOverviewResponse | null
-    cacheStats?: {
-        sizeBytes: number
-        items: number
-    }
 }
 
 export default function DatasetPage({
@@ -128,7 +123,7 @@ export default function DatasetPage({
                             />
                         </div>
 
-                        <div className="mb-4 flex justify-end">
+                        <div className="mb-4 flex justify-end gap-2">
                             <Button variant="destructive" onClick={handleDeleteClick}>
                                 <IconTrash className="mr-2 size-4" />
                                 Delete dataset

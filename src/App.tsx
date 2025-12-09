@@ -134,8 +134,6 @@ function App() {
                     datasets={state.datasets}
                     onFetchFileMetadata={handlers.handleFetchFileMetadata}
                     onDeleteDataset={handlers.handleDeleteDataset}
-                    monitoringOverview={state.monitoring.overview}
-                    cacheStats={state.cacheStats}
                   />
                 }
               />
