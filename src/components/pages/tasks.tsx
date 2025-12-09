@@ -3,22 +3,24 @@
 import { useEffect, useState } from "react"
 import { CheckCircle2Icon, AlertCircleIcon } from "lucide-react"
 
-import type { TasksResponse, TaskStatisticsResponse, MonitoringOverviewResponse } from "@/services/neo-api"
+import type { TasksResponse, TaskStatisticsResponse, MonitoringOverviewResponse, AclCacheStatisticsResponse } from "@/services/neo-api"
 
 import { TasksTable } from "@/components/data-tables/tasksT"
 import { OverviewCard } from "@/components/cards/overview-card"
+import { TasksSummaryCard } from "@/components/cards/tasks-summary-card"
+import { AclCacheCard } from "@/components/cards/acl-cache-card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
 interface TasksProps {
   tasks: TasksResponse[] | null
   taskStats: TaskStatisticsResponse | null
+  aclCacheStats: AclCacheStatisticsResponse | null
   onFetchTasks: () => Promise<void>
   onDeleteTask: (taskId: string) => Promise<void>
   monitoringOverview: MonitoringOverviewResponse | null
 }
 
-export default function Tasks({ tasks, taskStats, onFetchTasks, onDeleteTask, monitoringOverview }: TasksProps) {
+export default function Tasks({ tasks, taskStats, aclCacheStats, onFetchTasks, onDeleteTask, monitoringOverview }: TasksProps) {
   const [alertMessage, setAlertMessage] = useState<string | null>(null)
   const [alertVariant, setAlertVariant] = useState<"success" | "error">("success")
   const [initialLoad, setInitialLoad] = useState(true)
@@ -39,7 +41,7 @@ export default function Tasks({ tasks, taskStats, onFetchTasks, onDeleteTask, mo
   }
 
   useEffect(() => {
-    if (tasks === null && taskStats === null) {
+    if (tasks === null && taskStats === null && aclCacheStats === null) {
       handleRefresh()
     } else {
       setInitialLoad(false)
@@ -85,62 +87,10 @@ export default function Tasks({ tasks, taskStats, onFetchTasks, onDeleteTask, mo
               </Alert>
             ) : null}
 
-            {taskStats && (
-              <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardDescription>Total Tasks</CardDescription>
-                    <CardTitle className="text-3xl">{taskStats.total_tasks}</CardTitle>
-                  </CardHeader>
-                  <CardContent />
-                </Card>
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardDescription>Pending</CardDescription>
-                    <CardTitle className="text-3xl text-yellow-600">
-                      {taskStats.by_status.pending}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent />
-                </Card>
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardDescription>Running</CardDescription>
-                    <CardTitle className="text-3xl text-blue-600">
-                      {taskStats.by_status.running}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent />
-                </Card>
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardDescription>Completed</CardDescription>
-                    <CardTitle className="text-3xl text-green-600">
-                      {taskStats.by_status.completed}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent />
-                </Card>
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardDescription>Failed</CardDescription>
-                    <CardTitle className="text-3xl text-red-600">
-                      {taskStats.by_status.failed}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent />
-                </Card>
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardDescription>Cancelled</CardDescription>
-                    <CardTitle className="text-3xl text-gray-600">
-                      {taskStats.by_status.cancelled}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent />
-                </Card>
-              </div>
-            )}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2 mb-6">
+              <TasksSummaryCard stats={taskStats} />
+              <AclCacheCard stats={aclCacheStats} />
+            </div>
 
             <TasksTable tasks={tasks} onDeleteTask={onDeleteTask} />
           </div>

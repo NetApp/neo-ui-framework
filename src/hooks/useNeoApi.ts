@@ -27,6 +27,7 @@ import {
   type MonitoringFailedItemsResponse,
   type TasksResponse,
   type TaskStatisticsResponse,
+  type AclCacheStatisticsResponse,
   AuthenticationError,
 } from "@/services/neo-api"
 
@@ -125,6 +126,7 @@ export function useNeoApi() {
     failedItems: MonitoringFailedItemsResponse | null
     tasks: TasksResponse[] | null
     taskStats: TaskStatisticsResponse | null
+    aclCacheStats: AclCacheStatisticsResponse | null
     fileAnalytics: { file_type: string; count: number; total_size: number }[] | null
     sharesAnalytics: { share_id: string; share_name: string; share_path: string; count: number; total_size: number }[] | null
   }>({
@@ -135,6 +137,7 @@ export function useNeoApi() {
     failedItems: null,
     tasks: null,
     taskStats: null,
+    aclCacheStats: null,
     fileAnalytics: null,
     sharesAnalytics: null,
   })
@@ -190,6 +193,7 @@ export function useNeoApi() {
       failedItems: null,
       tasks: null,
       taskStats: null,
+      aclCacheStats: null,
       fileAnalytics: null,
       sharesAnalytics: null,
     })
@@ -797,20 +801,23 @@ export function useNeoApi() {
       if (force) {
         api.clearCache()
       }
-      const [tasks, taskStats] = await Promise.all([
+      const [tasks, taskStats, aclCacheStats] = await Promise.all([
         api.getTasks(token),
         api.getTaskStatistics(token),
+        api.getAclCacheStatistics(token),
       ])
 
       setMonitoring(prev => ({
         ...prev,
         tasks,
         taskStats,
+        aclCacheStats,
       }))
 
       appLogger.info("Tasks data fetched successfully", undefined, {
         total_tasks: taskStats.total_tasks,
         running_tasks: taskStats.by_status.running,
+        acl_cache_stats: true,
       })
     } catch (error) {
       if (error instanceof AuthenticationError) {
@@ -841,15 +848,17 @@ export function useNeoApi() {
 
         // Refresh tasks after cancellation attempt
         api.clearCache()
-        const [tasks, taskStats] = await Promise.all([
+        const [tasks, taskStats, aclCacheStats] = await Promise.all([
           api.getTasks(token),
           api.getTaskStatistics(token),
+          api.getAclCacheStatistics(token),
         ])
 
         setMonitoring(prev => ({
           ...prev,
           tasks,
           taskStats,
+          aclCacheStats,
         }))
 
         if (response.status === "cancelled") {

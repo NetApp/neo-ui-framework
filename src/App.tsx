@@ -143,6 +143,7 @@ function App() {
                   <Tasks
                     tasks={state.monitoring.tasks}
                     taskStats={state.monitoring.taskStats}
+                    aclCacheStats={state.monitoring.aclCacheStats}
                     onFetchTasks={handlers.handleFetchTasks}
                     onDeleteTask={handlers.handleDeleteTask}
                     monitoringOverview={state.monitoring.overview}

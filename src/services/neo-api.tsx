@@ -23,6 +23,7 @@ import type {
   TasksResponse,
   TasksListResponse,
   TaskStatisticsResponse,
+  AclCacheStatisticsResponse,
   HelmChartVersionResponse,
   TokenResponse,
   // TaskCancelResponse,
@@ -66,6 +67,7 @@ export type {
   TasksResponse,
   TasksListResponse,
   TaskStatisticsResponse,
+  AclCacheStatisticsResponse,
   HelmChartVersionResponse,
   TokenResponse,
   TaskCancelResponse,
@@ -241,6 +243,10 @@ export class NeoApiService extends BaseApiClient {
     return this.dataLoader.load(`taskStatistics:${token}`, () => this.tasks.getTaskStatistics(token), this.monitoringTtl)
   }
 
+  getAclCacheStatistics(token: string) {
+    return this.dataLoader.load(`aclCacheStatistics:${token}`, () => this.tasks.getAclCacheStatistics(token), this.monitoringTtl)
+  }
+
   deleteTask(token: string, taskId: string) {
     return this.tasks.deleteTask(token, taskId)
   }
@@ -346,6 +352,7 @@ export class NeoApiService extends BaseApiClient {
         taskStats,
         fileAnalytics,
         sharesAnalytics,
+        aclCacheStats,
       ] = await Promise.all([
         this.getMonitoringOverview(token),
         this.getMonitoringWorkers(token),
@@ -356,6 +363,7 @@ export class NeoApiService extends BaseApiClient {
         this.getTaskStatistics(token),
         this.getFileAnalytics(token),
         this.getSharesAnalytics(token),
+        this.getAclCacheStatistics(token),
       ])
 
       appLogger.info("Monitoring data fetched successfully", undefined, {
@@ -365,6 +373,7 @@ export class NeoApiService extends BaseApiClient {
         failed_items: failedItems.total_failed_items,
         file_types: fileAnalytics.length,
         shares_with_files: sharesAnalytics.length,
+        acl_cache_stats: true,
       })
 
       return {
@@ -377,6 +386,7 @@ export class NeoApiService extends BaseApiClient {
         taskStats,
         fileAnalytics,
         sharesAnalytics,
+        aclCacheStats,
       }
     } catch (error) {
       appLogger.error(

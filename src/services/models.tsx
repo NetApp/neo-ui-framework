@@ -394,6 +394,19 @@ export interface TaskStatisticsResponse { // only for v3
   running_task_ids: number[]
 }
 
+export interface AclCacheStatisticsResponse {
+  size: number
+  max_size: number
+  hits: number
+  misses: number
+  evictions: number
+  hit_rate: number
+  total_requests: number
+  capacity_used_percent: number
+  status: "cold" | "warm" | "hot"
+  recommendations: string[]
+}
+
 // Users Page Models
 export interface UserResponse {
   id: number
