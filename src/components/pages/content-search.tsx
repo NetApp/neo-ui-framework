@@ -138,6 +138,7 @@ export default function ContentSearch({ shares, onContentSearch, onCreateDataset
                 overview={monitoringOverview}
                 title="Content Search"
                 description="Search across all your indexed documents."
+                showCacheStats={false}
             />
 
             {/* Version Check Alert */}

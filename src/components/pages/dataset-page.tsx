@@ -16,9 +16,10 @@ import {
 } from "@/components/ui/sheet"
 import { Spinner } from "@/components/ui/spinner"
 import { Button } from "@/components/ui/button"
-import { IconTrash } from "@tabler/icons-react"
+import { IconTrash, IconInfoCircle } from "@tabler/icons-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { ConfirmDialog } from "@/components/dialogs/confirm-dialog"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 interface DatasetPageProps {
     datasets: Dataset[]
@@ -122,6 +123,14 @@ export default function DatasetPage({
                                 showCacheStats={false}
                             />
                         </div>
+
+                        <Alert className="mb-4 border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/20 text-blue-800 dark:text-blue-300">
+                            <IconInfoCircle className="h-4 w-4" />
+                            <AlertTitle>Tech Preview</AlertTitle>
+                            <AlertDescription>
+                                This is a tech preview feature. At the current stage, the dataset is only persistent using the current session cache for a given user. At logout, the cache is clear and so is the datasets. Please provide us with feedback.
+                            </AlertDescription>
+                        </Alert>
 
                         <div className="mb-4 flex justify-end gap-2">
                             <Button variant="destructive" onClick={handleDeleteClick}>

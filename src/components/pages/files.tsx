@@ -283,6 +283,7 @@ export default function Files({
                 description="Browse and manage files across all shares."
                 variant="files"
                 cacheStats={cacheStats}
+                showCacheStats={false}
               />
             </div>
             <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">

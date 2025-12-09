@@ -12,12 +12,13 @@ import {
 } from "@/components/ui/table"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Button } from "@/components/ui/button"
-import { IconTrash, IconFolderCode } from "@tabler/icons-react"
+import { IconTrash, IconFolderCode, IconInfoCircle } from "@tabler/icons-react"
 import { OverviewCard } from "@/components/cards/overview-card"
 import type { Dataset } from "@/services/models"
 import type { MonitoringOverviewResponse } from "@/services/neo-api"
 import { ConfirmDialog } from "@/components/dialogs/confirm-dialog"
 import { toast } from "sonner"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 interface MyDatasetsProps {
     datasets: Dataset[]
@@ -77,6 +78,14 @@ export default function MyDatasets({
                                 cacheStats={cacheStats}
                             />
                         </div>
+
+                        <Alert className="mb-4 border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/20 text-blue-800 dark:text-blue-300">
+                            <IconInfoCircle className="h-4 w-4" />
+                            <AlertTitle>Tech Preview</AlertTitle>
+                            <AlertDescription>
+                                This is a tech preview feature. At the current stage, the dataset is only persistent using the current session cache for a given user. At logout, the cache is clear and so is the datasets. Please provide us with feedback.
+                            </AlertDescription>
+                        </Alert>
 
                         {selectedDatasets.size > 0 && (
                             <div className="mb-4 flex justify-end">
