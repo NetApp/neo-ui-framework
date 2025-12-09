@@ -126,6 +126,11 @@ export default function Files({
   )
 
   useEffect(() => {
+    // Reset to "No selection" on mount to clear previous state
+    onSelectShare(null).catch(console.error)
+  }, [onSelectShare])
+
+  useEffect(() => {
     if (files === null && !loading) {
       onRefresh().catch((error) => {
         setAlertVariant("error")

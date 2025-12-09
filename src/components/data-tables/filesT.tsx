@@ -89,10 +89,10 @@ export function FilesTable({
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>({
     filename: 300,
 
+    share: 150,
     indexed_at: 180,
     size: 100,
     file_type: 100,
-    share: 150,
     actions: 80
   })
 
@@ -296,6 +296,16 @@ export function FilesTable({
                 </div>
               </TableHead>
 
+              {showShareColumn ? (
+                <TableHead style={{ width: columnWidths.share, position: 'relative' }}>
+                  Share
+                  <div
+                    className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-primary/50"
+                    onMouseDown={(e) => handleResizeStart(e, 'share')}
+                  />
+                </TableHead>
+              ) : null}
+
               <TableHead style={{ width: columnWidths.indexed_at, position: 'relative' }}>
                 Indexed
                 <div
@@ -317,15 +327,7 @@ export function FilesTable({
                   onMouseDown={(e) => handleResizeStart(e, 'file_type')}
                 />
               </TableHead>
-              {showShareColumn ? (
-                <TableHead style={{ width: columnWidths.share, position: 'relative' }}>
-                  Share
-                  <div
-                    className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-primary/50"
-                    onMouseDown={(e) => handleResizeStart(e, 'share')}
-                  />
-                </TableHead>
-              ) : null}
+
               <TableHead className="text-right" style={{ width: columnWidths.actions }}>Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -350,17 +352,18 @@ export function FilesTable({
                   className="cursor-pointer hover:bg-muted/50"
                 >
                   <TableCell className="truncate" title={file.filename}>{file.filename}</TableCell>
+                  {showShareColumn ? (
+                    <TableCell className="truncate" title={file.share_name ?? file.share_path ?? ""}>
+                      {file.share_name ?? file.share_path ?? "—"}
+                    </TableCell>
+                  ) : null}
 
                   <TableCell className="truncate">
                     {formatDate(file.indexed_at)}
                   </TableCell>
                   <TableCell className="truncate">{file.size}</TableCell>
                   <TableCell className="truncate">{file.file_type}</TableCell>
-                  {showShareColumn ? (
-                    <TableCell className="truncate" title={file.share_name ?? file.share_path ?? ""}>
-                      {file.share_name ?? file.share_path ?? "—"}
-                    </TableCell>
-                  ) : null}
+
                   <TableCell className="text-right">
                     {canFetchMetadata(file) ? (
                       <Button
