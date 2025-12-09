@@ -319,24 +319,22 @@ export interface MonitoringGraphRateLimitResponse { // only for v3
 
 export interface MonitoringFailedItemsResponse { // only for v3
   total_failed_items: number
-  failed_items: [
-    {
-      id: string
-      share_id: string
-      file_inventory_id: string
-      work_type: string
-      priority: number
-      retry_count: number
-      max_retries: number
-      error_message: string
-      created_at: string
-      started_at: string
-      completed_at: string
-      claimed_by: string
-      file_path: string
-      filename: string
-    }
-  ]
+  failed_items: {
+    id: string
+    share_id: string
+    file_inventory_id: string
+    work_type: string
+    priority: number
+    retry_count: number
+    max_retries: number
+    error_message: string
+    created_at: string
+    started_at: string
+    completed_at: string
+    claimed_by: string
+    file_path: string
+    filename: string
+  }[]
   failure_summary: {
     additionalProp1: number
     additionalProp2: number

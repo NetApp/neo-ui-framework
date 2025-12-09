@@ -36,4 +36,15 @@ export class MonitoringApiClient extends BaseApiClient {
     appLogger.debug("Fetching monitoring failed items")
     return this.requestWithToken<MonitoringFailedItemsResponse>("/monitoring/failed-items", token)
   }
+
+  retryWorkItems(token: string, shareId: string, workItemIds: string[]) {
+    appLogger.debug("Retrying failed work items", undefined, { shareId, count: workItemIds.length })
+    return this.requestWithToken<void>("/work-items/retry", token, {
+      method: "POST",
+      body: JSON.stringify({
+        share_id: shareId,
+        work_item_ids: workItemIds.join(","),
+      }),
+    })
+  }
 }

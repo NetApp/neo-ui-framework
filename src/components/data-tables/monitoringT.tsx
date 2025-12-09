@@ -1,12 +1,15 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import {
   IconAlertTriangle,
   IconClock,
   IconUsers,
-  IconActivity
+  IconActivity,
+  IconRefresh,
 } from "@tabler/icons-react"
+import { Button } from "@/components/ui/button"
+import { useNeoApi } from "@/hooks/useNeoApi"
 import {
   Card,
   CardContent,
@@ -59,6 +62,40 @@ export function MonitoringChart({ databaseSize, monitoring, onRefreshMonitoring 
     fileAnalytics,
     sharesAnalytics
   } = monitoring
+
+  const { handlers } = useNeoApi()
+  const { handleRetryWorkItems } = handlers
+  const [isRetrying, setIsRetrying] = useState(false)
+
+  const handleRetry = async () => {
+    if (!failedItems?.failed_items || failedItems.failed_items.length === 0) return
+
+    setIsRetrying(true)
+    try {
+      // Group items by share_id
+      const itemsByShare: Record<string, string[]> = {}
+      failedItems.failed_items.forEach((item) => {
+        if (!itemsByShare[item.share_id]) {
+          itemsByShare[item.share_id] = []
+        }
+        itemsByShare[item.share_id].push(item.id)
+      })
+
+      // Send retry request for each share
+      await Promise.all(
+        Object.entries(itemsByShare).map(([shareId, workItemIds]) =>
+          handleRetryWorkItems(shareId, workItemIds)
+        )
+      )
+
+      // Refresh data
+      await onRefreshMonitoring()
+    } catch (error) {
+      console.error("Retry failed:", error)
+    } finally {
+      setIsRetrying(false)
+    }
+  }
 
   // Auto-refresh monitoring data every 60 seconds
   useEffect(() => {
@@ -206,10 +243,23 @@ export function MonitoringChart({ databaseSize, monitoring, onRefreshMonitoring 
         </CardContent>
       </Card>
 
-      {/* Failed Items */}
       <Card className="md:col-span-2 lg:col-span-3">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Failed Items</CardTitle>
+          <div className="flex items-center gap-2">
+            <CardTitle className="text-sm font-medium">Failed Items</CardTitle>
+            {failedItems && failedItems.total_failed_items > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRetry}
+                disabled={isRetrying}
+                className="h-7 text-xs"
+              >
+                <IconRefresh className={`mr-1 h-3 w-3 ${isRetrying ? "animate-spin" : ""}`} />
+                Retry failed items
+              </Button>
+            )}
+          </div>
           <IconAlertTriangle className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>

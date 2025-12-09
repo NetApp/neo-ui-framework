@@ -833,6 +833,40 @@ export function useNeoApi() {
     }
   }, [token, clearSystemData])
 
+  const handleRetryWorkItems = useCallback(
+    async (shareId: string, workItemIds: string[]) => {
+      if (!token) {
+        appLogger.warn("Retry work items attempted without active token")
+        throw new AuthenticationError()
+      }
+
+      const api = apiRef.current
+
+      try {
+        appLogger.info("Retrying work items", undefined, { shareId, count: workItemIds.length })
+        await api.retryWorkItems(token, shareId, workItemIds)
+        toast.success("Retry initiated")
+        return true
+      } catch (error) {
+        if (error instanceof AuthenticationError) {
+          clearSystemData()
+          setToken(null)
+        }
+        toast.error("Failed to retry items")
+        appLogger.error(
+          "Retry work items failed",
+          error instanceof Error ? error.message : "Unknown error",
+          { shareId }
+        )
+        return false
+      }
+    },
+    [token, clearSystemData]
+  )
+
+
+
+
   const handleDeleteTask = useCallback(
     async (taskId: string) => {
       if (!token) {
@@ -953,6 +987,7 @@ export function useNeoApi() {
       handleFetchMyDocuments,
       handleCreateDataset,
       handleDeleteDataset,
+      handleRetryWorkItems,
     },
   }
 }

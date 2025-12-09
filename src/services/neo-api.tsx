@@ -235,6 +235,10 @@ export class NeoApiService extends BaseApiClient {
     return this.dataLoader.load(`monitoringFailedItems:${token}`, () => this.monitoring.getMonitoringFailedItems(token), this.monitoringTtl)
   }
 
+  retryWorkItems(token: string, shareId: string, workItemIds: string[]) {
+    return this.monitoring.retryWorkItems(token, shareId, workItemIds)
+  }
+
   getTasks(token: string) {
     return this.dataLoader.load(`tasks:${token}`, () => this.tasks.getTasks(token), this.monitoringTtl)
   }
