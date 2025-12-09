@@ -1,15 +1,18 @@
 "use client"
 
 import {
-  IconChartBar,
-  IconServer,
   IconFileText,
   IconHelp,
-  IconListDetails,
   IconUsers,
   IconListCheck,
   IconActivity,
   IconSettings,
+  IconFileSearch,
+  IconFolders,
+  IconFolderFilled,
+  IconArrowsJoin,
+  IconFolderShare,
+  IconFiles,
 } from "@tabler/icons-react"
 
 import {
@@ -26,7 +29,7 @@ const data = {
     {
       name: "Connector",
       url: "#/connector",
-      icon: IconServer,
+      icon: IconArrowsJoin,
     },
     {
       name: "Monitoring",
@@ -36,7 +39,7 @@ const data = {
     {
       name: "Shares",
       url: "#/shares",
-      icon: IconListDetails,
+      icon: IconFolderShare,
     },
     {
       name: "Tasks",
@@ -46,19 +49,19 @@ const data = {
     {
       name: "Files",
       url: "#/files",
-      icon: IconChartBar,
+      icon: IconFiles,
     },
   ],
   navDatasets: [
     {
-      name: "My Datasets",
-      url: "#/my-datasets/my-datasets",
-      icon: IconFileText,
-    },
-    {
       name: "Content Search",
       url: "#/my-datasets/content-search",
-      icon: IconFileText,
+      icon: IconFileSearch,
+    },
+    {
+      name: "My Datasets",
+      url: "#/my-datasets/my-datasets",
+      icon: IconFolders,
     },
   ],
   navSecondary: [
@@ -95,7 +98,7 @@ export function AppSidebarContent({ datasets = [], ...props }: AppSidebarContent
   const datasetItems = datasets.map((dataset) => ({
     name: dataset.name,
     url: `#/my-datasets/${dataset.id}`,
-    icon: IconFileText,
+    icon: IconFolderFilled,
   }))
 
   const navDatasets = [

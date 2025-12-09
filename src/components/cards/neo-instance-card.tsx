@@ -4,7 +4,6 @@ import {
     Activity,
     CheckIcon,
     AlertCircleIcon,
-    Server,
     HardDrive
 } from "lucide-react"
 import {
@@ -17,7 +16,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import type { HealthResponse, LicenseResponse } from "@/services/neo-api"
-import { IconCpu, IconRuler3 } from "@tabler/icons-react"
+import { IconCpu, IconRuler3, IconArrowsJoin } from "@tabler/icons-react"
 
 interface NeoInstanceCardProps {
     health: HealthResponse | null
@@ -38,7 +37,7 @@ export function NeoInstanceCard({ health, license, className }: NeoInstanceCardP
         <Card className={className}>
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                    <Server className="h-5 w-5" />
+                    <IconArrowsJoin className="h-5 w-5" />
                     Neo Instance
                 </CardTitle>
                 <CardDescription>

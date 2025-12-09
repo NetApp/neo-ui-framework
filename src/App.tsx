@@ -134,6 +134,7 @@ function App() {
                   <ContentSearch
                     shares={state.shares}
                     onContentSearch={handlers.handleContentSearch}
+                    onCreateDataset={handlers.handleCreateDataset}
                     monitoringOverview={state.monitoring.overview}
                   />
                 }

@@ -3,7 +3,8 @@ import type {
     SharesResponse,
     ContentSearchRequest,
     ContentSearchResponse,
-    MonitoringOverviewResponse
+    MonitoringOverviewResponse,
+    FileEntry
 } from "@/services/models"
 import {
     IconSearch,
@@ -14,6 +15,7 @@ import {
     IconFileText,
     IconClock,
     IconDatabase,
+    IconPlus,
 } from "@tabler/icons-react"
 
 import {
@@ -37,10 +39,12 @@ import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "sonner"
 import { OverviewCard } from "@/components/cards/overview-card"
+import { CreateDatasetDialog } from "@/components/dialogs/create-dataset-dialog"
 
 interface ContentSearchProps {
     shares: SharesResponse[] | null
     onContentSearch: (payload: ContentSearchRequest) => Promise<ContentSearchResponse>
+    onCreateDataset: (name: string, files: FileEntry[]) => void
     monitoringOverview: MonitoringOverviewResponse | null
 }
 
@@ -53,11 +57,12 @@ const FILE_TYPE_ICONS: Record<string, React.ReactNode> = {
     txt: <IconFileText className="h-4 w-4 text-gray-500" />,
 }
 
-export default function ContentSearch({ shares, onContentSearch, monitoringOverview }: ContentSearchProps) {
+export default function ContentSearch({ shares, onContentSearch, onCreateDataset, monitoringOverview }: ContentSearchProps) {
     const [query, setQuery] = useState("")
     const [results, setResults] = useState<ContentSearchResponse | null>(null)
     const [loading, setLoading] = useState(false)
     const [filtersOpen, setFiltersOpen] = useState(false)
+    const [createDatasetDialogOpen, setCreateDatasetDialogOpen] = useState(false)
 
     // Filters
     const [selectedShare, setSelectedShare] = useState<string>("all")
@@ -96,6 +101,28 @@ export default function ContentSearch({ shares, onContentSearch, monitoringOverv
             setLoading(false)
         }
     }, [query, selectedShare, fileType, sortBy, onContentSearch])
+
+    const handleCreateDataset = async (name: string) => {
+        if (!results?.results) return
+
+        const files: FileEntry[] = results.results.map(r => ({
+            id: r.id,
+            file_path: r.file_path,
+            unc_path: r.unc_path,
+            filename: r.filename,
+            size: r.size,
+            created_at: new Date().toISOString(), // Fallback as not returned by search
+            modified_time: r.modified_time,
+            accessed_at: new Date().toISOString(), // Fallback as not returned by search
+            is_directory: false,
+            file_type: r.file_type,
+            indexed_at: r.indexed_at,
+            share_id: r.share_id
+        }))
+
+        onCreateDataset(name, files)
+        toast.success(`Dataset "${name}" created`)
+    }
 
     return (
         <div className="flex flex-col gap-4 p-4">
@@ -214,6 +241,13 @@ export default function ContentSearch({ shares, onContentSearch, monitoringOverv
                             )}
                         </div>
 
+                        <div className="flex justify-end mb-4">
+                            <Button variant="default" onClick={() => setCreateDatasetDialogOpen(true)}>
+                                <IconPlus className="mr-2 h-4 w-4" />
+                                Create dataset
+                            </Button>
+                        </div>
+
                         {results.results.length === 0 ? (
                             <Card>
                                 <CardContent className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
@@ -270,6 +304,12 @@ export default function ContentSearch({ shares, onContentSearch, monitoringOverv
                     </div>
                 )}
             </div>
+
+            <CreateDatasetDialog
+                open={createDatasetDialogOpen}
+                onOpenChange={setCreateDatasetDialogOpen}
+                onSave={handleCreateDataset}
+            />
         </div>
     )
 }
