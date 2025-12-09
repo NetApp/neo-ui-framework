@@ -60,25 +60,18 @@ function getStatusIcon(status: string) {
 function getStatusBadge(status: string) {
   const statusLower = status.toLowerCase()
 
-  const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-    completed: "default",
-    failed: "destructive",
-    running: "secondary",
-    pending: "outline",
-    cancelled: "secondary",
-  }
 
   const colors: Record<string, string> = {
-    completed: "bg-green-500 hover:bg-green-600 text-white",
-    failed: "bg-red-500 hover:bg-red-600 text-white",
-    running: "bg-blue-500 hover:bg-blue-600 text-white",
-    pending: "bg-yellow-500 hover:bg-yellow-600 text-white",
-    cancelled: "bg-gray-500 hover:bg-gray-600 text-white",
+    completed: "text-green-600 border-green-200 dark:text-green-400 dark:border-green-800",
+    failed: "text-destructive border-destructive/50",
+    running: "text-blue-600 border-blue-200 dark:text-blue-400 dark:border-blue-800",
+    pending: "text-yellow-600 border-yellow-200 dark:text-yellow-400 dark:border-yellow-800",
+    cancelled: "text-gray-600 border-gray-200 dark:text-gray-400 dark:border-gray-800",
   }
 
   return (
     <Badge
-      variant={variants[statusLower] || "outline"}
+      variant="outline"
       className={`gap-1 ${colors[statusLower] || ""}`}
     >
       {getStatusIcon(status)}

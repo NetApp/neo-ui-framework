@@ -4,7 +4,8 @@ import type {
     ContentSearchRequest,
     ContentSearchResponse,
     MonitoringOverviewResponse,
-    FileEntry
+    FileEntry,
+    VersionResponse
 } from "@/services/models"
 import {
     IconSearch,
@@ -16,6 +17,7 @@ import {
     IconClock,
     IconDatabase,
     IconPlus,
+    IconAlertCircle
 } from "@tabler/icons-react"
 
 import {
@@ -37,6 +39,11 @@ import {
 } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
+import {
+    Alert,
+    AlertDescription,
+    AlertTitle,
+} from "@/components/ui/alert"
 import { toast } from "sonner"
 import { OverviewCard } from "@/components/cards/overview-card"
 import { CreateDatasetDialog } from "@/components/dialogs/create-dataset-dialog"
@@ -46,6 +53,7 @@ interface ContentSearchProps {
     onContentSearch: (payload: ContentSearchRequest) => Promise<ContentSearchResponse>
     onCreateDataset: (name: string, files: FileEntry[]) => void
     monitoringOverview: MonitoringOverviewResponse | null
+    version: VersionResponse | null
 }
 
 const FILE_TYPE_ICONS: Record<string, React.ReactNode> = {
@@ -57,7 +65,7 @@ const FILE_TYPE_ICONS: Record<string, React.ReactNode> = {
     txt: <IconFileText className="h-4 w-4 text-gray-500" />,
 }
 
-export default function ContentSearch({ shares, onContentSearch, onCreateDataset, monitoringOverview }: ContentSearchProps) {
+export default function ContentSearch({ shares, onContentSearch, onCreateDataset, monitoringOverview, version }: ContentSearchProps) {
     const [query, setQuery] = useState("")
     const [results, setResults] = useState<ContentSearchResponse | null>(null)
     const [loading, setLoading] = useState(false)
@@ -131,6 +139,46 @@ export default function ContentSearch({ shares, onContentSearch, onCreateDataset
                 title="Content Search"
                 description="Search across all your indexed documents."
             />
+
+            {/* Version Check Alert */}
+            {(() => {
+                if (!version?.version) return null
+                // Simple version check assuming semantic versioning format x.y.z
+                // We want to show alert if version < 3.0.5
+                // A robust semantic version comparison is ideal but for specific requirement a direct check can work if limited
+                // Or better, a small helper.
+
+                const currentVersion = version.version.split('-')[0] // remove prerelease tag if any
+                const targetVersion = "3.0.5"
+
+                // Helper to compare versions
+                const compareVersions = (v1: string, v2: string) => {
+                    const parts1 = v1.split('.').map(Number)
+                    const parts2 = v2.split('.').map(Number)
+
+                    for (let i = 0; i < 3; i++) {
+                        const p1 = parts1[i] || 0
+                        const p2 = parts2[i] || 0
+
+                        if (p1 > p2) return 1
+                        if (p1 < p2) return -1
+                    }
+                    return 0
+                }
+
+                if (compareVersions(currentVersion, targetVersion) < 0) {
+                    return (
+                        <Alert variant="destructive">
+                            <IconAlertCircle className="h-4 w-4" />
+                            <AlertTitle>Feature Unavailable</AlertTitle>
+                            <AlertDescription>
+                                Feature only available starting with Neo Connector version 3.0.5
+                            </AlertDescription>
+                        </Alert>
+                    )
+                }
+                return null
+            })()}
 
             <div className="w-full space-y-6">
                 {/* Search Input Section */}

@@ -136,6 +136,7 @@ function App() {
                     onContentSearch={handlers.handleContentSearch}
                     onCreateDataset={handlers.handleCreateDataset}
                     monitoringOverview={state.monitoring.overview}
+                    version={state.version}
                   />
                 }
               />

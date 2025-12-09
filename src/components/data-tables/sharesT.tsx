@@ -100,33 +100,22 @@ function getStatusIcon(status: string) {
 function getStatusBadge(status: string) {
   const statusLower = status.toLowerCase()
 
-  const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-    active: "default",
-    ready: "default",
-    error: "destructive",
-    failed: "destructive",
-    crawling: "secondary",
-    processing: "secondary",
-    pending: "outline",
-    scheduled: "outline",
-    warning: "outline",
-  }
 
   const colors: Record<string, string> = {
-    active: "bg-green-500 hover:bg-green-600 text-white",
-    ready: "bg-green-500 hover:bg-green-600 text-white",
-    error: "bg-red-500 hover:bg-red-600 text-white",
-    failed: "bg-red-500 hover:bg-red-600 text-white",
-    crawling: "bg-blue-500 hover:bg-blue-600 text-white",
-    processing: "bg-blue-500 hover:bg-blue-600 text-white",
-    pending: "bg-yellow-500 hover:bg-yellow-600 text-white",
-    scheduled: "bg-yellow-500 hover:bg-yellow-600 text-white",
-    warning: "bg-orange-500 hover:bg-orange-600 text-white",
+    active: "text-green-600 border-green-200 dark:text-green-400 dark:border-green-800",
+    ready: "text-green-600 border-green-200 dark:text-green-400 dark:border-green-800",
+    error: "text-destructive border-destructive/50",
+    failed: "text-destructive border-destructive/50",
+    crawling: "text-blue-600 border-blue-200 dark:text-blue-400 dark:border-blue-800",
+    processing: "text-blue-600 border-blue-200 dark:text-blue-400 dark:border-blue-800",
+    pending: "text-yellow-600 border-yellow-200 dark:text-yellow-400 dark:border-yellow-800",
+    scheduled: "text-yellow-600 border-yellow-200 dark:text-yellow-400 dark:border-yellow-800",
+    warning: "text-orange-600 border-orange-200 dark:text-orange-400 dark:border-orange-800",
   }
 
   return (
     <Badge
-      variant={variants[statusLower] || "outline"}
+      variant="outline"
       className={`gap-1 ${colors[statusLower] || ""}`}
     >
       {getStatusIcon(status)}

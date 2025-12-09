@@ -54,10 +54,10 @@ export function NeoInstanceCard({ health, license, className }: NeoInstanceCardP
                         </div>
                         <div className="flex items-center gap-2">
                             <Badge
-                                variant={health?.status === "healthy" ? "default" : "destructive"}
+                                variant="outline"
                                 className={`${health?.status === "healthy"
-                                    ? "bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700"
-                                    : ""
+                                    ? "text-green-600 border-green-200 dark:text-green-400 dark:border-green-800"
+                                    : "text-destructive border-destructive/50"
                                     } text-xl px-3 py-1`}
                             >
                                 {healthStatus}
