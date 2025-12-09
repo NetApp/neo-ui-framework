@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/table"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Button } from "@/components/ui/button"
-import { IconTrash, IconFolderCode, IconInfoCircle } from "@tabler/icons-react"
+import { IconTrash, IconInfoCircle } from "@tabler/icons-react"
 import { OverviewCard } from "@/components/cards/overview-card"
 import type { Dataset } from "@/services/models"
 import type { MonitoringOverviewResponse } from "@/services/neo-api"
@@ -135,10 +135,7 @@ export default function MyDatasets({
                                                     />
                                                 </TableCell>
                                                 <TableCell className="font-medium">
-                                                    <div className="flex items-center gap-2">
-                                                        <IconFolderCode className="size-4 text-muted-foreground" />
-                                                        {dataset.name}
-                                                    </div>
+                                                    {dataset.name}
                                                 </TableCell>
                                                 <TableCell>{dataset.files.length} files</TableCell>
                                                 <TableCell>

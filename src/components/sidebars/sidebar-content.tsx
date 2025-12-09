@@ -9,7 +9,7 @@ import {
   IconSettings,
   IconFileSearch,
   IconFolders,
-  IconFolderFilled,
+  IconFolderCode,
   IconArrowsJoin,
   IconFolderShare,
   IconFiles,
@@ -98,7 +98,7 @@ export function AppSidebarContent({ datasets = [], ...props }: AppSidebarContent
   const datasetItems = datasets.map((dataset) => ({
     name: dataset.name,
     url: `#/my-datasets/${dataset.id}`,
-    icon: IconFolderFilled,
+    icon: IconFolderCode,
   }))
 
   const navDatasets = [
