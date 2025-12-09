@@ -94,9 +94,9 @@ export function OverviewCard({
                                 <HardDrive className="h-4 w-4" />
                                 <span className="text-sm font-medium">Current Usage</span>
                             </div>
-                            <div className="flex items-baseline gap-2">
+                            <div className="flex flex-col">
                                 <div className="text-2xl font-bold">{formatBytes(cacheStats?.sizeBytes || 0)}</div>
-                                <div className="text-xs text-muted-foreground">({cacheStats?.items || 0} items)</div>
+                                <div className="text-xs text-muted-foreground">{cacheStats?.items || 0} items</div>
                             </div>
                         </div>
                     </div>
