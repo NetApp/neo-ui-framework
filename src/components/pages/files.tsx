@@ -290,7 +290,7 @@ export default function Files({
             <div className="mb-4">
               <OverviewCard
                 overview={monitoringOverview}
-                title="Files Overview"
+                title="Data Corpus"
                 description="Browse and manage files across all shares."
                 variant="files"
                 cacheStats={cacheStats}

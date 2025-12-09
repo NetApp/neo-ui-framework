@@ -101,7 +101,7 @@ function App() {
                 }
               />
               <Route
-                path="/files"
+                path="/my-datasets/data-corpus"
                 element={
                   <Files
                     files={state.files}

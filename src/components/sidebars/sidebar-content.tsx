@@ -46,13 +46,13 @@ const data = {
       url: "#/tasks",
       icon: IconListCheck,
     },
-    {
-      name: "Files",
-      url: "#/files",
-      icon: IconFiles,
-    },
   ],
   navDatasets: [
+    {
+      name: "Data Corpus",
+      url: "#/my-datasets/data-corpus",
+      icon: IconFiles,
+    },
     {
       name: "Content Search",
       url: "#/my-datasets/content-search",

@@ -50,16 +50,16 @@ export function SiteHeader({ onConnect, onRefresh, isConnected }: SiteHeaderProp
     title = "Monitoring"
   } else if (location.pathname.startsWith("/shares")) {
     title = "Shares"
-  } else if (location.pathname.startsWith("/files")) {
-    title = "Files"
+  } else if (location.pathname.startsWith("/my-datasets/data-corpus")) {
+    title = "Data Corpus"
+  } else if (location.pathname.startsWith("/my-datasets/content-search")) {
+    title = "Content Search"
+  } else if (location.pathname.startsWith("/my-datasets")) {
+    title = "My Datasets"
   } else if (location.pathname.startsWith("/logs")) {
     title = "Logs"
   } else if (location.pathname.startsWith("/users")) {
     title = "Users"
-  } else if (location.pathname.startsWith("/search")) {
-    title = "Search"
-  } else if (location.pathname.startsWith("/datasets")) {
-    title = "Datasets"
   } else if (location.pathname.startsWith("/settings")) {
     title = "Settings"
   } else if (location.pathname.startsWith("/help")) {
