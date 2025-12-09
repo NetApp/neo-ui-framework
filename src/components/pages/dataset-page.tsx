@@ -20,7 +20,7 @@ import {
 import { Spinner } from "@/components/ui/spinner"
 import { Button } from "@/components/ui/button"
 import { IconTrash, IconInfoCircle } from "@tabler/icons-react"
-import { Card, CardContent } from "@/components/ui/card"
+
 import { ConfirmDialog } from "@/components/dialogs/confirm-dialog"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
@@ -175,107 +175,99 @@ export default function DatasetPage({
                                         <TabsTrigger value="content">Content</TabsTrigger>
                                     </TabsList>
                                     <TabsContent value="details" className="mt-4 flex-1 flex flex-col data-[state='inactive']:hidden">
-                                        <Card className="flex-1">
-                                            <CardContent className="pt-6">
-                                                {fileMetadata ? (
-                                                    <dl className="grid grid-cols-1 gap-y-3 text-sm sm:grid-cols-2 lg:grid-cols-3 sm:gap-x-6">
-                                                        <div>
-                                                            <dt className="font-medium text-foreground">Filename</dt>
-                                                            <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{fileMetadata.filename}</pre></dd>
-                                                        </div>
-                                                        <div>
-                                                            <dt className="font-medium text-foreground">File type</dt>
-                                                            <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{fileMetadata.file_type || "—"}</pre></dd>
-                                                        </div>
-                                                        <div className="sm:col-span-1">
-                                                            <dt className="font-medium text-foreground">File path</dt>
-                                                            <dd className="break-words p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{fileMetadata.file_path}</pre></dd>
-                                                        </div>
-                                                        <div className="sm:col-span-1">
-                                                            <dt className="font-medium text-foreground">UNC path</dt>
-                                                            <dd className="break-words p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{fileMetadata.unc_path}</pre></dd>
-                                                        </div>
-                                                        <div>
-                                                            <dt className="font-medium text-foreground">Size</dt>
-                                                            <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{fileMetadata.size.toLocaleString()} bytes</pre></dd>
-                                                        </div>
-                                                        <div>
-                                                            <dt className="font-medium text-foreground">Directory</dt>
-                                                            <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{fileMetadata.is_directory ? "Yes" : "No"}</pre></dd>
-                                                        </div>
-                                                        <div>
-                                                            <dt className="font-medium text-foreground">Created</dt>
-                                                            <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{new Date(fileMetadata.created_at).toLocaleString()}</pre></dd>
-                                                        </div>
-                                                        <div>
-                                                            <dt className="font-medium text-foreground">Modified</dt>
-                                                            <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{new Date(fileMetadata.modified_time).toLocaleString()}</pre></dd>
-                                                        </div>
-                                                        <div>
-                                                            <dt className="font-medium text-foreground">Accessed</dt>
-                                                            <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{new Date(fileMetadata.accessed_at).toLocaleString()}</pre></dd>
-                                                        </div>
-                                                        <div>
-                                                            <dt className="font-medium text-foreground">Indexed</dt>
-                                                            <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{fileMetadata.indexed_at ? new Date(fileMetadata.indexed_at).toLocaleString() : "—"}</pre></dd>
-                                                        </div>
-                                                        <div>
-                                                            <dt className="font-medium text-foreground">Conversion (ms)</dt>
-                                                            <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{fileMetadata.conversion_duration_ms}</pre></dd>
-                                                        </div>
-                                                        <div>
-                                                            <dt className="font-medium text-foreground">Extractor</dt>
-                                                            <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{fileMetadata.extractor_used || "—"}</pre></dd>
-                                                        </div>
-                                                        <div className="sm:col-span-3">
-                                                            <dt className="font-medium text-foreground">ACL principals</dt>
-                                                            <dd className="p-1">
-                                                                <pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">
-                                                                    {fileMetadata.acl_principals?.length ? fileMetadata.acl_principals.join(", ") : "N/A"}
-                                                                </pre>
-                                                            </dd>
-                                                        </div>
-                                                        <div className="sm:col-span-3">
-                                                            <dt className="font-medium text-foreground">Resolved principals</dt>
-                                                            <dd className="p-1">
-                                                                {fileMetadata.resolved_principals?.length ? (
-                                                                    <pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">
-                                                                        {JSON.stringify(fileMetadata.resolved_principals, null, 2)}
-                                                                    </pre>
-                                                                ) : (
-                                                                    <pre className="mt-1 max-h-40 overflow-auto rounded bg-muted p-2 text-xs">"N/A"</pre>
-                                                                )}
-                                                            </dd>
-                                                        </div>
-                                                        <div className="sm:col-span-3">
-                                                            <dt className="font-medium text-foreground">Content</dt>
-                                                            <dd className="p-1">
-                                                                {fileMetadata.content ? (
-                                                                    <pre className="mt-1 max-h-96 overflow-auto rounded bg-muted p-2 text-xs">
-                                                                        {fileMetadata.content}
-                                                                    </pre>
-                                                                ) : (
-                                                                    <pre className="mt-1 max-h-40 overflow-auto rounded bg-muted p-2 text-xs">"—"</pre>
-                                                                )}
-                                                            </dd>
-                                                        </div>
-                                                    </dl>
-                                                ) : (
-                                                    <p className="text-center text-muted-foreground">No metadata available</p>
-                                                )}
-                                            </CardContent>
-                                        </Card>
+                                        {fileMetadata ? (
+                                            <dl className="grid grid-cols-1 gap-y-3 text-sm sm:grid-cols-2 lg:grid-cols-3 sm:gap-x-6">
+                                                <div>
+                                                    <dt className="font-medium text-foreground">Filename</dt>
+                                                    <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{fileMetadata.filename}</pre></dd>
+                                                </div>
+                                                <div>
+                                                    <dt className="font-medium text-foreground">File type</dt>
+                                                    <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{fileMetadata.file_type || "—"}</pre></dd>
+                                                </div>
+                                                <div className="sm:col-span-1">
+                                                    <dt className="font-medium text-foreground">File path</dt>
+                                                    <dd className="break-words p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{fileMetadata.file_path}</pre></dd>
+                                                </div>
+                                                <div className="sm:col-span-1">
+                                                    <dt className="font-medium text-foreground">UNC path</dt>
+                                                    <dd className="break-words p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{fileMetadata.unc_path}</pre></dd>
+                                                </div>
+                                                <div>
+                                                    <dt className="font-medium text-foreground">Size</dt>
+                                                    <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{fileMetadata.size.toLocaleString()} bytes</pre></dd>
+                                                </div>
+                                                <div>
+                                                    <dt className="font-medium text-foreground">Directory</dt>
+                                                    <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{fileMetadata.is_directory ? "Yes" : "No"}</pre></dd>
+                                                </div>
+                                                <div>
+                                                    <dt className="font-medium text-foreground">Created</dt>
+                                                    <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{new Date(fileMetadata.created_at).toLocaleString()}</pre></dd>
+                                                </div>
+                                                <div>
+                                                    <dt className="font-medium text-foreground">Modified</dt>
+                                                    <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{new Date(fileMetadata.modified_time).toLocaleString()}</pre></dd>
+                                                </div>
+                                                <div>
+                                                    <dt className="font-medium text-foreground">Accessed</dt>
+                                                    <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{new Date(fileMetadata.accessed_at).toLocaleString()}</pre></dd>
+                                                </div>
+                                                <div>
+                                                    <dt className="font-medium text-foreground">Indexed</dt>
+                                                    <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{fileMetadata.indexed_at ? new Date(fileMetadata.indexed_at).toLocaleString() : "—"}</pre></dd>
+                                                </div>
+                                                <div>
+                                                    <dt className="font-medium text-foreground">Conversion (ms)</dt>
+                                                    <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{fileMetadata.conversion_duration_ms}</pre></dd>
+                                                </div>
+                                                <div>
+                                                    <dt className="font-medium text-foreground">Extractor</dt>
+                                                    <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{fileMetadata.extractor_used || "—"}</pre></dd>
+                                                </div>
+                                                <div className="sm:col-span-3">
+                                                    <dt className="font-medium text-foreground">ACL principals</dt>
+                                                    <dd className="p-1">
+                                                        <pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">
+                                                            {fileMetadata.acl_principals?.length ? fileMetadata.acl_principals.join(", ") : "N/A"}
+                                                        </pre>
+                                                    </dd>
+                                                </div>
+                                                <div className="sm:col-span-3">
+                                                    <dt className="font-medium text-foreground">Resolved principals</dt>
+                                                    <dd className="p-1">
+                                                        {fileMetadata.resolved_principals?.length ? (
+                                                            <pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">
+                                                                {JSON.stringify(fileMetadata.resolved_principals, null, 2)}
+                                                            </pre>
+                                                        ) : (
+                                                            <pre className="mt-1 max-h-40 overflow-auto rounded bg-muted p-2 text-xs">"N/A"</pre>
+                                                        )}
+                                                    </dd>
+                                                </div>
+                                                <div className="sm:col-span-3">
+                                                    <dt className="font-medium text-foreground">Content</dt>
+                                                    <dd className="p-1">
+                                                        {fileMetadata.content ? (
+                                                            <pre className="mt-1 max-h-96 overflow-auto rounded bg-muted p-2 text-xs">
+                                                                {fileMetadata.content}
+                                                            </pre>
+                                                        ) : (
+                                                            <pre className="mt-1 max-h-40 overflow-auto rounded bg-muted p-2 text-xs">"—"</pre>
+                                                        )}
+                                                    </dd>
+                                                </div>
+                                            </dl>
+                                        ) : (
+                                            <p className="text-center text-muted-foreground">No metadata available</p>
+                                        )}
                                     </TabsContent>
                                     <TabsContent value="content" className="mt-4 flex-1 flex flex-col data-[state='inactive']:hidden">
-                                        <Card className="flex-1 flex flex-col">
-                                            <CardContent className="flex-1 flex flex-col">
-                                                <div className="flex-1 text-sm text-muted-foreground bg-muted/50 p-2 rounded-md font-mono whitespace-pre-wrap [&_b]:text-red-500 [&_b]:font-bold">
-                                                    <Markdown remarkPlugins={[remarkGfm]}>
-                                                        {fileMetadata?.content || "*No content available*"}
-                                                    </Markdown>
-                                                </div>
-                                            </CardContent>
-                                        </Card>
+                                        <div className="flex-1 text-sm text-muted-foreground bg-muted/50 p-2 rounded-md font-mono whitespace-pre-wrap [&_b]:text-red-500 [&_b]:font-bold">
+                                            <Markdown remarkPlugins={[remarkGfm]}>
+                                                {fileMetadata?.content || "*No content available*"}
+                                            </Markdown>
+                                        </div>
                                     </TabsContent>
                                 </Tabs>
                             )}
