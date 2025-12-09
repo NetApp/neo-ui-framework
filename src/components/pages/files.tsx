@@ -250,7 +250,18 @@ export default function Files({
     }
 
     return files
-  }, [files, isSearchMode, searchResults])
+      ? {
+        ...files,
+        files: files.files.map((file) => ({
+          ...file,
+          unc_path:
+            file.unc_path ||
+            shares?.find((s) => String(s.id) === file.share_id)?.share_path ||
+            "",
+        })),
+      }
+      : null
+  }, [files, isSearchMode, searchResults, shares])
 
   const selectedShareId =
     value === ALL_VALUE || value === NONE_VALUE ? undefined : value
@@ -377,11 +388,11 @@ export default function Files({
               <p className="mb-2 text-sm text-muted-foreground">
                 Showing search results across all accessible shares.
               </p>
-            ) : files?.path ? (
+            ) : files?.share_id ? (
               <p className="mb-2 text-sm text-muted-foreground">
                 Showing files for:{" "}
                 <span className="font-medium">
-                  {files.path} ({files.share_id})
+                  {files.path || shares?.find((s) => String(s.id) === files.share_id)?.share_path} ({files.share_id})
                 </span>
               </p>
             ) : null}

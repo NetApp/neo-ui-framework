@@ -110,6 +110,15 @@ export default function ContentSearch({ shares, onContentSearch, onCreateDataset
         }
     }, [query, selectedShare, fileType, sortBy, onContentSearch])
 
+    const handleClearSearch = () => {
+        setQuery("")
+        setResults(null)
+        setSelectedShare("all")
+        setFileType("all")
+        setSortBy("relevance")
+        setFiltersOpen(false)
+    }
+
     const handleCreateDataset = async (name: string) => {
         if (!results?.results) return
 
@@ -206,6 +215,16 @@ export default function ContentSearch({ shares, onContentSearch, onCreateDataset
                                 <Button type="submit" disabled={loading}>
                                     {loading ? "Searching..." : "Search"}
                                 </Button>
+                                {results && (
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={handleClearSearch}
+                                        disabled={loading}
+                                    >
+                                        Clear search
+                                    </Button>
+                                )}
                                 <Button
                                     type="button"
                                     variant="outline"

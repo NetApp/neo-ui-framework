@@ -81,9 +81,9 @@ export default function MyDatasets({
 
                         <Alert className="mb-4 border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/20 text-blue-800 dark:text-blue-300">
                             <IconInfoCircle className="h-4 w-4" />
-                            <AlertTitle>Tech Preview</AlertTitle>
+                            <AlertTitle>Tech Preview feature</AlertTitle>
                             <AlertDescription>
-                                This is a tech preview feature. At the current stage, the dataset is only persistent using the current session cache for a given user. At logout, the cache is clear and so is the datasets. Please provide us with feedback.
+                                Datasets are only persistent during the user session and will be deleted at logout with the cache.
                             </AlertDescription>
                         </Alert>
 
