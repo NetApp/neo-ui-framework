@@ -12,9 +12,9 @@ import {
 } from "@/components/ui/table"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Button } from "@/components/ui/button"
-import { IconTrash, IconInfoCircle } from "@tabler/icons-react"
+import { IconTrash, IconInfoCircle, IconDatabase } from "@tabler/icons-react"
 import { OverviewCard } from "@/components/cards/overview-card"
-import type { Dataset } from "@/services/models"
+import type { Dataset, FileMetadataResponse } from "@/services/models"
 import type { MonitoringOverviewResponse } from "@/services/neo-api"
 import { ConfirmDialog } from "@/components/dialogs/confirm-dialog"
 import { toast } from "sonner"
@@ -23,6 +23,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 interface MyDatasetsProps {
     datasets: Dataset[]
     onDeleteDataset: (id: string) => void
+    onFetchFileMetadata: (shareId: string, fileId: string) => Promise<FileMetadataResponse>
     monitoringOverview: MonitoringOverviewResponse | null
     cacheStats?: {
         sizeBytes: number
@@ -33,12 +34,14 @@ interface MyDatasetsProps {
 export default function MyDatasets({
     datasets,
     onDeleteDataset,
+    onFetchFileMetadata,
     monitoringOverview,
     cacheStats,
 }: MyDatasetsProps) {
     const navigate = useNavigate()
     const [selectedDatasets, setSelectedDatasets] = useState<Set<string>>(new Set())
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+    const [isWarmingUp, setIsWarmingUp] = useState(false)
 
     const toggleSelectAll = () => {
         if (selectedDatasets.size === datasets.length) {
@@ -62,6 +65,43 @@ export default function MyDatasets({
         selectedDatasets.forEach((id) => onDeleteDataset(id))
         setSelectedDatasets(new Set())
         toast.success(`Deleted ${selectedDatasets.size} dataset(s)`)
+    }
+
+    const handleCacheWarmup = async () => {
+        const targetDatasets = datasets.filter(d => selectedDatasets.has(d.id))
+        const totalFiles = targetDatasets.reduce((acc, d) => acc + d.files.length, 0)
+
+        if (totalFiles === 0) {
+            toast.error("No files in selected datasets to cache")
+            return
+        }
+
+        setIsWarmingUp(true)
+        toast.info(`Starting cache warmup for ${totalFiles} files...`)
+
+        let successCount = 0
+        let failCount = 0
+
+        try {
+            for (const dataset of targetDatasets) {
+                for (const file of dataset.files) {
+                    if (file.share_id) {
+                        try {
+                            await onFetchFileMetadata(file.share_id, file.id)
+                            successCount++
+                        } catch (error) {
+                            console.error(`Failed to warm cache for file ${file.id}`, error)
+                            failCount++
+                        }
+                    }
+                }
+            }
+            toast.success(`Cache warmup complete. ${successCount} cached, ${failCount} failed.`)
+        } catch (error) {
+            toast.error("Cache warmup interrupted due to an error")
+        } finally {
+            setIsWarmingUp(false)
+        }
     }
 
     return (
@@ -88,7 +128,15 @@ export default function MyDatasets({
                         </Alert>
 
                         {selectedDatasets.size > 0 && (
-                            <div className="mb-4 flex justify-end">
+                            <div className="mb-4 flex justify-end gap-2">
+                                <Button
+                                    variant="outline"
+                                    onClick={handleCacheWarmup}
+                                    disabled={isWarmingUp}
+                                >
+                                    <IconDatabase className="mr-2 size-4" />
+                                    {isWarmingUp ? "Caching..." : "Cache all files"}
+                                </Button>
                                 <Button variant="destructive" onClick={() => setIsDeleteDialogOpen(true)}>
                                     <IconTrash className="mr-2 size-4" />
                                     Delete Dataset(s)
