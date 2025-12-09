@@ -20,6 +20,8 @@ import {
   type FileMetadataResponse,
   type FileSearchParams,
   type FileSearchResponse,
+  type ContentSearchRequest,
+  type ContentSearchResponse,
   type MonitoringOverviewResponse,
   type MonitoringWorkersResponse,
   type MonitoringEnumerationResponse,
@@ -604,6 +606,22 @@ export function useNeoApi() {
     [token]
   )
 
+  const handleContentSearch = useCallback(
+    async (payload: ContentSearchRequest): Promise<ContentSearchResponse> => {
+      if (!token) {
+        appLogger.warn("Content search attempted without active token")
+        throw new AuthenticationError()
+      }
+
+      const api = apiRef.current
+      appLogger.debug("Searching content", undefined, { query: payload.query })
+      const results = await api.searchContent(token, payload)
+      setCacheStats(api.getCacheStats())
+      return results
+    },
+    [token]
+  )
+
   const handleSelectFilesShare = useCallback(
     async (shareKey: string | "all" | null, page?: number) => {
       if (!token) {
@@ -987,6 +1005,7 @@ export function useNeoApi() {
       handleFetchMyDocuments,
       handleCreateDataset,
       handleDeleteDataset,
+      handleContentSearch,
       handleRetryWorkItems,
     },
   }

@@ -416,6 +416,45 @@ export interface UserResponse {
   last_login: string | null
 }
 
+// Content Search Models
+export interface ContentSearchRequest {
+  query: string
+  share_ids?: string[]
+  file_types?: string[]
+  modified_after?: string
+  modified_before?: string
+  sort_by?: "relevance" | "modified_time" | "filename" | "size"
+  page?: number
+  page_size?: number
+}
+
+export interface ContentSearchResult {
+  id: string
+  share_id: string
+  filename: string
+  file_path: string
+  unc_path: string
+  size: number
+  modified_time: string
+  file_type: string
+  indexed_at: string
+  relevance_score: number
+  snippet?: string
+}
+
+export interface ContentSearchResponse {
+  results: ContentSearchResult[]
+  total_count: number
+  page: number
+  page_size: number
+  total_pages: number
+  has_next: boolean
+  has_previous: boolean
+  query: string
+  search_time_ms: number
+  database_type?: string
+}
+
 export interface Dataset {
   id: string
   name: string

@@ -5,6 +5,8 @@ import type {
   FileMetadataResponse,
   FileSearchParams,
   FileSearchResponse,
+  ContentSearchRequest,
+  ContentSearchResponse,
 } from "@/services/models"
 
 export class FilesApiClient extends BaseApiClient {
@@ -56,5 +58,16 @@ export class FilesApiClient extends BaseApiClient {
     appLogger.debug("Fetching my documents", undefined, { page, pageSize })
     // Using /files endpoint which returns files accessible to the user
     return this.requestWithToken<FileSearchResponse>(`/files?${params}`, token)
+  }
+
+  searchContent(token: string, payload: ContentSearchRequest) {
+    appLogger.debug("Performing content search", undefined, { query: payload.query })
+    return this.requestWithToken<ContentSearchResponse>("/search", token, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    })
   }
 }

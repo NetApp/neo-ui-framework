@@ -55,6 +55,11 @@ const data = {
       url: "#/my-datasets/my-datasets",
       icon: IconFileText,
     },
+    {
+      name: "Content Search",
+      url: "#/my-datasets/content-search",
+      icon: IconFileText,
+    },
   ],
   navSecondary: [
     {

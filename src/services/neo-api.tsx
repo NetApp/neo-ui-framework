@@ -26,6 +26,8 @@ import type {
   AclCacheStatisticsResponse,
   HelmChartVersionResponse,
   TokenResponse,
+  ContentSearchRequest,
+  ContentSearchResponse,
   // TaskCancelResponse,
 } from "./models"
 import { BaseApiClient, AuthenticationError, AuthorizationError } from "./api/base"
@@ -71,6 +73,8 @@ export type {
   HelmChartVersionResponse,
   TokenResponse,
   TaskCancelResponse,
+  ContentSearchRequest,
+  ContentSearchResponse,
 }
 export { AuthenticationError, AuthorizationError }
 
@@ -204,6 +208,11 @@ export class NeoApiService extends BaseApiClient {
   searchFiles(token: string, params: FileSearchParams) {
     const key = `searchFiles:${token}:${JSON.stringify(params)}`
     return this.dataLoader.load(key, () => this.files.searchFiles(token, params), this.filesTtl)
+  }
+
+  searchContent(token: string, payload: ContentSearchRequest) {
+    const key = `searchContent:${token}:${JSON.stringify(payload)}`
+    return this.dataLoader.load(key, () => this.files.searchContent(token, payload), this.filesTtl)
   }
 
   getMyDocuments(token: string, page: number = 1, pageSize: number = 100) {

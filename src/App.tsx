@@ -16,6 +16,7 @@ import Help from "@/components/pages/help"
 import Logs from "@/components/pages/logs"
 import Settings from "@/components/pages/settings"
 const MyDatasets = React.lazy(() => import("@/components/pages/my-datasets"))
+const ContentSearch = React.lazy(() => import("@/components/pages/content-search"))
 const DatasetPage = React.lazy(() => import("@/components/pages/dataset-page"))
 
 import { useNeoApi } from "@/hooks/useNeoApi"
@@ -124,6 +125,16 @@ function App() {
                     onDeleteDataset={handlers.handleDeleteDataset}
                     monitoringOverview={state.monitoring.overview}
                     cacheStats={state.cacheStats}
+                  />
+                }
+              />
+              <Route
+                path="/my-datasets/content-search"
+                element={
+                  <ContentSearch
+                    shares={state.shares}
+                    onContentSearch={handlers.handleContentSearch}
+                    monitoringOverview={state.monitoring.overview}
                   />
                 }
               />
