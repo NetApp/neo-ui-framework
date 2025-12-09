@@ -9,15 +9,18 @@ import { FilesTable } from "@/components/data-tables/filesT"
 import type { FilesResponse, FileMetadataResponse, FileEntry } from "@/services/neo-api"
 import type { Dataset } from "@/services/models"
 import { toast } from "sonner"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
     Sheet,
     SheetContent,
     SheetHeader,
+    SheetFooter,
+    SheetClose,
 } from "@/components/ui/sheet"
 import { Spinner } from "@/components/ui/spinner"
 import { Button } from "@/components/ui/button"
 import { IconTrash, IconInfoCircle } from "@tabler/icons-react"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { ConfirmDialog } from "@/components/dialogs/confirm-dialog"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
@@ -35,7 +38,7 @@ export default function DatasetPage({
     const { datasetId } = useParams()
     const navigate = useNavigate()
     const [selectedFile, setSelectedFile] = useState<FileEntry | null>(null)
-    const [fileContent, setFileContent] = useState<string | null>(null)
+    const [fileMetadata, setFileMetadata] = useState<FileMetadataResponse | null>(null)
     const [contentLoading, setContentLoading] = useState(false)
 
     const dataset = useMemo(() =>
@@ -77,16 +80,15 @@ export default function DatasetPage({
         const fetchContent = async () => {
             if (!selectedFile) return
 
-            setFileContent(null)
+            setFileMetadata(null)
             setContentLoading(true)
 
             try {
                 const shareId = selectedFile.share_id || "dataset"
                 const metadata = await onFetchFileMetadata(shareId, selectedFile.id)
-                setFileContent(metadata.content || "*No content available*")
+                setFileMetadata(metadata)
             } catch (error) {
                 console.error("Failed to fetch file content", error)
-                setFileContent("*Failed to load content*")
                 toast.error("Failed to load file content")
             } finally {
                 setContentLoading(false)
@@ -97,7 +99,7 @@ export default function DatasetPage({
     }, [selectedFile, onFetchFileMetadata])
 
     const handleFileClick = (file: FileEntry) => {
-        setFileContent(null)
+        setFileMetadata(null)
         setContentLoading(true)
         setSelectedFile(file)
     }
@@ -135,7 +137,8 @@ export default function DatasetPage({
                         <div className="mb-4 flex justify-end gap-2">
                             <Button variant="destructive" onClick={handleDeleteClick}>
                                 <IconTrash className="mr-2 size-4" />
-                                Delete dataset
+                                <span className="hidden sm:inline">Delete dataset</span>
+                                <span className="sm:hidden">Delete</span>
                             </Button>
                         </div>
 
@@ -151,29 +154,138 @@ export default function DatasetPage({
             </div>
 
             <Sheet open={!!selectedFile} onOpenChange={(open) => !open && setSelectedFile(null)}>
-                <SheetContent className="w-[90vw] sm:w-[75vw] sm:max-w-[75vw] overflow-y-auto">
-                    <SheetHeader className="mb-4">
-                    </SheetHeader>
-
-                    <div className="mt-4">
-                        {contentLoading ? (
-                            <div className="flex justify-center py-8">
-                                <Spinner className="size-8" />
+                <SheetContent className="w-[90vw] sm:w-[85vw] sm:max-w-[85vw] flex flex-col p-0 gap-0">
+                    <div className="flex-1 overflow-y-auto p-6 flex flex-col">
+                        <SheetHeader className="mb-4 p-0">
+                            <div className="flex flex-col space-y-1">
+                                <h2 className="text-lg font-semibold">{selectedFile?.filename}</h2>
+                                <p className="text-sm text-muted-foreground break-all">{selectedFile?.unc_path}</p>
                             </div>
-                        ) : (
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>{selectedFile?.filename}</CardTitle>
-                                    <CardDescription>{selectedFile?.unc_path}</CardDescription>
-                                </CardHeader>
-                                <CardContent className="prose dark:prose-invert max-w-none prose-table:border prose-table:border-collapse prose-th:border prose-th:p-2 prose-td:border prose-td:p-2">
-                                    <Markdown remarkPlugins={[remarkGfm]}>
-                                        {fileContent || ""}
-                                    </Markdown>
-                                </CardContent>
-                            </Card>
-                        )}
+                        </SheetHeader>
+
+                        <div className="mt-4 flex-1 flex flex-col">
+                            {contentLoading ? (
+                                <div className="flex justify-center py-8">
+                                    <Spinner className="size-8" />
+                                </div>
+                            ) : (
+                                <Tabs defaultValue="details" className="w-full flex-1 flex flex-col">
+                                    <TabsList className="grid w-full grid-cols-2">
+                                        <TabsTrigger value="details">Details</TabsTrigger>
+                                        <TabsTrigger value="content">Content</TabsTrigger>
+                                    </TabsList>
+                                    <TabsContent value="details" className="mt-4 flex-1 flex flex-col data-[state='inactive']:hidden">
+                                        <Card className="flex-1">
+                                            <CardContent className="pt-6">
+                                                {fileMetadata ? (
+                                                    <dl className="grid grid-cols-1 gap-y-3 text-sm sm:grid-cols-2 lg:grid-cols-3 sm:gap-x-6">
+                                                        <div>
+                                                            <dt className="font-medium text-foreground">Filename</dt>
+                                                            <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{fileMetadata.filename}</pre></dd>
+                                                        </div>
+                                                        <div>
+                                                            <dt className="font-medium text-foreground">File type</dt>
+                                                            <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{fileMetadata.file_type || "—"}</pre></dd>
+                                                        </div>
+                                                        <div className="sm:col-span-1">
+                                                            <dt className="font-medium text-foreground">File path</dt>
+                                                            <dd className="break-words p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{fileMetadata.file_path}</pre></dd>
+                                                        </div>
+                                                        <div className="sm:col-span-1">
+                                                            <dt className="font-medium text-foreground">UNC path</dt>
+                                                            <dd className="break-words p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{fileMetadata.unc_path}</pre></dd>
+                                                        </div>
+                                                        <div>
+                                                            <dt className="font-medium text-foreground">Size</dt>
+                                                            <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{fileMetadata.size.toLocaleString()} bytes</pre></dd>
+                                                        </div>
+                                                        <div>
+                                                            <dt className="font-medium text-foreground">Directory</dt>
+                                                            <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{fileMetadata.is_directory ? "Yes" : "No"}</pre></dd>
+                                                        </div>
+                                                        <div>
+                                                            <dt className="font-medium text-foreground">Created</dt>
+                                                            <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{new Date(fileMetadata.created_at).toLocaleString()}</pre></dd>
+                                                        </div>
+                                                        <div>
+                                                            <dt className="font-medium text-foreground">Modified</dt>
+                                                            <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{new Date(fileMetadata.modified_time).toLocaleString()}</pre></dd>
+                                                        </div>
+                                                        <div>
+                                                            <dt className="font-medium text-foreground">Accessed</dt>
+                                                            <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{new Date(fileMetadata.accessed_at).toLocaleString()}</pre></dd>
+                                                        </div>
+                                                        <div>
+                                                            <dt className="font-medium text-foreground">Indexed</dt>
+                                                            <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{fileMetadata.indexed_at ? new Date(fileMetadata.indexed_at).toLocaleString() : "—"}</pre></dd>
+                                                        </div>
+                                                        <div>
+                                                            <dt className="font-medium text-foreground">Conversion (ms)</dt>
+                                                            <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{fileMetadata.conversion_duration_ms}</pre></dd>
+                                                        </div>
+                                                        <div>
+                                                            <dt className="font-medium text-foreground">Extractor</dt>
+                                                            <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{fileMetadata.extractor_used || "—"}</pre></dd>
+                                                        </div>
+                                                        <div className="sm:col-span-3">
+                                                            <dt className="font-medium text-foreground">ACL principals</dt>
+                                                            <dd className="p-1">
+                                                                <pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">
+                                                                    {fileMetadata.acl_principals?.length ? fileMetadata.acl_principals.join(", ") : "N/A"}
+                                                                </pre>
+                                                            </dd>
+                                                        </div>
+                                                        <div className="sm:col-span-3">
+                                                            <dt className="font-medium text-foreground">Resolved principals</dt>
+                                                            <dd className="p-1">
+                                                                {fileMetadata.resolved_principals?.length ? (
+                                                                    <pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">
+                                                                        {JSON.stringify(fileMetadata.resolved_principals, null, 2)}
+                                                                    </pre>
+                                                                ) : (
+                                                                    <pre className="mt-1 max-h-40 overflow-auto rounded bg-muted p-2 text-xs">"N/A"</pre>
+                                                                )}
+                                                            </dd>
+                                                        </div>
+                                                        <div className="sm:col-span-3">
+                                                            <dt className="font-medium text-foreground">Content</dt>
+                                                            <dd className="p-1">
+                                                                {fileMetadata.content ? (
+                                                                    <pre className="mt-1 max-h-96 overflow-auto rounded bg-muted p-2 text-xs">
+                                                                        {fileMetadata.content}
+                                                                    </pre>
+                                                                ) : (
+                                                                    <pre className="mt-1 max-h-40 overflow-auto rounded bg-muted p-2 text-xs">"—"</pre>
+                                                                )}
+                                                            </dd>
+                                                        </div>
+                                                    </dl>
+                                                ) : (
+                                                    <p className="text-center text-muted-foreground">No metadata available</p>
+                                                )}
+                                            </CardContent>
+                                        </Card>
+                                    </TabsContent>
+                                    <TabsContent value="content" className="mt-4 flex-1 flex flex-col data-[state='inactive']:hidden">
+                                        <Card className="flex-1 flex flex-col">
+                                            <CardContent className="flex-1 flex flex-col">
+                                                <div className="flex-1 text-sm text-muted-foreground bg-muted/50 p-2 rounded-md font-mono whitespace-pre-wrap [&_b]:text-red-500 [&_b]:font-bold">
+                                                    <Markdown remarkPlugins={[remarkGfm]}>
+                                                        {fileMetadata?.content || "*No content available*"}
+                                                    </Markdown>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    </TabsContent>
+                                </Tabs>
+                            )}
+                        </div>
                     </div>
+                    <SheetFooter className="p-4 border-t">
+                        <SheetClose asChild>
+                            <Button variant="outline">Close</Button>
+                        </SheetClose>
+                    </SheetFooter>
                 </SheetContent>
             </Sheet >
 

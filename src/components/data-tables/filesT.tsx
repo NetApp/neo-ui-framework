@@ -74,7 +74,7 @@ export function FilesTable({
   const rows = files?.files ?? []
   const message = emptyMessage ?? (loading ? "Loading files…" : "No files available.")
   const showShareColumn = rows.some((file) => file.share_name || file.share_path)
-  const columnCount = 6 + (showShareColumn ? 1 : 0)
+  const columnCount = 5 + (showShareColumn ? 1 : 0)
 
   const [metadataOpen, setMetadataOpen] = useState(false)
   const [metadataLoading, setMetadataLoading] = useState(false)
@@ -88,7 +88,7 @@ export function FilesTable({
 
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>({
     filename: 300,
-    unc_path: 300,
+
     indexed_at: 180,
     size: 100,
     file_type: 100,
@@ -295,13 +295,7 @@ export function FilesTable({
                   />
                 </div>
               </TableHead>
-              <TableHead style={{ width: columnWidths.unc_path, position: 'relative' }}>
-                UNC Path
-                <div
-                  className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-primary/50"
-                  onMouseDown={(e) => handleResizeStart(e, 'unc_path')}
-                />
-              </TableHead>
+
               <TableHead style={{ width: columnWidths.indexed_at, position: 'relative' }}>
                 Indexed
                 <div
@@ -356,7 +350,7 @@ export function FilesTable({
                   className="cursor-pointer hover:bg-muted/50"
                 >
                   <TableCell className="truncate" title={file.filename}>{file.filename}</TableCell>
-                  <TableCell className="truncate" title={file.unc_path}>{file.unc_path}</TableCell>
+
                   <TableCell className="truncate">
                     {formatDate(file.indexed_at)}
                   </TableCell>
