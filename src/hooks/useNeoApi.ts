@@ -98,7 +98,18 @@ export function useNeoApi() {
   const [files, setFiles] = useState<FilesResponse | null>(null)
   const [myDocuments, setMyDocuments] = useState<FilesResponse | null>(null)
   const [datasets, setDatasets] = useState<Dataset[]>([])
-  const [token, setToken] = useState<string | null>(null)
+  /*
+   * Initialize token from localStorage to support persistence across tabs/refresh.
+   * This fixes the issue where opening a new tab would require re-authentication.
+   */
+  const [token, setToken] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem("neo_token")
+    } catch (e) {
+      // Handle potential localStorage access errors (e.g. private mode)
+      return null
+    }
+  })
 
   const [cacheStats, setCacheStats] = useState<{ sizeBytes: number; maxSizeBytes: number; items: number }>({
     sizeBytes: 0,
@@ -157,17 +168,17 @@ export function useNeoApi() {
     []
   )
 
+
   const clearSystemData = useCallback(() => {
     setHealth(null)
     setLicense(null)
     setVersion(null)
-    setHelmChartVersion(null)  // Add this
+    setHelmChartVersion(null)
     setDatabaseSize(null)
     setUsers(null)
     setMe(null)
     setOperations(null)
     setShares(null)
-    setFiles(null)
     setFiles(null)
     setMyDocuments(null)
     setDatasets([])
@@ -183,6 +194,47 @@ export function useNeoApi() {
       sharesAnalytics: null,
     })
   }, [])
+
+  /*
+   * Sync token to localStorage whenever it changes.
+   */
+  useEffect(() => {
+    try {
+      if (token) {
+        localStorage.setItem("neo_token", token)
+      } else {
+        localStorage.removeItem("neo_token")
+      }
+    } catch (e) {
+      appLogger.error("Failed to sync token to localStorage", e instanceof Error ? e.message : "Unknown error")
+    }
+  }, [token])
+
+  /*
+   * Restore session: specific effect to fetch system data on mount if a token exists
+   * but we don't have user data yet (typical reload/new tab scenario).
+   */
+  useEffect(() => {
+    if (token && !me) {
+      const restoreSession = async () => {
+        try {
+          appLogger.info("Restoring session from persisted token")
+          const api = apiRef.current
+          // We need to fetch system data to populate the state (user info, etc.)
+          const data = await api.fetchSystemData(token)
+          applySystemData(data)
+          setCacheStats(api.getCacheStats())
+          appLogger.info("Session restored successfully")
+        } catch (error) {
+          appLogger.warn("Failed to restore session, invalidating token", error instanceof Error ? error.message : "Unknown error")
+          // If the token is invalid (e.g. expired), clear it so the user is prompted to login
+          setToken(null)
+          clearSystemData()
+        }
+      }
+      restoreSession()
+    }
+  }, [token, me, applySystemData, clearSystemData])
 
   const handleConnect = useCallback(
     async (credentials: ConnectionCredentials) => {
