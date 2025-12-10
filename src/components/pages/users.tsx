@@ -26,6 +26,7 @@ import type {
   MeResponse,
   MonitoringOverviewResponse
 } from "@/services/neo-api"
+import { AuthenticationError } from "@/services/neo-api"
 import { OverviewCard } from "@/components/cards/overview-card"
 
 import {
@@ -161,6 +162,9 @@ export default function Users({ users, me, onAddUser, onChangePassword, onRefres
   useEffect(() => {
     if (users === null) {
       onRefresh().catch((error) => {
+        // Suppress alert for authentication errors
+        if (error instanceof AuthenticationError) return
+
         setAlertVariant("error")
         setAlertMessage(error instanceof Error ? error.message : "Failed to refresh users")
       })

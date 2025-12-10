@@ -8,20 +8,18 @@ import type {
   VersionResponse,
   HelmChartVersionResponse,
   MonitoringOverviewResponse,
-  SetupStatus,
 } from "@/services/neo-api"
 import { OverviewCard } from "@/components/cards/overview-card"
 
 interface ConnectorProps {
   health: HealthResponse | null
   license: LicenseResponse | null
-  setupStatus: SetupStatus | null
   version: VersionResponse | null
   helmChartVersion: HelmChartVersionResponse | null
   monitoringOverview: MonitoringOverviewResponse | null
 }
 
-export default function Connector({ health, license, setupStatus, version, helmChartVersion, monitoringOverview }: ConnectorProps) {
+export default function Connector({ health, license, version, helmChartVersion, monitoringOverview }: ConnectorProps) {
   return (
     <div className="flex flex-1 flex-col">
       <div className="@container/main flex flex-1 flex-col gap-2">
@@ -37,7 +35,6 @@ export default function Connector({ health, license, setupStatus, version, helmC
               <NeoInstanceCard
                 health={health}
                 license={license}
-                setupStatus={setupStatus}
                 className="md:col-span-2 lg:col-span-2"
               />
               <VersioningCard

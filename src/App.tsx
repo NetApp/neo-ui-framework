@@ -19,6 +19,9 @@ const MyDatasets = React.lazy(() => import("@/components/pages/my-datasets"))
 const ContentSearch = React.lazy(() => import("@/components/pages/content-search"))
 const DatasetPage = React.lazy(() => import("@/components/pages/dataset-page"))
 
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { IconAlertTriangle } from "@tabler/icons-react"
+
 import { useNeoApi } from "@/hooks/useNeoApi"
 
 function App() {
@@ -48,6 +51,17 @@ function App() {
               onRefresh={handlers.handleRefresh}
               isConnected={!!state.token}
             />
+            {!state.token && (
+              <div className="px-4 pt-4 lg:px-6 lg:pt-6">
+                <Alert variant="destructive">
+                  <IconAlertTriangle className="h-4 w-4" />
+                  <AlertTitle>Authentication Required</AlertTitle>
+                  <AlertDescription>
+                    Some resources on this page require valid authentication. Please log in.
+                  </AlertDescription>
+                </Alert>
+              </div>
+            )}
             <Routes>
               <Route
                 path="/"

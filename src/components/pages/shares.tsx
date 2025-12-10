@@ -20,6 +20,7 @@ import type {
   SharesResponse,
   MonitoringOverviewResponse
 } from "@/services/neo-api"
+import { AuthenticationError } from "@/services/neo-api"
 import { OverviewCard } from "@/components/cards/overview-card"
 
 import {
@@ -222,6 +223,9 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
   useEffect(() => {
     if (shares === null) {
       onRefresh().catch((error) => {
+        // Suppress alert for authentication errors
+        if (error instanceof AuthenticationError) return
+
         setAlertVariant("error")
         setAlertMessage(error instanceof Error ? error.message : "Failed to refresh shares")
       })
@@ -267,6 +271,9 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
         setEditingShareId(shareId)
         setDialogOpen(true)
       } catch (err) {
+        // Suppress alert for authentication errors
+        if (err instanceof AuthenticationError) return
+
         setAlertVariant("error")
         setAlertMessage(err instanceof Error ? err.message : "Unable to load share details.")
       }

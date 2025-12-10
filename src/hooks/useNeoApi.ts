@@ -9,9 +9,8 @@ import {
   type HealthResponse,
   type LicenseResponse,
   type VersionResponse,
-  type HelmChartVersionResponse,  // Add this import
+  type HelmChartVersionResponse,
   type DatabaseSizeResponse,
-  type SetupStatus,
   type OperationResponse,
   type UserResponse,
   type MeResponse,
@@ -49,7 +48,6 @@ export function useNeoApi() {
   const [license, setLicense] = useState<LicenseResponse | null>(null)
   const [version, setVersion] = useState<VersionResponse | null>(null)
   const [helmChartVersion, setHelmChartVersion] = useState<HelmChartVersionResponse | null>(null)
-  const [setupStatus, setSetupStatus] = useState<SetupStatus | null>(null)
 
   const apiRef = useRef(new NeoApiService())
 
@@ -73,16 +71,14 @@ export function useNeoApi() {
           api.getLicenseStatus(),
           api.getVersion(),
           api.getLatestHelmVersion(),
-          api.getSetupStatus(),
         ])
 
-        const [healthResult, licenseResult, versionResult, helmResult, setupStatusResult] = results
+        const [healthResult, licenseResult, versionResult, helmResult] = results
 
         if (healthResult.status === "fulfilled") setHealth(healthResult.value)
         if (licenseResult.status === "fulfilled") setLicense(licenseResult.value)
         if (versionResult.status === "fulfilled") setVersion(versionResult.value)
         if (helmResult.status === "fulfilled") setHelmChartVersion(helmResult.value)
-        if (setupStatusResult.status === "fulfilled") setSetupStatus(setupStatusResult.value)
 
         appLogger.info("Public system data fetched", undefined, {
           health: healthResult.status,
@@ -155,21 +151,20 @@ export function useNeoApi() {
       health: HealthResponse | null
       license: LicenseResponse | null
       version: VersionResponse | null
-      helmChartVersion: HelmChartVersionResponse | null // Add this
+      helmChartVersion: HelmChartVersionResponse | null
       databaseSize: DatabaseSizeResponse | null
-      setupStatus: SetupStatus | null
       users: UserResponse[]
       me: MeResponse | null
       operations: OperationResponse[]
       shares: SharesResponse[]
       files: FilesResponse | null
     }) => {
+      appLogger.debug("applySystemData received")
       setHealth(data.health)
       setLicense(data.license)
       setVersion(data.version)
-      setHelmChartVersion(data.helmChartVersion)  // Add this
+      setHelmChartVersion(data.helmChartVersion)
       setDatabaseSize(data.databaseSize)
-      setSetupStatus(data.setupStatus)
       setUsers(data.users)
       setMe(data.me)
       setOperations(data.operations)
@@ -186,7 +181,6 @@ export function useNeoApi() {
     setVersion(null)
     setHelmChartVersion(null)
     setDatabaseSize(null)
-    setSetupStatus(null)
     setUsers(null)
     setMe(null)
     setOperations(null)
@@ -300,34 +294,80 @@ export function useNeoApi() {
     [applySystemData, clearSystemData]
   )
 
-  const handleRefresh = useCallback(async () => {
+  const handleFetchSystemData = useCallback(async () => {
+    if (!token) return null
+    const api = apiRef.current
+    try {
+      const data = await api.fetchSystemData(token)
+      applySystemData(data)
+      setCacheStats(api.getCacheStats())
+      appLogger.info("System data refreshed successfully")
+      return data
+    } catch (error) {
+      if (error instanceof AuthenticationError) {
+        clearSystemData()
+        setToken(null)
+      }
+      appLogger.error("Failed to fetch system data", error instanceof Error ? error.message : "Unknown error")
+      throw error
+    }
+  }, [token, applySystemData, clearSystemData])
+
+  const handleFetchMonitoring = useCallback(async (force?: boolean) => {
     if (!token) {
-      appLogger.warn("Refresh attempted without active token")
+      appLogger.warn("Fetch monitoring attempted without active token")
       throw new AuthenticationError()
     }
 
     const api = apiRef.current
 
     try {
-      appLogger.debug("Refreshing system data from Neo API")
-      api.clearCache()
-      const data = await api.fetchSystemData(token)
-      applySystemData(data)
-      setCacheStats(api.getCacheStats())
-      appLogger.info("System data refreshed successfully")
+      appLogger.debug("Fetching monitoring data", undefined, { force })
+      if (force) {
+        api.clearCache()
+      }
+      const data = await api.fetchMonitoringData(token)
+      setMonitoring(data)
+      appLogger.info("Monitoring data fetched successfully")
     } catch (error) {
       if (error instanceof AuthenticationError) {
         clearSystemData()
         setToken(null)
-        appLogger.warn("Token expired during refresh")
+      }
+      appLogger.error("Failed to fetch monitoring data", error instanceof Error ? error.message : "Unknown error")
+      throw error
+    }
+  }, [token, clearSystemData])
+
+  const handleRefresh = useCallback(async (): Promise<void> => {
+    if (!token) {
+      appLogger.warn("Refresh attempted without active token")
+      throw new AuthenticationError()
+    }
+
+    try {
+      appLogger.debug("Refreshing system data from Neo API")
+      // Sequential logic: Fetch System Data first
+      await handleFetchSystemData()
+
+      // Always fetch monitoring data now
+      await handleFetchMonitoring(true)
+
+      appLogger.info("Refresh sequence completed")
+    } catch (error) {
+      // handleFetchSystemData already handles auth error/logging for itself
+      // handleFetchMonitoring handles its own errors
+      // Top level catch just for safety or bubbling
+      if (error instanceof AuthenticationError) {
+        // already handled
       }
       appLogger.error(
-        "Failed to refresh system data",
+        "Failed to complete refresh sequence",
         error instanceof Error ? error.message : "Unknown error"
       )
       throw error
     }
-  }, [applySystemData, clearSystemData, token])
+  }, [token, handleFetchSystemData, handleFetchMonitoring])
 
   const handleDeleteShare = useCallback(
     async (shareId: string) => {
@@ -462,6 +502,8 @@ export function useNeoApi() {
     },
     [applySystemData, clearSystemData, token]
   )
+
+
 
   const handleStartCrawl = useCallback(
     async (shareId: string) => {
@@ -783,35 +825,7 @@ export function useNeoApi() {
     [currentShareId, handleSelectFilesShare]
   )
 
-  const handleFetchMonitoring = useCallback(async (force?: boolean) => {
-    if (!token) {
-      appLogger.warn("Fetch monitoring attempted without active token")
-      throw new AuthenticationError()
-    }
 
-    const api = apiRef.current
-
-    try {
-      appLogger.debug("Fetching monitoring data", undefined, { force })
-      if (force) {
-        api.clearCache()
-      }
-      const data = await api.fetchMonitoringData(token)
-      setMonitoring(data)
-      appLogger.info("Monitoring data fetched successfully")
-    } catch (error) {
-      if (error instanceof AuthenticationError) {
-        clearSystemData()
-        setToken(null)
-        appLogger.warn("Token expired during monitoring fetch")
-      }
-      appLogger.error(
-        "Failed to fetch monitoring data",
-        error instanceof Error ? error.message : "Unknown error"
-      )
-      throw error
-    }
-  }, [token, clearSystemData])
 
   const handleFetchTasks = useCallback(async (force?: boolean) => {
     if (!token) {
@@ -931,6 +945,21 @@ export function useNeoApi() {
           status: response.status,
           graceful: response.graceful
         })
+        try {
+          await handleFetchSystemData()
+          await handleFetchMonitoring(true)
+        } catch (error) {
+          if (error instanceof AuthenticationError) {
+            clearSystemData()
+            setToken(null)
+          }
+          appLogger.error(
+            "Failed to refresh monitoring data after task cancellation",
+            error instanceof Error ? error.message : "Unknown error",
+            { taskId }
+          )
+          // Do not re-throw, as the task cancellation itself was successful
+        }
       } catch (error) {
         if (error instanceof AuthenticationError) {
           clearSystemData()
@@ -980,7 +1009,6 @@ export function useNeoApi() {
       version,
       helmChartVersion,
       databaseSize,
-      setupStatus,
       users,
       me,
       operations,

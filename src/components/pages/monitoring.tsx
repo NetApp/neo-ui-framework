@@ -25,6 +25,7 @@ import type {
     TasksResponse,
     TaskStatisticsResponse,
 } from "@/services/neo-api"
+import { AuthenticationError } from "@/services/neo-api"
 
 interface MonitoringProps {
     databaseSize: DatabaseSizeResponse | null
@@ -61,6 +62,9 @@ export default function Monitoring({
             setAlertVariant("success")
             setAlertMessage("Monitoring data refreshed successfully")
         } catch (error) {
+            // Suppress alert for authentication errors as they are handled globally
+            if (error instanceof AuthenticationError) return
+
             setAlertVariant("error")
             setAlertMessage(error instanceof Error ? error.message : "Failed to refresh monitoring data")
         }

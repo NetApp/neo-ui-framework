@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { CheckCircle2Icon, AlertCircleIcon } from "lucide-react"
 
 import type { TasksResponse, TaskStatisticsResponse, MonitoringOverviewResponse, AclCacheStatisticsResponse } from "@/services/neo-api"
+import { AuthenticationError } from "@/services/neo-api"
 
 import { TasksTable } from "@/components/data-tables/tasksT"
 import { OverviewCard } from "@/components/cards/overview-card"
@@ -33,6 +34,9 @@ export default function Tasks({ tasks, taskStats, aclCacheStats, onFetchTasks, o
         setAlertMessage("Tasks refreshed successfully!")
       }
     } catch (error) {
+      // Suppress alert for authentication errors
+      if (error instanceof AuthenticationError) return
+
       setAlertVariant("error")
       setAlertMessage(error instanceof Error ? error.message : "Failed to refresh tasks")
     } finally {

@@ -131,31 +131,27 @@ export class NeoApiService extends BaseApiClient {
   }
 
   getHealth(token?: string) {
-    return this.dataLoader.load(`health:${token || "public"}`, () => this.system.getHealth(token))
+    return this.dataLoader.load(`health:${token || "public"} `, () => this.system.getHealth(token))
   }
 
   getLicenseStatus(token?: string) {
-    return this.dataLoader.load(`license:${token || "public"}`, () => this.system.getLicenseStatus(token))
+    return this.dataLoader.load(`license:${token || "public"} `, () => this.system.getLicenseStatus(token))
   }
 
   getVersion(token?: string) {
-    return this.dataLoader.load(`version:${token || "public"}`, () => this.system.getVersion(token))
-  }
-
-  getSetupStatus(token?: string) {
-    return this.dataLoader.load(`setupStatus:${token || "public"}`, () => this.system.getSetupStatus(token))
+    return this.dataLoader.load(`version:${token || "public"} `, () => this.system.getVersion(token))
   }
 
   getDatabaseSize(token: string) {
-    return this.dataLoader.load(`databaseSize:${token}`, () => this.system.getDatabaseSize(token))
+    return this.dataLoader.load(`databaseSize:${token} `, () => this.system.getDatabaseSize(token))
   }
 
   getUsers(token: string) {
-    return this.dataLoader.load(`users:${token}`, () => this.users.getUsers(token))
+    return this.dataLoader.load(`users:${token} `, () => this.users.getUsers(token))
   }
 
   getMeUsers(token: string) {
-    return this.dataLoader.load(`me:${token}`, () => this.users.getMeUsers(token))
+    return this.dataLoader.load(`me:${token} `, () => this.users.getMeUsers(token))
   }
 
   createUser(
@@ -177,11 +173,11 @@ export class NeoApiService extends BaseApiClient {
   }
 
   getShares(token: string) {
-    return this.dataLoader.load(`shares:${token}`, () => this.shares.getShares(token))
+    return this.dataLoader.load(`shares:${token} `, () => this.shares.getShares(token))
   }
 
   getShareDetails(token: string, shareId: string) {
-    return this.dataLoader.load(`shareDetails:${token}:${shareId}`, () => this.shares.getShareDetails(token, shareId))
+    return this.dataLoader.load(`shareDetails:${token}:${shareId} `, () => this.shares.getShareDetails(token, shareId))
   }
 
   createShare(token: string, payload: Parameters<SharesApiClient["createShare"]>[1]) {
@@ -201,51 +197,51 @@ export class NeoApiService extends BaseApiClient {
   }
 
   getFiles(token: string, shareId: string, page?: number, pageSize?: number) {
-    const key = `files:${token}:${shareId}:${page}:${pageSize}`
+    const key = `files:${token}:${shareId}:${page}:${pageSize} `
     return this.dataLoader.load(key, () => this.files.getFiles(token, shareId, page, pageSize), this.filesTtl)
   }
 
   getFileMetadata(token: string, shareId: string, fileId: string) {
-    return this.dataLoader.load(`fileMetadata:${token}:${shareId}:${fileId}`, () => this.files.getFileMetadata(token, shareId, fileId), this.filesTtl)
+    return this.dataLoader.load(`fileMetadata:${token}:${shareId}:${fileId} `, () => this.files.getFileMetadata(token, shareId, fileId), this.filesTtl)
   }
 
   searchFiles(token: string, params: FileSearchParams) {
-    const key = `searchFiles:${token}:${JSON.stringify(params)}`
+    const key = `searchFiles:${token}:${JSON.stringify(params)} `
     return this.dataLoader.load(key, () => this.files.searchFiles(token, params), this.filesTtl)
   }
 
   searchContent(token: string, payload: ContentSearchRequest) {
-    const key = `searchContent:${token}:${JSON.stringify(payload)}`
+    const key = `searchContent:${token}:${JSON.stringify(payload)} `
     return this.dataLoader.load(key, () => this.files.searchContent(token, payload), this.filesTtl)
   }
 
   getMyDocuments(token: string, page: number = 1, pageSize: number = 100) {
-    const key = `myDocuments:${token}:${page}:${pageSize}`
+    const key = `myDocuments:${token}:${page}:${pageSize} `
     return this.dataLoader.load(key, () => this.files.getMyDocuments(token, page, pageSize), this.filesTtl)
   }
 
   getOperations(token: string) {
-    return this.dataLoader.load(`operations:${token}`, () => this.operations.getOperations(token))
+    return this.dataLoader.load(`operations:${token} `, () => this.operations.getOperations(token))
   }
 
   getMonitoringOverview(token: string) {
-    return this.dataLoader.load(`monitoringOverview:${token}`, () => this.monitoring.getMonitoringOverview(token), this.monitoringTtl)
+    return this.dataLoader.load(`monitoringOverview:${token} `, () => this.monitoring.getMonitoringOverview(token), this.monitoringTtl)
   }
 
   getMonitoringWorkers(token: string) {
-    return this.dataLoader.load(`monitoringWorkers:${token}`, () => this.monitoring.getMonitoringWorkers(token), this.monitoringTtl)
+    return this.dataLoader.load(`monitoringWorkers:${token} `, () => this.monitoring.getMonitoringWorkers(token), this.monitoringTtl)
   }
 
   getMonitoringEnumeration(token: string) {
-    return this.dataLoader.load(`monitoringEnumeration:${token}`, () => this.monitoring.getMonitoringEnumeration(token), this.monitoringTtl)
+    return this.dataLoader.load(`monitoringEnumeration:${token} `, () => this.monitoring.getMonitoringEnumeration(token), this.monitoringTtl)
   }
 
   getMonitoringGraphRateLimit(token: string) {
-    return this.dataLoader.load(`monitoringGraphRateLimit:${token}`, () => this.monitoring.getMonitoringGraphRateLimit(token), this.monitoringTtl)
+    return this.dataLoader.load(`monitoringGraphRateLimit:${token} `, () => this.monitoring.getMonitoringGraphRateLimit(token), this.monitoringTtl)
   }
 
   getMonitoringFailedItems(token: string) {
-    return this.dataLoader.load(`monitoringFailedItems:${token}`, () => this.monitoring.getMonitoringFailedItems(token), this.monitoringTtl)
+    return this.dataLoader.load(`monitoringFailedItems:${token} `, () => this.monitoring.getMonitoringFailedItems(token), this.monitoringTtl)
   }
 
   retryWorkItems(token: string, shareId: string, workItemIds: string[]) {
@@ -253,15 +249,15 @@ export class NeoApiService extends BaseApiClient {
   }
 
   getTasks(token: string) {
-    return this.dataLoader.load(`tasks:${token}`, () => this.tasks.getTasks(token), this.monitoringTtl)
+    return this.dataLoader.load(`tasks:${token} `, () => this.tasks.getTasks(token), this.monitoringTtl)
   }
 
   getTaskStatistics(token: string) {
-    return this.dataLoader.load(`taskStatistics:${token}`, () => this.tasks.getTaskStatistics(token), this.monitoringTtl)
+    return this.dataLoader.load(`taskStatistics:${token} `, () => this.tasks.getTaskStatistics(token), this.monitoringTtl)
   }
 
   getAclCacheStatistics(token: string) {
-    return this.dataLoader.load(`aclCacheStatistics:${token}`, () => this.tasks.getAclCacheStatistics(token), this.monitoringTtl)
+    return this.dataLoader.load(`aclCacheStatistics:${token} `, () => this.tasks.getAclCacheStatistics(token), this.monitoringTtl)
   }
 
   deleteTask(token: string, taskId: string) {
@@ -269,11 +265,11 @@ export class NeoApiService extends BaseApiClient {
   }
 
   getFileAnalytics(token: string) {
-    return this.dataLoader.load(`fileAnalytics:${token}`, () => this.analytics.getFileAnalytics(token), this.monitoringTtl)
+    return this.dataLoader.load(`fileAnalytics:${token} `, () => this.analytics.getFileAnalytics(token), this.monitoringTtl)
   }
 
   getSharesAnalytics(token: string) {
-    return this.dataLoader.load(`sharesAnalytics:${token}`, () => this.analytics.getSharesAnalytics(token), this.monitoringTtl)
+    return this.dataLoader.load(`sharesAnalytics:${token} `, () => this.analytics.getSharesAnalytics(token), this.monitoringTtl)
   }
 
   getLatestHelmVersion() {
@@ -302,6 +298,10 @@ export class NeoApiService extends BaseApiClient {
     }
 
     try {
+      appLogger.debug("System fetch logic", undefined, {
+        reason: "Active token found - fetching full system data"
+      })
+
       const [
         health,
         license,
@@ -312,7 +312,6 @@ export class NeoApiService extends BaseApiClient {
         shares,
         databaseSize,
         helmChartVersion,
-        setupStatus,
       ] = await Promise.all([
         fetchOptional(this.getHealth(token), null),
         fetchOptional(this.getLicenseStatus(token), null),
@@ -323,8 +322,6 @@ export class NeoApiService extends BaseApiClient {
         fetchOptional(this.getShares(token), []),
         fetchOptional(this.getDatabaseSize(token), null),
         fetchOptional(this.getLatestHelmVersion(), null),
-        // Handle missing setup endpoint (older backends)
-        this.getSetupStatus(token).catch(() => null),
       ])
 
       appLogger.info("System data fetched successfully", undefined, {
@@ -348,7 +345,6 @@ export class NeoApiService extends BaseApiClient {
         files: null as FilesResponse | null,
         databaseSize,
         helmChartVersion,
-        setupStatus,
       }
     } catch (error) {
       appLogger.error(

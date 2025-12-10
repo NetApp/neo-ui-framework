@@ -32,6 +32,7 @@ import type {
   MonitoringOverviewResponse,
   FileEntry
 } from "@/services/neo-api"
+import { AuthenticationError } from "@/services/neo-api"
 import { OverviewCard } from "@/components/cards/overview-card"
 
 import {
@@ -133,6 +134,9 @@ export default function Files({
   useEffect(() => {
     if (files === null && !loading) {
       onRefresh().catch((error) => {
+        // Suppress alert for authentication errors
+        if (error instanceof AuthenticationError) return
+
         setAlertVariant("error")
         setAlertMessage(error instanceof Error ? error.message : "Failed to refresh files")
       })
