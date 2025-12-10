@@ -478,8 +478,8 @@ export function FilesTable({
                   <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{metadata.size.toLocaleString()} bytes</pre></dd>
                 </div>
                 <div>
-                  <dt className="font-medium text-foreground">Directory</dt>
-                  <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{metadata.is_directory ? "Yes" : "No"}</pre></dd>
+                  <dt className="font-medium text-foreground">File ID</dt>
+                  <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{metadata.id}</pre></dd>
                 </div>
                 <div>
                   <dt className="font-medium text-foreground">Created</dt>
