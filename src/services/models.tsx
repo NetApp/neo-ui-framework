@@ -9,6 +9,22 @@ export interface ConnectionCredentials {
   password: string
 }
 
+export interface SetupStatus {
+  setup_complete: boolean
+  database_configured: boolean
+  database_url_environment_set: boolean
+  config_storage: string
+  steps_completed: string[]
+  required_steps: string[]
+  optional_steps: string[]
+  message: string
+  persistence_info: {
+    database_url_set: boolean
+    persistent: boolean
+    message: string
+  }
+}
+
 export interface ReadyResponse { // only for v3
   ready: boolean
   checks: {

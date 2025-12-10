@@ -15,16 +15,17 @@ import {
 } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import type { HealthResponse, LicenseResponse } from "@/services/neo-api"
-import { IconCpu, IconRuler3, IconArrowsJoin } from "@tabler/icons-react"
+import type { HealthResponse, LicenseResponse, SetupStatus } from "@/services/neo-api"
+import { IconCpu, IconRuler3, IconArrowsJoin, IconSettings } from "@tabler/icons-react"
 
 interface NeoInstanceCardProps {
     health: HealthResponse | null
     license: LicenseResponse | null
+    setupStatus: SetupStatus | null
     className?: string
 }
 
-export function NeoInstanceCard({ health, license, className }: NeoInstanceCardProps) {
+export function NeoInstanceCard({ health, license, setupStatus, className }: NeoInstanceCardProps) {
     const healthStatus = health?.status ?? "Not connected"
     const healthComponents = [
         { key: "database", label: "Database" },
@@ -41,12 +42,35 @@ export function NeoInstanceCard({ health, license, className }: NeoInstanceCardP
                     Neo Instance
                 </CardTitle>
                 <CardDescription>
-                    System health, license status, and resource usage
+                    Last check: {health?.timestamp ? new Date(health.timestamp).toLocaleString() : "Unknown"}
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
                 {/* System Status & License Overview */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                            <IconSettings className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm font-medium">System Setup</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Badge
+                                variant="outline"
+                                className={`${setupStatus
+                                    ? (setupStatus.setup_complete
+                                        ? "text-green-600 border-green-200 dark:text-green-400 dark:border-green-800"
+                                        : "text-destructive border-destructive/50")
+                                    : "text-muted-foreground border-border"
+                                    } text-xl px-3 py-1`}
+                            >
+                                {setupStatus ? (setupStatus.setup_complete ? "Configured" : "Configure") : "N/A"}
+                            </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                            {setupStatus?.message || (setupStatus === null ? "Setup info unavailable" : "Status unknown")}
+                        </p>
+                    </div>
+
                     <div className="space-y-2">
                         <div className="flex items-center gap-2">
                             <Activity className="h-4 w-4 text-muted-foreground" />
@@ -63,9 +87,6 @@ export function NeoInstanceCard({ health, license, className }: NeoInstanceCardP
                                 {healthStatus}
                             </Badge>
                         </div>
-                        <p className="text-xs text-muted-foreground">
-                            Last check: {health?.timestamp ? new Date(health.timestamp).toLocaleString() : "Unknown"}
-                        </p>
                     </div>
 
                     <div className="space-y-2">

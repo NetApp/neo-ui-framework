@@ -348,7 +348,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
                 <Label htmlFor="username">Username*</Label>
                 <Input
                   id="username"
-                  placeholder="domain\user"
+                  placeholder="user@domain"
                   value={username}
                   onChange={(event) => setUsername(event.target.value)}
                   required

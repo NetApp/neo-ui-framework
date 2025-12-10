@@ -142,6 +142,10 @@ export class NeoApiService extends BaseApiClient {
     return this.dataLoader.load(`version:${token || "public"}`, () => this.system.getVersion(token))
   }
 
+  getSetupStatus(token?: string) {
+    return this.dataLoader.load(`setupStatus:${token || "public"}`, () => this.system.getSetupStatus(token))
+  }
+
   getDatabaseSize(token: string) {
     return this.dataLoader.load(`databaseSize:${token}`, () => this.system.getDatabaseSize(token))
   }
@@ -308,6 +312,7 @@ export class NeoApiService extends BaseApiClient {
         shares,
         databaseSize,
         helmChartVersion,
+        setupStatus,
       ] = await Promise.all([
         fetchOptional(this.getHealth(token), null),
         fetchOptional(this.getLicenseStatus(token), null),
@@ -318,6 +323,8 @@ export class NeoApiService extends BaseApiClient {
         fetchOptional(this.getShares(token), []),
         fetchOptional(this.getDatabaseSize(token), null),
         fetchOptional(this.getLatestHelmVersion(), null),
+        // Handle missing setup endpoint (older backends)
+        this.getSetupStatus(token).catch(() => null),
       ])
 
       appLogger.info("System data fetched successfully", undefined, {
@@ -341,6 +348,7 @@ export class NeoApiService extends BaseApiClient {
         files: null as FilesResponse | null,
         databaseSize,
         helmChartVersion,
+        setupStatus,
       }
     } catch (error) {
       appLogger.error(

@@ -11,6 +11,7 @@ import {
   type VersionResponse,
   type HelmChartVersionResponse,  // Add this import
   type DatabaseSizeResponse,
+  type SetupStatus,
   type OperationResponse,
   type UserResponse,
   type MeResponse,
@@ -48,6 +49,7 @@ export function useNeoApi() {
   const [license, setLicense] = useState<LicenseResponse | null>(null)
   const [version, setVersion] = useState<VersionResponse | null>(null)
   const [helmChartVersion, setHelmChartVersion] = useState<HelmChartVersionResponse | null>(null)
+  const [setupStatus, setSetupStatus] = useState<SetupStatus | null>(null)
 
   const apiRef = useRef(new NeoApiService())
 
@@ -70,15 +72,17 @@ export function useNeoApi() {
           api.getHealth(),
           api.getLicenseStatus(),
           api.getVersion(),
-          api.getLatestHelmVersion()
+          api.getLatestHelmVersion(),
+          api.getSetupStatus(),
         ])
 
-        const [healthResult, licenseResult, versionResult, helmResult] = results
+        const [healthResult, licenseResult, versionResult, helmResult, setupStatusResult] = results
 
         if (healthResult.status === "fulfilled") setHealth(healthResult.value)
         if (licenseResult.status === "fulfilled") setLicense(licenseResult.value)
         if (versionResult.status === "fulfilled") setVersion(versionResult.value)
         if (helmResult.status === "fulfilled") setHelmChartVersion(helmResult.value)
+        if (setupStatusResult.status === "fulfilled") setSetupStatus(setupStatusResult.value)
 
         appLogger.info("Public system data fetched", undefined, {
           health: healthResult.status,
@@ -153,6 +157,7 @@ export function useNeoApi() {
       version: VersionResponse | null
       helmChartVersion: HelmChartVersionResponse | null // Add this
       databaseSize: DatabaseSizeResponse | null
+      setupStatus: SetupStatus | null
       users: UserResponse[]
       me: MeResponse | null
       operations: OperationResponse[]
@@ -164,6 +169,7 @@ export function useNeoApi() {
       setVersion(data.version)
       setHelmChartVersion(data.helmChartVersion)  // Add this
       setDatabaseSize(data.databaseSize)
+      setSetupStatus(data.setupStatus)
       setUsers(data.users)
       setMe(data.me)
       setOperations(data.operations)
@@ -180,6 +186,7 @@ export function useNeoApi() {
     setVersion(null)
     setHelmChartVersion(null)
     setDatabaseSize(null)
+    setSetupStatus(null)
     setUsers(null)
     setMe(null)
     setOperations(null)
@@ -973,6 +980,7 @@ export function useNeoApi() {
       version,
       helmChartVersion,
       databaseSize,
+      setupStatus,
       users,
       me,
       operations,
