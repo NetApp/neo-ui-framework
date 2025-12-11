@@ -24,6 +24,10 @@ import type {
     MonitoringFailedItemsResponse,
     TasksResponse,
     TaskStatisticsResponse,
+    HealthResponse,
+    LicenseResponse,
+    VersionResponse,
+    HelmChartVersionResponse,
 } from "@/services/neo-api"
 import { AuthenticationError } from "@/services/neo-api"
 
@@ -46,6 +50,10 @@ interface MonitoringProps {
         items: number
     }
     onRetryWorkItems: (shareId: string, workItemIds: string[]) => Promise<boolean>
+    health: HealthResponse | null
+    license: LicenseResponse | null
+    version: VersionResponse | null
+    helmChartVersion: HelmChartVersionResponse | null
 }
 
 export default function Monitoring({
@@ -54,6 +62,10 @@ export default function Monitoring({
     onFetchMonitoring,
     cacheStats,
     onRetryWorkItems,
+    health,
+    license,
+    version,
+    helmChartVersion,
 }: MonitoringProps) {
     const [alertMessage, setAlertMessage] = useState<string | null>(null)
     const [alertVariant, setAlertVariant] = useState<"success" | "error">("success")
@@ -112,6 +124,11 @@ export default function Monitoring({
                             monitoring={monitoring}
                             onRefreshMonitoring={onFetchMonitoring}
                             onRetryWorkItems={onRetryWorkItems}
+                            health={health}
+                            license={license}
+                            version={version}
+                            helmChartVersion={helmChartVersion}
+                            cacheStats={cacheStats}
                         />
                     </div>
                 </div>

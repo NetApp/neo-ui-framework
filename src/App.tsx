@@ -97,6 +97,10 @@ function App() {
                     onFetchMonitoring={handlers.handleFetchMonitoring}
                     cacheStats={state.cacheStats}
                     onRetryWorkItems={handlers.handleRetryWorkItems}
+                    health={state.health}
+                    license={state.license}
+                    version={state.version}
+                    helmChartVersion={state.helmChartVersion}
                   />
                 }
               />

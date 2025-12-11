@@ -21,6 +21,7 @@ import type { DatabaseSizeResponse } from "@/services/neo-api"
 
 interface ContentSavingsChartProps {
   databaseSize: DatabaseSizeResponse | null
+  className?: string
 }
 
 // Static chart configuration for content savings
@@ -42,7 +43,7 @@ const chartConfig = {
   },
 } satisfies ChartConfig
 
-export function ContentSavingsChart({ databaseSize }: ContentSavingsChartProps) {
+export function ContentSavingsChart({ databaseSize, className }: ContentSavingsChartProps) {
   const chartData = React.useMemo(() => {
     if (!databaseSize) {
       return []
@@ -73,21 +74,21 @@ export function ContentSavingsChart({ databaseSize }: ContentSavingsChartProps) 
 
   const savingsPercentage = React.useMemo(() => {
     if (!databaseSize || databaseSize.total_original_file_size_mb === 0) return 0
-    
+
     const originalSize = databaseSize.total_original_file_size_mb
     const contentSize = databaseSize.total_file_content_size_mb
     const savings = originalSize - contentSize
-    
+
     return (savings / originalSize) * 100
   }, [databaseSize])
 
   const savingsInfo = React.useMemo(() => {
     if (!databaseSize) return null
-    
+
     const originalSize = databaseSize.total_original_file_size_mb
     const contentSize = databaseSize.total_file_content_size_mb
     const savings = originalSize - contentSize
-    
+
     return {
       originalSize,
       contentSize,
@@ -101,7 +102,7 @@ export function ContentSavingsChart({ databaseSize }: ContentSavingsChartProps) 
     if (active && payload && payload.length && savingsInfo) {
       const data = payload[0].payload
       const percentage = ((data.size / totalOriginalSize) * 100).toFixed(1)
-      
+
       return (
         <div className="bg-background border border-border rounded-lg p-3 shadow-lg">
           <p className="font-medium">
@@ -123,7 +124,7 @@ export function ContentSavingsChart({ databaseSize }: ContentSavingsChartProps) 
 
   if (!databaseSize) {
     return (
-      <Card className="md:col-span-2 lg:col-span-2 flex flex-col">
+      <Card className={`md:col-span-2 lg:col-span-2 flex flex-col ${className || ""}`}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle>Content Savings</CardTitle>
         </CardHeader>
@@ -135,7 +136,7 @@ export function ContentSavingsChart({ databaseSize }: ContentSavingsChartProps) 
   }
 
   return (
-    <Card className="md:col-span-2 lg:col-span-2 flex flex-col">
+    <Card className={`md:col-span-2 lg:col-span-2 flex flex-col ${className || ""}`}>
       <CardHeader className="items-center pb-0">
         <CardTitle>Content Storage Efficiency</CardTitle>
         <CardDescription>Original files vs extracted content size</CardDescription>

@@ -27,11 +27,18 @@ import type {
   TasksResponse,
   TaskStatisticsResponse,
   DatabaseSizeResponse,
+  HealthResponse,
+  LicenseResponse,
+  VersionResponse,
+  HelmChartVersionResponse,
 } from "@/services/neo-api"
 import { FileTypeChart } from "@/components/charts/filetype"
 import { SharesDistributionChart } from "@/components/charts/sharesdistribution"
 import { DatabaseSizeCard } from "@/components/charts/databasesize"
 import { ContentSavingsChart } from "@/components/charts/contentsavings"
+import { NeoInstanceCard } from "@/components/cards/neo-instance-card"
+import { VersioningCard } from "@/components/cards/versioning-card"
+import { CacheStatsCard } from "@/components/cards/cache-stats-card"
 
 interface MonitoringChartProps {
   monitoring: {
@@ -48,9 +55,27 @@ interface MonitoringChartProps {
   databaseSize: DatabaseSizeResponse | null
   onRefreshMonitoring: () => Promise<void>
   onRetryWorkItems: (shareId: string, workItemIds: string[]) => Promise<boolean>
+  health: HealthResponse | null
+  license: LicenseResponse | null
+  version: VersionResponse | null
+  helmChartVersion: HelmChartVersionResponse | null
+  cacheStats?: {
+    sizeBytes: number
+    items: number
+  }
 }
 
-export function MonitoringChart({ databaseSize, monitoring, onRefreshMonitoring, onRetryWorkItems }: MonitoringChartProps) {
+export function MonitoringChart({
+  databaseSize,
+  monitoring,
+  onRefreshMonitoring,
+  onRetryWorkItems,
+  health,
+  license,
+  version,
+  helmChartVersion,
+  cacheStats
+}: MonitoringChartProps) {
   const {
     overview,
     workers,
@@ -109,11 +134,28 @@ export function MonitoringChart({ databaseSize, monitoring, onRefreshMonitoring,
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      {/* Neo Instance Card */}
+      <NeoInstanceCard
+        health={health}
+        license={license}
+        className="md:col-span-1 lg:col-span-1"
+      />
+
+      {/* System Versions Card */}
+      <VersioningCard
+        version={version}
+        helmChartVersion={helmChartVersion}
+        className="md:col-span-1 lg:col-span-1"
+      />
+
       {/* Database Size Card */}
-      <DatabaseSizeCard databaseSize={databaseSize} />
+      <DatabaseSizeCard databaseSize={databaseSize} className="lg:col-span-1" />
+
+      {/* Cache Stats Card */}
+      <CacheStatsCard cacheStats={cacheStats} className="lg:col-span-1" />
 
       {/* Content Savings Chart */}
-      <ContentSavingsChart databaseSize={databaseSize} />
+      <ContentSavingsChart databaseSize={databaseSize} className="md:col-span-1 lg:col-span-1" />
 
       {/* File Types Distribution */}
       <FileTypeChart fileAnalytics={fileAnalytics} />
