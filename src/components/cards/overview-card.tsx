@@ -53,6 +53,11 @@ export function OverviewCard({
                             Last updated (UTC): {new Date(overview.timestamp).toLocaleString()}
                         </span>
                     )}
+                    {overview?.timestamp && (
+                        <span className="block">
+                            Next refresh (UTC): {new Date(new Date(overview.timestamp).getTime() + monitoringTtl * 60 * 1000).toLocaleString()}
+                        </span>
+                    )}
                 </CardDescription>
             </CardHeader>
             {showCacheStats && (

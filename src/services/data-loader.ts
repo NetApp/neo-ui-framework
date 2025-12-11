@@ -1,6 +1,6 @@
 import { appLogger } from "./app-logger"
 
-interface CacheEntry<T> {
+export interface CacheEntry<T> {
   data: T
   timestamp: number
   expiresAt: number
@@ -154,6 +154,13 @@ export class DataLoader {
       maxSizeBytes: this.maxSizeBytes,
       items: this.cache.size
     }
+  }
+
+  /**
+   * Returns a specific cache entry metadata if it exists
+   */
+  getEntry<T>(key: string): CacheEntry<T> | undefined {
+    return this.cache.get(key)
   }
 
   /**

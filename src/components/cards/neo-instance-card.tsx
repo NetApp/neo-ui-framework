@@ -41,7 +41,7 @@ export function NeoInstanceCard({ health, license, className }: NeoInstanceCardP
                     Neo Instance
                 </CardTitle>
                 <CardDescription>
-                    Last check: {health?.timestamp ? new Date(health.timestamp).toLocaleString() : "Unknown"}
+                    Health and resource information
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
