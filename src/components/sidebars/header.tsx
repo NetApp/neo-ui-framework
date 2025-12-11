@@ -15,6 +15,13 @@ import {
 } from "@/components/ui/sidebar"
 
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+
+import {
   ModeToggle
 } from "@/components/navs/theme-toggle"
 import { CacheStatus } from "@/components/navs/cache-status"
@@ -49,7 +56,7 @@ interface SiteHeaderProps {
 export function SiteHeader({ onConnect, onRefresh, isConnected, cacheStats }: SiteHeaderProps) {
   const location = useLocation()
 
-  let title = "Connector"
+  let title = "Monitoring"
   if (location.pathname.startsWith("/connector")) {
     title = "Connector"
   } else if (location.pathname.startsWith("/monitoring")) {
@@ -85,22 +92,43 @@ export function SiteHeader({ onConnect, onRefresh, isConnected, cacheStats }: Si
         <h1 className="text-base font-medium">{title}</h1>
         <div className="ml-auto flex items-center gap-2">
           {isConnected && <CacheStatus stats={cacheStats} />}
-          <ModeToggle />
-          <Button
-            variant="outline"
-            asChild
-            size="default"
-            className="hidden sm:flex"
-          >
-            <a
-              href="https://github.com/NetApp/Innovation-Labs"
-              rel="noopener noreferrer"
-              target="_blank"
-              className="dark:text-foreground"
-            >
-              <IconBrandGithub /> GitHub
-            </a>
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="inline-flex">
+                  <ModeToggle />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Toggle theme</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="inline-flex hidden sm:flex">
+                  <Button
+                    variant="outline"
+                    asChild
+                    size="default"
+                    className="w-full"
+                  >
+                    <a
+                      href="https://github.com/NetApp/Innovation-Labs"
+                      rel="noopener noreferrer"
+                      target="_blank"
+                      className="dark:text-foreground"
+                    >
+                      <IconBrandGithub /> GitHub
+                    </a>
+                  </Button>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>View source on GitHub</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           <ConnectDialog onConnect={onConnect} onRefresh={onRefresh} isConnected={isConnected}>
             <Button
               variant="default"

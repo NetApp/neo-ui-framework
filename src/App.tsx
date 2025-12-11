@@ -6,7 +6,7 @@ import { AppSidebar } from "@/components/sidebars/sidebar"
 import { SiteHeader } from "@/components/sidebars/header"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 
-import Connector from "@/components/pages/connector"
+// import Connector from "@/components/pages/connector"
 import Monitoring from "@/components/pages/monitoring"
 import Shares from "@/components/pages/shares"
 import Files from "@/components/pages/files"
@@ -67,16 +67,20 @@ function App() {
               <Route
                 path="/"
                 element={
-                  <Connector
+                  <Monitoring
+                    databaseSize={state.databaseSize}
+                    monitoring={state.monitoring}
+                    onFetchMonitoring={handlers.handleFetchMonitoring}
+                    cacheStats={state.cacheStats}
+                    onRetryWorkItems={handlers.handleRetryWorkItems}
                     health={state.health}
                     license={state.license}
                     version={state.version}
                     helmChartVersion={state.helmChartVersion}
-                    monitoringOverview={state.monitoring.overview}
                   />
                 }
               />
-              <Route
+              {/* <Route
                 path="/connector"
                 element={
                   <Connector
@@ -87,7 +91,7 @@ function App() {
                     monitoringOverview={state.monitoring.overview}
                   />
                 }
-              />
+              /> */}
               <Route
                 path="/monitoring"
                 element={

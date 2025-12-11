@@ -1,14 +1,14 @@
-import { 
-    IconMoon,
-    IconSun
+import {
+  IconMoon,
+  IconSun
 } from "@tabler/icons-react"
 
-import { 
-  Button 
+import {
+  Button
 } from "@/components/ui/button"
 
-import { 
-  useTheme 
+import {
+  useTheme
 } from "@/components/navs/theme-provider"
 
 export function ModeToggle() {
@@ -30,8 +30,8 @@ export function ModeToggle() {
   }
 
   return (
-    <Button 
-      variant="outline" 
+    <Button
+      variant="outline"
       onClick={toggleTheme}
       className="gap-2"
     >

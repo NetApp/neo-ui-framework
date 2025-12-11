@@ -10,7 +10,7 @@ import {
   IconFileSearch,
   IconFolders,
   IconFolderCode,
-  IconArrowsJoin,
+  // IconArrowsJoin,
   IconFolderShare,
   IconFiles,
 } from "@tabler/icons-react"
@@ -26,11 +26,11 @@ import {
 
 const data = {
   navMain: [
-    {
-      name: "Connector",
-      url: "#/connector",
-      icon: IconArrowsJoin,
-    },
+    // {
+    //   name: "Connector",
+    //   url: "#/connector",
+    //   icon: IconArrowsJoin,
+    // },
     {
       name: "Monitoring",
       url: "#/monitoring",

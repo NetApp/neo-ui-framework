@@ -90,7 +90,7 @@ export default function Logs({ operations, monitoringOverview }: { operations: O
                 </p>
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={onDownloadLogs}>
+                <Button variant="default" size="sm" onClick={onDownloadLogs}>
                   <IconDownload className="mr-2 size-4" />
                   Download
                 </Button>

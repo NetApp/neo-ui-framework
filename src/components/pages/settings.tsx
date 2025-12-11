@@ -29,7 +29,7 @@ interface SettingsProps {
     }
 }
 
-export default function Settings({ monitoringOverview, cacheStats }: SettingsProps) {
+export default function Settings({ monitoringOverview }: SettingsProps) {
     const { monitoringTtl, filesTtl, cacheMaxSize, logLevel, updateSettings } = useSettings()
     const [searchParams, setSearchParams] = useSearchParams()
 
@@ -67,8 +67,7 @@ export default function Settings({ monitoringOverview, cacheStats }: SettingsPro
                             <OverviewCard
                                 overview={monitoringOverview}
                                 title="Settings"
-                                cacheStats={cacheStats}
-                                showCacheStats={true}
+                                showCacheStats={false}
                             />
 
                             <div className="flex items-center justify-between">

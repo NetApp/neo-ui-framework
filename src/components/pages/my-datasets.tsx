@@ -36,7 +36,7 @@ export default function MyDatasets({
     onDeleteDataset,
     onFetchFileMetadata,
     monitoringOverview,
-    cacheStats,
+    // cacheStats,
 }: MyDatasetsProps) {
     const navigate = useNavigate()
     const [selectedDatasets, setSelectedDatasets] = useState<Set<string>>(new Set())
@@ -113,9 +113,8 @@ export default function MyDatasets({
                             <OverviewCard
                                 overview={monitoringOverview}
                                 title="My Datasets"
-                                description="Manage your created datasets."
                                 variant="files"
-                                cacheStats={cacheStats}
+                                showCacheStats={false}
                             />
                         </div>
 
