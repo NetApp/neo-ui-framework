@@ -1,3 +1,4 @@
+// Copyright 2025 NetApp, Inc. All Rights Reserved.
 import { useCallback, useRef, useState, useEffect } from "react"
 
 import { toast } from "sonner"

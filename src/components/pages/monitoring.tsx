@@ -1,3 +1,4 @@
+// Copyright 2025 NetApp, Inc. All Rights Reserved.
 "use client"
 
 import { useEffect, useState, useCallback } from "react"

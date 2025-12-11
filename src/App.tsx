@@ -1,3 +1,4 @@
+// Copyright 2025 NetApp, Inc. All Rights Reserved.
 import React from "react"
 import { HashRouter, Routes, Route } from "react-router-dom"
 

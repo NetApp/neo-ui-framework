@@ -1,3 +1,4 @@
+// Copyright 2025 NetApp, Inc. All Rights Reserved.
 export interface TokenResponse {
   access_token: string
   token_type: string

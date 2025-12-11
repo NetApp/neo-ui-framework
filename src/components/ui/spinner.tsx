@@ -1,3 +1,4 @@
+// Copyright 2025 NetApp, Inc. All Rights Reserved.
 import { Loader2Icon } from "lucide-react"
 
 import { cn } from "@/lib/utils"

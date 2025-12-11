@@ -1,3 +1,4 @@
+// Copyright 2025 NetApp, Inc. All Rights Reserved.
 import { useState, useCallback } from "react"
 import type {
     SharesResponse,
