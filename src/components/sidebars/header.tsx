@@ -17,6 +17,7 @@ import {
 import {
   ModeToggle
 } from "@/components/navs/theme-toggle"
+import { CacheStatus } from "@/components/navs/cache-status"
 
 import {
   IconBrandGithub,
@@ -38,9 +39,14 @@ interface SiteHeaderProps {
   onConnect: (credentials: ConnectionCredentials) => Promise<void>
   onRefresh: () => Promise<void>
   isConnected: boolean
+  cacheStats?: {
+    sizeBytes: number
+    maxSizeBytes: number
+    items: number
+  }
 }
 
-export function SiteHeader({ onConnect, onRefresh, isConnected }: SiteHeaderProps) {
+export function SiteHeader({ onConnect, onRefresh, isConnected, cacheStats }: SiteHeaderProps) {
   const location = useLocation()
 
   let title = "Connector"
@@ -78,6 +84,7 @@ export function SiteHeader({ onConnect, onRefresh, isConnected }: SiteHeaderProp
         />
         <h1 className="text-base font-medium">{title}</h1>
         <div className="ml-auto flex items-center gap-2">
+          {isConnected && <CacheStatus stats={cacheStats} />}
           <ModeToggle />
           <Button
             variant="outline"

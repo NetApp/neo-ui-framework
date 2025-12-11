@@ -50,6 +50,7 @@ function App() {
               onConnect={handlers.handleConnect}
               onRefresh={handlers.handleRefresh}
               isConnected={!!state.token}
+              cacheStats={state.cacheStats}
             />
             {!state.token && (
               <div className="px-4 pt-4 lg:px-6 lg:pt-6">
@@ -190,7 +191,12 @@ function App() {
                   monitoringOverview={state.monitoring.overview}
                 />
               } />
-              <Route path="/settings" element={<Settings />} />
+              <Route path="/settings" element={
+                <Settings
+                  monitoringOverview={state.monitoring.overview}
+                  cacheStats={state.cacheStats}
+                />
+              } />
               <Route path="/help" element={<Help />} />
             </Routes>
           </SidebarInset>
