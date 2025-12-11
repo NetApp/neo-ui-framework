@@ -62,7 +62,7 @@ export function SiteHeader({ onConnect, onRefresh, isConnected, cacheStats }: Si
   } else if (location.pathname.startsWith("/monitoring")) {
     title = "Monitoring"
   } else if (location.pathname.startsWith("/shares")) {
-    title = "Shares"
+    title = "Data Sources"
   } else if (location.pathname.startsWith("/my-datasets/data-corpus")) {
     title = "Data Corpus"
   } else if (location.pathname.startsWith("/my-datasets/content-search")) {

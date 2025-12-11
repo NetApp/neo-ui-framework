@@ -289,7 +289,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
             <div className="mb-4">
               <OverviewCard
                 overview={monitoringOverview}
-                title="Shares Overview"
+                title="Data Sources Overview"
                 cacheStats={undefined}
                 showCacheStats={false}
               />
