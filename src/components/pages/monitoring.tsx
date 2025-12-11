@@ -45,6 +45,7 @@ interface MonitoringProps {
         sizeBytes: number
         items: number
     }
+    onRetryWorkItems: (shareId: string, workItemIds: string[]) => Promise<boolean>
 }
 
 export default function Monitoring({
@@ -52,6 +53,7 @@ export default function Monitoring({
     monitoring,
     onFetchMonitoring,
     cacheStats,
+    onRetryWorkItems,
 }: MonitoringProps) {
     const [alertMessage, setAlertMessage] = useState<string | null>(null)
     const [alertVariant, setAlertVariant] = useState<"success" | "error">("success")
@@ -59,8 +61,6 @@ export default function Monitoring({
     const handleFetchMonitoring = useCallback(async (force?: boolean) => {
         try {
             await onFetchMonitoring(force)
-            setAlertVariant("success")
-            setAlertMessage("Monitoring data refreshed successfully")
         } catch (error) {
             // Suppress alert for authentication errors as they are handled globally
             if (error instanceof AuthenticationError) return
@@ -104,7 +104,6 @@ export default function Monitoring({
                             <OverviewCard
                                 overview={monitoring.overview}
                                 title="Monitoring Overview"
-                                description="Real-time monitoring data for NetApp Neo operations. Auto-refreshes every 60 seconds."
                                 cacheStats={cacheStats}
                             />
                         </div>
@@ -112,6 +111,7 @@ export default function Monitoring({
                             databaseSize={databaseSize}
                             monitoring={monitoring}
                             onRefreshMonitoring={onFetchMonitoring}
+                            onRetryWorkItems={onRetryWorkItems}
                         />
                     </div>
                 </div>

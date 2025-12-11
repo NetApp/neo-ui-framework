@@ -95,6 +95,7 @@ function App() {
                     monitoring={state.monitoring}
                     onFetchMonitoring={handlers.handleFetchMonitoring}
                     cacheStats={state.cacheStats}
+                    onRetryWorkItems={handlers.handleRetryWorkItems}
                   />
                 }
               />

@@ -10,8 +10,6 @@ import {
   Check,
   ChevronsUpDown,
   Loader2,
-  CheckCircle2Icon,
-  AlertCircleIcon
 } from "lucide-react"
 
 import {
@@ -32,7 +30,6 @@ import type {
   MonitoringOverviewResponse,
   FileEntry
 } from "@/services/neo-api"
-import { AuthenticationError } from "@/services/neo-api"
 import { OverviewCard } from "@/components/cards/overview-card"
 
 import {
@@ -63,12 +60,6 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command"
-
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle
-} from "@/components/ui/alert"
 
 import {
   Popover,
@@ -103,7 +94,7 @@ export default function Files({
   onSearchFiles,
   onPageChange,
   onCreateDataset,
-  onRefresh,
+  // onRefresh, // Unused
   monitoringOverview,
   cacheStats,
 }: FilesProps) {
@@ -114,8 +105,6 @@ export default function Files({
   const [createDatasetDialogOpen, setCreateDatasetDialogOpen] = useState(false)
   const [searchResults, setSearchResults] = useState<FileSearchResponse | null>(null)
   const [isSearchMode, setIsSearchMode] = useState(false)
-  const [alertMessage, setAlertMessage] = useState<string | null>(null)
-  const [alertVariant, setAlertVariant] = useState<"success" | "error">("success")
 
   const options = useMemo(
     () =>
@@ -130,28 +119,6 @@ export default function Files({
     // Reset to "No selection" on mount to clear previous state
     onSelectShare(null).catch(console.error)
   }, [onSelectShare])
-
-  useEffect(() => {
-    if (files === null && !loading) {
-      onRefresh().catch((error) => {
-        // Suppress alert for authentication errors
-        if (error instanceof AuthenticationError) return
-
-        setAlertVariant("error")
-        setAlertMessage(error instanceof Error ? error.message : "Failed to refresh files")
-      })
-    }
-  }, [onRefresh, files, loading])
-
-  useEffect(() => {
-    if (!alertMessage) return
-
-    const timer = window.setTimeout(() => {
-      setAlertMessage(null)
-    }, 5_000)
-
-    return () => window.clearTimeout(timer)
-  }, [alertMessage])
 
   useEffect(() => {
     if (!shares?.length) {
@@ -299,8 +266,7 @@ export default function Files({
             <div className="mb-4">
               <OverviewCard
                 overview={monitoringOverview}
-                title="Data Corpus"
-                description="Browse and manage files across all shares."
+                title="Data Corpus Overview"
                 variant="files"
                 cacheStats={cacheStats}
                 showCacheStats={false}
@@ -406,16 +372,6 @@ export default function Files({
               </p>
             ) : null}
 
-            {alertMessage ? (
-              <Alert
-                variant={alertVariant === "success" ? "default" : "destructive"}
-                className="mb-4"
-              >
-                {alertVariant === "success" ? <CheckCircle2Icon /> : <AlertCircleIcon />}
-                <AlertTitle>{alertMessage}</AlertTitle>
-                <AlertDescription />
-              </Alert>
-            ) : null}
             <FilesTable
               files={displayFiles}
               loading={loading}

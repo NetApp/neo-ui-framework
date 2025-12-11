@@ -9,7 +9,6 @@ import {
   IconRefresh,
 } from "@tabler/icons-react"
 import { Button } from "@/components/ui/button"
-import { useNeoApi } from "@/hooks/useNeoApi"
 import {
   Card,
   CardContent,
@@ -48,9 +47,10 @@ interface MonitoringChartProps {
   }
   databaseSize: DatabaseSizeResponse | null
   onRefreshMonitoring: () => Promise<void>
+  onRetryWorkItems: (shareId: string, workItemIds: string[]) => Promise<boolean>
 }
 
-export function MonitoringChart({ databaseSize, monitoring, onRefreshMonitoring }: MonitoringChartProps) {
+export function MonitoringChart({ databaseSize, monitoring, onRefreshMonitoring, onRetryWorkItems }: MonitoringChartProps) {
   const {
     overview,
     workers,
@@ -63,8 +63,7 @@ export function MonitoringChart({ databaseSize, monitoring, onRefreshMonitoring 
     sharesAnalytics
   } = monitoring
 
-  const { handlers } = useNeoApi()
-  const { handleRetryWorkItems } = handlers
+  const handleRetryWorkItems = onRetryWorkItems
   const [isRetrying, setIsRetrying] = useState(false)
 
   const handleRetry = async () => {

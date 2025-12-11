@@ -73,12 +73,14 @@ export class DataLoader {
 
     // Return cached data if valid
     if (cached && now < cached.expiresAt) {
-      appLogger.debug(`[DataLoader] Cache hit for ${key}`)
+      appLogger.debug(`[DataLoader] Cache HIT for ${key}`)
       // Refresh LRU order by deleting and re-inserting
       this.cache.delete(key)
       this.cache.set(key, cached)
       return cached.data as T
     }
+
+    appLogger.debug(`[DataLoader] Cache MISS for ${key}`)
 
     // If a request is already in flight for this key, return that promise
     if (this.pendingRequests.has(key)) {
@@ -101,6 +103,7 @@ export class DataLoader {
             size,
           })
           this.currentSizeBytes += size
+          appLogger.debug(`[DataLoader] Cached ${key} (TTL: ${ttl}ms, Size: ${size}b)`)
         }
 
         this.pendingRequests.delete(key)

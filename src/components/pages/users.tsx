@@ -189,7 +189,6 @@ export default function Users({ users, me, onAddUser, onChangePassword, onRefres
               <OverviewCard
                 overview={monitoringOverview}
                 title="Users Overview"
-                description="Overview of system users and their roles."
                 showCacheStats={false}
               />
             </div>

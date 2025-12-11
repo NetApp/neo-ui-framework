@@ -25,7 +25,7 @@ interface OverviewCardProps {
 export function OverviewCard({
     overview,
     title = "Monitoring Overview",
-    description = "Real-time monitoring data for NetApp Neo operations. Auto-refreshes every 60 seconds.",
+    description = "",
     showCacheStats = true,
     variant = "default",
     cacheStats

@@ -29,7 +29,6 @@ export default function Connector({ health, license, version, helmChartVersion, 
               <OverviewCard
                 overview={monitoringOverview}
                 title="System Overview"
-                description="Overview of the NetApp Neo system status and health."
                 showCacheStats={false}
               />
               <NeoInstanceCard

@@ -290,7 +290,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
               <OverviewCard
                 overview={monitoringOverview}
                 title="Shares Overview"
-                description="Overview of configured shares and their status."
+                cacheStats={undefined}
                 showCacheStats={false}
               />
             </div>

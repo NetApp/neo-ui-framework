@@ -42,6 +42,9 @@ import type {
 
 import { useSettings } from "@/context/settings-context"
 
+// Create singleton instance outside the hook
+const neoApiService = new NeoApiService()
+
 export function useNeoApi() {
   const { monitoringTtl, filesTtl, cacheMaxSize } = useSettings()
   const [health, setHealth] = useState<HealthResponse | null>(null)
@@ -49,11 +52,12 @@ export function useNeoApi() {
   const [version, setVersion] = useState<VersionResponse | null>(null)
   const [helmChartVersion, setHelmChartVersion] = useState<HelmChartVersionResponse | null>(null)
 
-  const apiRef = useRef(new NeoApiService())
+  // Use singleton instance
+  const apiRef = useRef(neoApiService)
 
   // Update API config when settings change
   useEffect(() => {
-    apiRef.current.updateConfig({
+    neoApiService.updateConfig({
       monitoringTtl,
       filesTtl,
       cacheMaxSize,
@@ -326,8 +330,15 @@ export function useNeoApi() {
       if (force) {
         api.clearCache()
       }
-      const data = await api.fetchMonitoringData(token)
-      setMonitoring(data)
+
+      const [monitoringData, databaseSizeData] = await Promise.all([
+        api.fetchMonitoringData(token),
+        api.getDatabaseSize(token)
+      ])
+
+      setMonitoring(monitoringData)
+      setDatabaseSize(databaseSizeData)
+      setCacheStats(api.getCacheStats())
       appLogger.info("Monitoring data fetched successfully")
     } catch (error) {
       if (error instanceof AuthenticationError) {

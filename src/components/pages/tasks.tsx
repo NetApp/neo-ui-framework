@@ -72,7 +72,6 @@ export default function Tasks({ tasks, taskStats, aclCacheStats, onFetchTasks, o
               <OverviewCard
                 overview={monitoringOverview}
                 title="Tasks Overview"
-                description="Overview of background tasks and their execution status."
                 showCacheStats={false}
               />
             </div>

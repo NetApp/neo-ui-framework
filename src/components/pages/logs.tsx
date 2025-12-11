@@ -67,8 +67,7 @@ export default function Logs({ operations, monitoringOverview }: { operations: O
             <div className="mb-4">
               <OverviewCard
                 overview={monitoringOverview}
-                title="Logs Overview"
-                description="Recent system operations and audit logs."
+                title="System Logs"
                 showCacheStats={false}
               />
             </div>

@@ -165,60 +165,11 @@ export default function ContentSearch({ shares, onContentSearch, onCreateDataset
         <div className="flex flex-1 flex-col">
             <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
                 <div className="px-4 lg:px-6">
-                    <div className="mb-4">
-                        <OverviewCard
-                            overview={monitoringOverview}
-                            title="Content Search"
-                            description="Search across all your indexed documents."
-                            showCacheStats={false}
-                        />
-                    </div>
-
-                    {/* Version Check Alert */}
-                    {(() => {
-                        if (!version?.version) return null
-                        // Simple version check assuming semantic versioning format x.y.z
-                        // We want to show alert if version < 3.0.5
-                        // A robust semantic version comparison is ideal but for specific requirement a direct check can work if limited
-                        // Or better, a small helper.
-
-                        const currentVersion = version.version.split('-')[0] // remove prerelease tag if any
-                        const targetVersion = "3.0.5"
-
-                        // Helper to compare versions
-                        const compareVersions = (v1: string, v2: string) => {
-                            const parts1 = v1.split('.').map(Number)
-                            const parts2 = v2.split('.').map(Number)
-
-                            for (let i = 0; i < 3; i++) {
-                                const p1 = parts1[i] || 0
-                                const p2 = parts2[i] || 0
-
-                                if (p1 > p2) return 1
-                                if (p1 < p2) return -1
-                            }
-                            return 0
-                        }
-
-                        if (compareVersions(currentVersion, targetVersion) < 0) {
-                            return (
-                                <Alert variant="destructive">
-                                    <IconAlertCircle className="h-4 w-4" />
-                                    <AlertTitle>Feature Unavailable</AlertTitle>
-                                    <AlertDescription>
-                                        Feature only available starting with Neo Connector version 3.0.5
-                                    </AlertDescription>
-                                </Alert>
-                            )
-                        }
-                        return null
-                    })()}
-
                     <div className="w-full space-y-6">
                         {/* Search Input Section */}
                         <Card>
                             <CardHeader>
-                                <CardTitle>Search Content</CardTitle>
+                                <CardTitle>Full Text Content Search</CardTitle>
                                 <CardDescription>
                                     Perform full-text search across all your indexed documents.
                                 </CardDescription>
