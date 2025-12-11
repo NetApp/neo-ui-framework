@@ -532,9 +532,21 @@ export function FilesTable({
                       <pre className="mt-1 max-h-200 overflow-auto rounded bg-muted p-2 text-xs">
                         {metadata.content}
                       </pre>
+                    ) : metadata.content_chunks && metadata.content_chunks.length > 0 ? (
+                      <pre className="mt-1 max-h-200 overflow-auto rounded bg-muted p-2 text-xs">
+                        {metadata.content_chunks.join("")}
+                      </pre>
                     ) : (
                       <pre className="mt-1 max-h-40 overflow-auto rounded bg-muted p-2 text-xs">"—"</pre>
                     )}
+                  </dd>
+                </div>
+                <div className="sm:col-span-3">
+                  <dt className="font-medium text-foreground">All Fields</dt>
+                  <dd className="p-1">
+                    <pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">
+                      {JSON.stringify(metadata, null, 2)}
+                    </pre>
                   </dd>
                 </div>
               </dl>
