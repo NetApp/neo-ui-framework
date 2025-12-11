@@ -106,10 +106,19 @@ export function ContentSavingsChart({ databaseSize, className }: ContentSavingsC
       return (
         <div className="bg-background border border-border rounded-lg p-3 shadow-lg">
           <p className="font-medium">
-            {data.type === 'content' ? 'Extracted Content' : 'Space Saved'}
+            {data.type === 'content' ? 'Content Size' : 'Space Saved'}
           </p>
           <p className="text-sm text-muted-foreground">
-            Size: {data.size.toFixed(2)} MB ({percentage}%)
+            {data.type === 'content' ? (
+              <>
+                Size: {data.size.toFixed(2)} MB ({percentage}%) <br />
+                Original Size: {savingsInfo.originalSize.toFixed(2)} MB
+              </>
+            ) : (
+              <>
+                Size: {data.size.toFixed(2)} MB ({percentage}%)
+              </>
+            )}
           </p>
           {data.type === 'savings' && (
             <p className="text-sm text-muted-foreground">
@@ -138,7 +147,7 @@ export function ContentSavingsChart({ databaseSize, className }: ContentSavingsC
   return (
     <Card className={`md:col-span-2 lg:col-span-2 flex flex-col ${className || ""}`}>
       <CardHeader className="items-center pb-0">
-        <CardTitle>Content Storage Efficiency</CardTitle>
+        <CardTitle>Content Extraction Efficiency</CardTitle>
         <CardDescription>Original files vs extracted content size</CardDescription>
       </CardHeader>
       <CardContent className="flex-1 pb-0">
@@ -197,16 +206,6 @@ export function ContentSavingsChart({ databaseSize, className }: ContentSavingsC
             <div className="flex items-center gap-2 leading-none font-medium">
               {savingsInfo.savings.toFixed(2)} MB saved ({savingsInfo.compressionRatio}:1 ratio)
               <TrendingDown className="h-4 w-4" />
-            </div>
-            <div className="grid grid-cols-2 gap-2 w-full text-xs">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Original:</span>
-                <span className="font-mono">{savingsInfo.originalSize.toFixed(2)} MB</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Content:</span>
-                <span className="font-mono">{savingsInfo.contentSize.toFixed(2)} MB</span>
-              </div>
             </div>
           </>
         )}

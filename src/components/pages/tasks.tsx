@@ -8,8 +8,6 @@ import { AuthenticationError } from "@/services/neo-api"
 
 import { TasksTable } from "@/components/data-tables/tasksT"
 import { OverviewCard } from "@/components/cards/overview-card"
-import { TasksSummaryCard } from "@/components/cards/tasks-summary-card"
-import { AclCacheCard } from "@/components/cards/acl-cache-card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 interface TasksProps {
@@ -90,10 +88,6 @@ export default function Tasks({ tasks, taskStats, aclCacheStats, onFetchTasks, o
               </Alert>
             ) : null}
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2 mb-6">
-              <TasksSummaryCard stats={taskStats} />
-              <AclCacheCard stats={aclCacheStats} />
-            </div>
 
             <TasksTable tasks={tasks} onDeleteTask={onDeleteTask} />
           </div>

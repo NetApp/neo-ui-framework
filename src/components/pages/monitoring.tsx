@@ -24,6 +24,7 @@ import type {
     MonitoringFailedItemsResponse,
     TasksResponse,
     TaskStatisticsResponse,
+    AclCacheStatisticsResponse,
     HealthResponse,
     LicenseResponse,
     VersionResponse,
@@ -41,6 +42,7 @@ interface MonitoringProps {
         failedItems: MonitoringFailedItemsResponse | null
         tasks: TasksResponse[] | null
         taskStats: TaskStatisticsResponse | null
+        aclCacheStats: AclCacheStatisticsResponse | null
         fileAnalytics: { file_type: string; count: number; total_size: number }[] | null
         sharesAnalytics: { share_id: string; share_name: string; share_path: string; count: number; total_size: number }[] | null
     }
@@ -116,6 +118,7 @@ export default function Monitoring({
                             <OverviewCard
                                 overview={monitoring.overview}
                                 title="Monitoring Overview"
+                                showCacheStats={false}
                                 cacheStats={cacheStats}
                             />
                         </div>
