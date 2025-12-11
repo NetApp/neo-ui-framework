@@ -365,9 +365,9 @@ export function MonitoringChart({
       </TabsContent>
 
       <TabsContent value="tasks">
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
-          <TasksSummaryCard stats={taskStats} />
-          <AclCacheCard stats={monitoring.aclCacheStats} />
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <TasksSummaryCard stats={taskStats} className="md:col-span-1 lg:col-span-1" />
+          <AclCacheCard stats={monitoring.aclCacheStats} className="md:col-span-1 lg:col-span-1" />
         </div>
       </TabsContent>
     </Tabs>

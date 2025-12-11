@@ -37,27 +37,31 @@ const data = {
       icon: IconActivity,
     },
     {
-      name: "Shares",
-      url: "#/shares",
-      icon: IconFolderShare,
-    },
-    {
       name: "Tasks",
       url: "#/tasks",
       icon: IconListCheck,
     },
   ],
-  navDatasets: [
+  navDataEstate: [
+    {
+      name: "Sources",
+      url: "#/shares",
+      icon: IconFolderShare,
+    },
     {
       name: "Data Corpus",
       url: "#/my-datasets/data-corpus",
       icon: IconFiles,
     },
+  ],
+  navDiscovery: [
     {
       name: "Content Search",
       url: "#/my-datasets/content-search",
       icon: IconFileSearch,
     },
+  ],
+  navDatasets: [
     {
       name: "My Datasets",
       url: "#/my-datasets/my-datasets",
@@ -109,7 +113,9 @@ export function AppSidebarContent({ datasets = [], ...props }: AppSidebarContent
   return (
     <SidebarContent {...props}>
       <NavMain items={data.navMain} />
-      <NavMain items={navDatasets} label="My Datasets" />
+      <NavMain items={data.navDataEstate} label="Data Estate" />
+      <NavMain items={data.navDiscovery} label="Discovery" />
+      <NavMain items={navDatasets} label="Datasets" />
       <NavMain items={data.navSecondary} className="mt-auto" />
     </SidebarContent>
   )
