@@ -13,21 +13,19 @@ import type {
 export class FilesApiClient extends BaseApiClient {
   async getFiles(token: string, shareId: string, page?: number, pageSize?: number) {
     const params = new URLSearchParams()
-
-    // Only filter by share if a specific share is selected
-    if (shareId && shareId !== "all" && shareId !== "__none__" && shareId !== "__all__") {
-      params.append("share_id", shareId)
-    }
-
     if (page !== undefined) params.append("page", page.toString())
     if (pageSize !== undefined) params.append("page_size", pageSize.toString())
 
-    // Use /files endpoint to get full file details including UNC path
-    const endpoint = `/files?${params}`
+    let endpoint = `/files?${params}`
 
-    appLogger.debug("Fetching files for share via /files", undefined, { shareId, page, pageSize })
+    // If specific share is selected, use the share-specific endpoint
+    if (shareId && shareId !== "all" && shareId !== "__none__" && shareId !== "__all__") {
+      endpoint = `/shares/${shareId}/files?${params}`
+    }
 
-    // The /files endpoint returns a structure similar to FileSearchResponse
+    appLogger.debug("Fetching files", undefined, { shareId, endpoint })
+
+    // The endpoints return a structure similar to FileSearchResponse
     const response = await this.requestWithToken<FileSearchResponse>(endpoint, token)
 
     // Map to FilesResponse with UNC path fallback and share_path fallback
