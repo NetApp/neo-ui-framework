@@ -1,6 +1,7 @@
 // Copyright 2025 NetApp, Inc. All Rights Reserved.
 "use client"
 
+import { useState, useRef, useCallback, useEffect } from "react"
 import {
   CheckCircle2,
   XCircle,
@@ -82,17 +83,119 @@ function getStatusBadge(status: string) {
 export function SharesTable({ shares, onShareClick }: SharesTableProps) {
   const rows = shares ?? []
 
+  const [columnWidths, setColumnWidths] = useState<Record<string, number>>({
+    share_path: 300,
+    files: 100,
+    username: 150,
+    last_crawled: 200,
+    status: 120,
+  })
+
+  const resizingRef = useRef<{
+    column: string
+    startX: number
+    startWidth: number
+  } | null>(null)
+
+  const handleResizeStart = (e: React.MouseEvent, column: string) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    resizingRef.current = {
+      column,
+      startX: e.clientX,
+      startWidth: columnWidths[column] || 100
+    }
+
+    document.addEventListener('mousemove', handleResizeMove)
+    document.addEventListener('mouseup', handleResizeEnd)
+    document.body.style.cursor = 'col-resize'
+  }
+
+  const animationFrameRef = useRef<number | null>(null)
+
+  const handleResizeMove = useCallback((e: MouseEvent) => {
+    if (!resizingRef.current) return
+
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current)
+    }
+
+    animationFrameRef.current = requestAnimationFrame(() => {
+      if (!resizingRef.current) return
+
+      const { column, startX, startWidth } = resizingRef.current
+      const diff = e.clientX - startX
+      const newWidth = Math.max(50, startWidth + diff)
+
+      setColumnWidths(prev => {
+        if (prev[column] === newWidth) return prev
+        return {
+          ...prev,
+          [column]: newWidth
+        }
+      })
+    })
+  }, [])
+
+  const handleResizeEnd = useCallback(() => {
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current)
+    }
+    resizingRef.current = null
+    document.removeEventListener('mousemove', handleResizeMove)
+    document.removeEventListener('mouseup', handleResizeEnd)
+    document.body.style.cursor = ''
+  }, [handleResizeMove])
+
+  useEffect(() => {
+    return () => {
+      document.removeEventListener('mousemove', handleResizeMove)
+      document.removeEventListener('mouseup', handleResizeEnd)
+    }
+  }, [handleResizeMove, handleResizeEnd])
+
   return (
     <>
       <div className="overflow-hidden rounded-lg border">
-        <Table>
+        <Table style={{ tableLayout: 'fixed', width: '100%' }}>
           <TableHeader className="sticky top-0 z-10 bg-muted">
             <TableRow>
-              <TableHead>Share Path</TableHead>
-              <TableHead>User</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Last Crawled</TableHead>
-              <TableHead>Files</TableHead>
+              <TableHead style={{ width: columnWidths.share_path, position: 'relative' }}>
+                Share Path
+                <div
+                  className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-primary/50"
+                  onMouseDown={(e) => handleResizeStart(e, 'share_path')}
+                />
+              </TableHead>
+              <TableHead style={{ width: columnWidths.files, position: 'relative' }}>
+                Files
+                <div
+                  className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-primary/50"
+                  onMouseDown={(e) => handleResizeStart(e, 'files')}
+                />
+              </TableHead>
+              <TableHead style={{ width: columnWidths.username, position: 'relative' }}>
+                User
+                <div
+                  className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-primary/50"
+                  onMouseDown={(e) => handleResizeStart(e, 'username')}
+                />
+              </TableHead>
+              <TableHead style={{ width: columnWidths.last_crawled, position: 'relative' }}>
+                Last Crawled
+                <div
+                  className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-primary/50"
+                  onMouseDown={(e) => handleResizeStart(e, 'last_crawled')}
+                />
+              </TableHead>
+              <TableHead style={{ width: columnWidths.status, position: 'relative' }}>
+                Status
+                <div
+                  className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-primary/50"
+                  onMouseDown={(e) => handleResizeStart(e, 'status')}
+                />
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -104,13 +207,13 @@ export function SharesTable({ shares, onShareClick }: SharesTableProps) {
                   className="cursor-pointer hover:bg-muted/50"
                   data-id={share.id}
                 >
-                  <TableCell>{share.share_path}</TableCell>
-                  <TableCell>{share.username}</TableCell>
-                  <TableCell>{getStatusBadge(share.status)}</TableCell>
-                  <TableCell>
+                  <TableCell className="truncate" title={share.share_path}>{share.share_path}</TableCell>
+                  <TableCell className="truncate">{share.last_crawl_file_count}</TableCell>
+                  <TableCell className="truncate" title={share.username}>{share.username}</TableCell>
+                  <TableCell className="truncate">
                     {share.last_crawled ? new Date(share.last_crawled).toLocaleString() : "—"}
                   </TableCell>
-                  <TableCell>{share.last_crawl_file_count}</TableCell>
+                  <TableCell className="truncate">{getStatusBadge(share.status)}</TableCell>
                 </TableRow >
               ))
             ) : (
