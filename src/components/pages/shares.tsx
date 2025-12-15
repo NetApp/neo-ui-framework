@@ -71,9 +71,6 @@ import {
   AlertTitle
 } from "@/components/ui/alert"
 
-import {
-  Switch
-} from "@/components/ui/switch"
 
 import { ConfirmDialog } from "@/components/dialogs/confirm-dialog"
 import { Spinner } from "@/components/ui/spinner"
@@ -129,7 +126,7 @@ const DEFAULT_RULES_JSON = `{
   "exclude_patterns": [],
   "include_patterns": [],
   "persist_file_content": true,
-  "enable_copilot_upload": true
+  "enable_copilot_upload": false
 }`
 
 function getStatusIcon(status: string) {
@@ -196,7 +193,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
   const [useKerberos, setUseKerberos] = useState("required")
   const [workgroup, setWorkgroup] = useState("")
   const [resolveOrder, setResolveOrder] = useState("host")
-  const [showAdvanced, setShowAdvanced] = useState(false)
+
   const [editingShareId, setEditingShareId] = useState<string | null>(null)
 
   const [detailsLoading, setDetailsLoading] = useState(false)
@@ -215,7 +212,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
     setUseKerberos("required")
     setWorkgroup("")
     setResolveOrder("host")
-    setShowAdvanced(false)
+
     setEditingShareId(null)
     setError(null)
   }, [])
@@ -337,7 +334,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
     setUseKerberos(details.use_kerberos ?? "required")
     setWorkgroup(details.workgroup ?? "")
     setResolveOrder(details.resolve_order ?? "host")
-    setShowAdvanced(true)
+
   }, [])
 
   const handleShareClick = useCallback(async (shareId: string) => {
@@ -384,24 +381,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
     }
   }, [editingShareId, onDeleteShare])
 
-  const handleEditShare = useCallback(async (shareId: string) => {
-    // This is called from the dropdown menu, so we go directly to edit mode
-    // But we need to fetch details first to populate the form
-    setEditingShareId(shareId)
-    setSheetMode('edit')
-    setSheetOpen(true)
-    setDetailsLoading(true)
 
-    try {
-      const details = await onFetchShareDetails(shareId)
-      populateForm(details)
-    } catch (err) {
-      setAlertVariant("error")
-      setAlertMessage(err instanceof Error ? err.message : "Unable to load share details.")
-    } finally {
-      setDetailsLoading(false)
-    }
-  }, [onFetchShareDetails, populateForm])
 
   return (
     <div className="flex flex-1 flex-col">
@@ -434,11 +414,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
             ) : null}
             <SharesTable
               shares={shares}
-              onDeleteShare={onDeleteShare}
-              onStartCrawl={handleCrawl}
               onShareClick={handleShareClick}
-              onEditShare={handleEditShare}
-              isAdmin={isAdmin}
             />
           </div>
         </div>
@@ -620,74 +596,70 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
                     />
                   </div>
                 </div>
-                <div className="flex items-center justify-end gap-2">
-                  <span className="text-sm text-muted-foreground">Basic</span>
-                  <Switch checked={showAdvanced} onCheckedChange={setShowAdvanced} />
-                  <span className="text-sm text-muted-foreground">Advanced</span>
-                </div>
-                {showAdvanced && (
-                  <>
+
+
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="crawl-schedule">Crawl schedule</Label>
+                    <Input
+                      id="crawl-schedule"
+                      value={crawlSchedule}
+                      onChange={(event) => setCrawlSchedule(event.target.value)}
+                      placeholder="0 0 * * *"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="rules">Rules (JSON format)*</Label>
+                    <Textarea
+                      id="rules"
+                      value={rulesJson}
+                      onChange={(event) => setRulesJson(event.target.value)}
+                      placeholder={DEFAULT_RULES_JSON}
+                      className="min-h-[200px] font-mono text-sm"
+                      required
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Enter rules configuration in JSON format. Use the placeholder as a template.
+                      <br />
+                      <strong>Note:</strong> Ensure no trailing commas after the last property.
+                    </p>
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-3">
                     <div className="space-y-2">
-                      <Label htmlFor="crawl-schedule">Crawl schedule</Label>
+                      <Label htmlFor="realm">Realm</Label>
                       <Input
-                        id="crawl-schedule"
-                        value={crawlSchedule}
-                        onChange={(event) => setCrawlSchedule(event.target.value)}
-                        placeholder="0 0 * * *"
+                        id="realm"
+                        value={realm}
+                        onChange={(event) => setRealm(event.target.value)}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="rules">Rules (JSON format)*</Label>
-                      <Textarea
-                        id="rules"
-                        value={rulesJson}
-                        onChange={(event) => setRulesJson(event.target.value)}
-                        placeholder={DEFAULT_RULES_JSON}
-                        className="min-h-[200px] font-mono text-sm"
-                        required
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Enter rules configuration in JSON format. Use the placeholder as a template.
-                        <br />
-                        <strong>Note:</strong> Ensure no trailing commas after the last property.
-                      </p>
-                    </div>
-                    <div className="grid gap-4 sm:grid-cols-3">
-                      <div className="space-y-2">
-                        <Label htmlFor="realm">Realm</Label>
-                        <Input
-                          id="realm"
-                          value={realm}
-                          onChange={(event) => setRealm(event.target.value)}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="workgroup">Workgroup</Label>
-                        <Input
-                          id="workgroup"
-                          value={workgroup}
-                          onChange={(event) => setWorkgroup(event.target.value)}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="use-kerberos">Use Kerberos</Label>
-                        <Input
-                          id="use-kerberos"
-                          value={useKerberos}
-                          onChange={(event) => setUseKerberos(event.target.value)}
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="resolve-order">Resolve order</Label>
+                      <Label htmlFor="workgroup">Workgroup</Label>
                       <Input
-                        id="resolve-order"
-                        value={resolveOrder}
-                        onChange={(event) => setResolveOrder(event.target.value)}
+                        id="workgroup"
+                        value={workgroup}
+                        onChange={(event) => setWorkgroup(event.target.value)}
                       />
                     </div>
-                  </>
-                )}
+                    <div className="space-y-2">
+                      <Label htmlFor="use-kerberos">Use Kerberos</Label>
+                      <Input
+                        id="use-kerberos"
+                        value={useKerberos}
+                        onChange={(event) => setUseKerberos(event.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="resolve-order">Resolve order</Label>
+                    <Input
+                      id="resolve-order"
+                      value={resolveOrder}
+                      onChange={(event) => setResolveOrder(event.target.value)}
+                    />
+                  </div>
+                </>
+
                 {error ? <p className="text-sm text-destructive">{error}</p> : null}
                 <SheetFooter className="gap-2">
                   <Button
