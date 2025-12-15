@@ -7,7 +7,24 @@ import { CheckCircle2Icon, AlertCircleIcon } from "lucide-react"
 import type { TasksResponse, TaskStatisticsResponse, MonitoringOverviewResponse, AclCacheStatisticsResponse } from "@/services/neo-api"
 import { AuthenticationError } from "@/services/neo-api"
 
-import { TasksTable } from "@/components/data-tables/tasksT"
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+  SheetFooter,
+  SheetClose,
+} from "@/components/ui/sheet"
+import { Separator } from "@/components/ui/separator"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { ConfirmDialog } from "@/components/dialogs/confirm-dialog"
+import {
+  IconTrash
+} from "@tabler/icons-react"
+
+import { TasksTable, getStatusBadge, formatDuration } from "@/components/data-tables/tasksT"
 import { OverviewCard } from "@/components/cards/overview-card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
@@ -24,6 +41,10 @@ export default function Tasks({ tasks, taskStats, aclCacheStats, onFetchTasks, o
   const [alertMessage, setAlertMessage] = useState<string | null>(null)
   const [alertVariant, setAlertVariant] = useState<"success" | "error">("success")
   const [initialLoad, setInitialLoad] = useState(true)
+
+  const [selectedTask, setSelectedTask] = useState<TasksResponse | null>(null)
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false)
+  const [taskToCancel, setTaskToCancel] = useState<TasksResponse | null>(null)
 
   const handleRefresh = async () => {
     try {
@@ -62,6 +83,37 @@ export default function Tasks({ tasks, taskStats, aclCacheStats, onFetchTasks, o
     return () => window.clearTimeout(timer)
   }, [alertMessage])
 
+  const handleTaskClick = (task: TasksResponse) => {
+    setSelectedTask(task)
+  }
+
+  const handleCancelClick = (task: TasksResponse) => {
+    setTaskToCancel(task)
+    setIsConfirmOpen(true)
+  }
+
+  const handleConfirmCancel = async () => {
+    if (taskToCancel) {
+      try {
+        await onDeleteTask(taskToCancel.id)
+        setAlertVariant("success")
+        setAlertMessage("Task cancellation requested")
+        setIsConfirmOpen(false)
+        setTaskToCancel(null)
+        setSelectedTask(null)
+        handleRefresh()
+      } catch (error) {
+        setAlertVariant("error")
+        setAlertMessage(error instanceof Error ? error.message : "Failed to cancel task")
+      }
+    }
+  }
+
+  const canCancelTask = (status: string) => {
+    const statusLower = status.toLowerCase()
+    return statusLower === "pending" || statusLower === "running"
+  }
+
   return (
     <div className="flex flex-1 flex-col">
       <div className="@container/main flex flex-1 flex-col gap-2">
@@ -90,10 +142,144 @@ export default function Tasks({ tasks, taskStats, aclCacheStats, onFetchTasks, o
             ) : null}
 
 
-            <TasksTable tasks={tasks} onDeleteTask={onDeleteTask} />
+            <TasksTable tasks={tasks} onTaskClick={handleTaskClick} />
           </div>
         </div>
       </div>
+
+      <Sheet open={!!selectedTask} onOpenChange={(open) => !open && setSelectedTask(null)}>
+        <SheetContent className="w-[90vw] sm:w-[85vw] sm:max-w-[85vw] flex flex-col p-0 gap-0">
+          <div className="flex-1 overflow-y-auto p-6 flex flex-col">
+            <SheetHeader className="mb-4 p-0">
+              <SheetTitle>Task Details</SheetTitle>
+              <SheetDescription>
+                Full information about the selected task
+              </SheetDescription>
+            </SheetHeader>
+
+            {selectedTask ? (
+              <div className="space-y-6">
+                <dl className="grid grid-cols-1 gap-y-4 text-sm sm:grid-cols-2 lg:grid-cols-3 sm:gap-x-6">
+                  <div>
+                    <dt className="font-medium text-muted-foreground mb-1">Task ID</dt>
+                    <dd className="font-mono text-xs break-all bg-muted p-2 rounded">{selectedTask.id}</dd>
+                  </div>
+                  <div>
+                    <dt className="font-medium text-muted-foreground mb-1">Name</dt>
+                    <dd className="font-medium p-2">{selectedTask.name}</dd>
+                  </div>
+                  <div>
+                    <dt className="font-medium text-muted-foreground mb-1">Status</dt>
+                    <dd className="p-2">{getStatusBadge(selectedTask.status)}</dd>
+                  </div>
+                  <div>
+                    <dt className="font-medium text-muted-foreground mb-1">Share ID</dt>
+                    <dd className="font-mono text-xs bg-muted p-2 rounded">{selectedTask.share_id ?? "N/A"}</dd>
+                  </div>
+                  <div>
+                    <dt className="font-medium text-muted-foreground mb-1">Created</dt>
+                    <dd className="p-2">{new Date(selectedTask.created_at).toLocaleString()}</dd>
+                  </div>
+                  <div>
+                    <dt className="font-medium text-muted-foreground mb-1">Started</dt>
+                    <dd className="p-2">
+                      {selectedTask.started_at
+                        ? new Date(selectedTask.started_at).toLocaleString()
+                        : "N/A"}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="font-medium text-muted-foreground mb-1">Completed</dt>
+                    <dd className="p-2">
+                      {selectedTask.completed_at
+                        ? new Date(selectedTask.completed_at).toLocaleString()
+                        : "N/A"}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="font-medium text-muted-foreground mb-1">Duration</dt>
+                    <dd className="font-semibold p-2">
+                      {formatDuration(selectedTask.started_at, selectedTask.completed_at)}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="font-medium text-muted-foreground mb-1">Progress</dt>
+                    <dd className="p-2">{selectedTask.progress ?? "N/A"}</dd>
+                  </div>
+                  <div>
+                    <dt className="font-medium text-muted-foreground mb-1">
+                      Cancellation Requested
+                    </dt>
+                    <dd className="p-2">
+                      <Badge
+                        variant={
+                          selectedTask.cancellation_requested ? "destructive" : "secondary"
+                        }
+                      >
+                        {selectedTask.cancellation_requested ? "Yes" : "No"}
+                      </Badge>
+                    </dd>
+                  </div>
+                </dl>
+
+                <Separator />
+
+                <div className="space-y-2">
+                  <h3 className="font-semibold text-sm text-muted-foreground">Result</h3>
+                  <div className="rounded-lg border bg-muted/50 p-4">
+                    <pre className="overflow-auto text-xs whitespace-pre-wrap">
+                      {JSON.stringify(selectedTask.result, null, 2)}
+                    </pre>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <h3 className="font-semibold text-sm text-muted-foreground">Metadata</h3>
+                  <div className="rounded-lg border bg-muted/50 p-4">
+                    <pre className="overflow-auto text-xs whitespace-pre-wrap">
+                      {JSON.stringify(selectedTask.metadata, null, 2)}
+                    </pre>
+                  </div>
+                </div>
+
+                {selectedTask.error && (
+                  <div className="space-y-2">
+                    <h3 className="font-semibold text-destructive text-sm">Error</h3>
+                    <div className="rounded-lg border border-destructive bg-destructive/10 p-4">
+                      <p className="text-sm text-destructive whitespace-pre-wrap">{selectedTask.error}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : null}
+          </div>
+          <SheetFooter className="p-4 border-t gap-2 sm:gap-0">
+            {selectedTask && canCancelTask(selectedTask.status) && (
+              <Button
+                variant="destructive"
+                onClick={() => handleCancelClick(selectedTask)}
+                className="mr-auto"
+              >
+                <IconTrash className="mr-2 size-4" />
+                Cancel Task
+              </Button>
+            )}
+            <SheetClose asChild>
+              <Button variant="outline">Close</Button>
+            </SheetClose>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
+
+      <ConfirmDialog
+        open={isConfirmOpen}
+        onOpenChange={setIsConfirmOpen}
+        title="Cancel Task?"
+        description="This will attempt to cancel the running or pending task. Already completed or failed tasks cannot be cancelled."
+        onConfirm={handleConfirmCancel}
+        confirmText="Cancel Task"
+        variant="destructive"
+      />
     </div>
   )
 }
