@@ -147,7 +147,6 @@ export default function DatasetPage({
                             files={filesResponse}
                             loading={false}
                             emptyMessage="No documents in this dataset."
-                            onFetchFileMetadata={onFetchFileMetadata}
                             onFileClick={handleFileClick}
                         />
                     </div>
