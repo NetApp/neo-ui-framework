@@ -469,15 +469,15 @@ export function useNeoApi() {
     async (
       shareId: string,
       share: {
-        share_path: string
-        username: string
-        password: string
-        crawl_schedule: string
-        rules: Record<string, unknown>
-        realm: string
-        use_kerberos: string
-        workgroup: string
-        resolve_order: string
+        share_path?: string
+        username?: string
+        password?: string
+        crawl_schedule?: string
+        rules?: Record<string, unknown>
+        realm?: string
+        use_kerberos?: string
+        workgroup?: string
+        resolve_order?: string
       }
     ) => {
       if (!token) {

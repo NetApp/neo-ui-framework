@@ -102,15 +102,15 @@ interface SharesProps {
   onUpdateShare: (
     shareId: string,
     share: {
-      share_path: string
-      username: string
-      password: string
-      crawl_schedule: string
-      rules: Record<string, unknown>
-      realm: string
-      use_kerberos: string
-      workgroup: string
-      resolve_order: string
+      share_path?: string
+      username?: string
+      password?: string
+      crawl_schedule?: string
+      rules?: Record<string, unknown>
+      realm?: string
+      use_kerberos?: string
+      workgroup?: string
+      resolve_order?: string
     }
   ) => Promise<void>
   onStartCrawl: (shareId: string) => Promise<boolean>
@@ -241,8 +241,6 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
         if (editingShareId != null) {
           await onUpdateShare(editingShareId, {
             share_path: sharePath,
-            username,
-            password,
             crawl_schedule: crawlSchedule,
             rules: parsedRules,
             realm,
@@ -285,6 +283,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
       if (ok) {
         setAlertVariant("success")
         setAlertMessage("Crawl job started!")
+        setSheetOpen(false)
       } else {
         setAlertVariant("error")
         setAlertMessage("Crawl job failed to start!")
@@ -582,7 +581,8 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
                       placeholder="user@domain"
                       value={username}
                       onChange={(event) => setUsername(event.target.value)}
-                      required
+                      required={editingShareId === null}
+                      disabled={editingShareId !== null}
                     />
                   </div>
                   <div className="space-y-2">
@@ -592,7 +592,9 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
                       type="password"
                       value={password}
                       onChange={(event) => setPassword(event.target.value)}
-                      required
+                      required={editingShareId === null}
+                      disabled={editingShareId !== null}
+                      placeholder={editingShareId !== null ? "(Unchanged)" : undefined}
                     />
                   </div>
                 </div>

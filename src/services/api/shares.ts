@@ -65,15 +65,15 @@ export class SharesApiClient extends BaseApiClient {
     token: string,
     shareId: string,
     payload: {
-      share_path: string
-      username: string
-      password: string
-      crawl_schedule: string
-      rules: Record<string, unknown>
-      realm: string
-      use_kerberos: string
-      workgroup: string
-      resolve_order: string
+      share_path?: string
+      username?: string
+      password?: string
+      crawl_schedule?: string
+      rules?: Record<string, unknown>
+      realm?: string
+      use_kerberos?: string
+      workgroup?: string
+      resolve_order?: string
     }
   ) {
     appLogger.debug("Sending PATCH request to update share", undefined, {
