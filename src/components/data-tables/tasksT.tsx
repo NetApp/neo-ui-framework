@@ -1,3 +1,4 @@
+import { useState, useRef, useCallback, useEffect } from "react"
 import { CheckCircle2, XCircle, Clock, Loader2, Ban } from "lucide-react"
 import type { TasksResponse } from "@/services/neo-api"
 
@@ -73,16 +74,118 @@ export function formatDuration(startedAt: string | null, completedAt: string | n
 export function TasksTable({ tasks, onTaskClick }: TasksTableProps) {
   const rows = tasks ?? []
 
+  const [columnWidths, setColumnWidths] = useState<Record<string, number>>({
+    name: 250,
+    share_id: 150,
+    status: 120,
+    created_at: 180,
+    duration: 100,
+  })
+
+  const resizingRef = useRef<{
+    column: string
+    startX: number
+    startWidth: number
+  } | null>(null)
+
+  const handleResizeStart = (e: React.MouseEvent, column: string) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    resizingRef.current = {
+      column,
+      startX: e.clientX,
+      startWidth: columnWidths[column] || 100
+    }
+
+    document.addEventListener('mousemove', handleResizeMove)
+    document.addEventListener('mouseup', handleResizeEnd)
+    document.body.style.cursor = 'col-resize'
+  }
+
+  const animationFrameRef = useRef<number | null>(null)
+
+  const handleResizeMove = useCallback((e: MouseEvent) => {
+    if (!resizingRef.current) return
+
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current)
+    }
+
+    animationFrameRef.current = requestAnimationFrame(() => {
+      if (!resizingRef.current) return
+
+      const { column, startX, startWidth } = resizingRef.current
+      const diff = e.clientX - startX
+      const newWidth = Math.max(50, startWidth + diff)
+
+      setColumnWidths(prev => {
+        if (prev[column] === newWidth) return prev
+        return {
+          ...prev,
+          [column]: newWidth
+        }
+      })
+    })
+  }, [])
+
+  const handleResizeEnd = useCallback(() => {
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current)
+    }
+    resizingRef.current = null
+    document.removeEventListener('mousemove', handleResizeMove)
+    document.removeEventListener('mouseup', handleResizeEnd)
+    document.body.style.cursor = ''
+  }, [handleResizeMove])
+
+  useEffect(() => {
+    return () => {
+      document.removeEventListener('mousemove', handleResizeMove)
+      document.removeEventListener('mouseup', handleResizeEnd)
+    }
+  }, [handleResizeMove, handleResizeEnd])
+
   return (
     <div className="overflow-hidden rounded-lg border">
-      <Table>
+      <Table style={{ tableLayout: 'fixed', width: '100%' }}>
         <TableHeader className="sticky top-0 z-10 bg-muted">
           <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Created</TableHead>
-            <TableHead>Duration</TableHead>
-            <TableHead>Share ID</TableHead>
+            <TableHead style={{ width: columnWidths.name, position: 'relative' }}>
+              Name
+              <div
+                className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-primary/50"
+                onMouseDown={(e) => handleResizeStart(e, 'name')}
+              />
+            </TableHead>
+            <TableHead style={{ width: columnWidths.share_id, position: 'relative' }}>
+              Share ID
+              <div
+                className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-primary/50"
+                onMouseDown={(e) => handleResizeStart(e, 'share_id')}
+              />
+            </TableHead>
+            <TableHead style={{ width: columnWidths.created_at, position: 'relative' }}>
+              Created
+              <div
+                className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-primary/50"
+                onMouseDown={(e) => handleResizeStart(e, 'created_at')}
+              />
+            </TableHead>
+            <TableHead style={{ width: columnWidths.duration, position: 'relative' }}>
+              Duration
+              <div
+                className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-primary/50"
+                onMouseDown={(e) => handleResizeStart(e, 'duration')}
+              />
+            </TableHead>
+            <TableHead style={{ width: columnWidths.status, position: 'relative' }}>
+              Status
+              <div
+                className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-primary/50"
+                onMouseDown={(e) => handleResizeStart(e, 'status')}
+              />
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -93,17 +196,19 @@ export function TasksTable({ tasks, onTaskClick }: TasksTableProps) {
                 onClick={() => onTaskClick(task)}
                 className="cursor-pointer hover:bg-muted/50"
               >
-                <TableCell className="font-medium">{task.name}</TableCell>
-                <TableCell>{getStatusBadge(task.status)}</TableCell>
-                <TableCell className="text-sm">
+                <TableCell className="font-medium truncate" title={task.name}>{task.name}</TableCell>
+                <TableCell className="truncate" title={task.share_id ?? ""}>
+                  <div className="font-mono text-xs truncate">
+                    {task.share_id ? task.share_id : "—"}
+                  </div>
+                </TableCell>
+                <TableCell className="text-sm truncate">
                   {new Date(task.created_at).toLocaleString()}
                 </TableCell>
-                <TableCell className="text-sm">
+                <TableCell className="text-sm truncate">
                   {formatDuration(task.started_at, task.completed_at)}
                 </TableCell>
-                <TableCell className="font-mono text-xs">
-                  {task.share_id ? task.share_id.substring(0, 8) + "..." : "—"}
-                </TableCell>
+                <TableCell className="truncate">{getStatusBadge(task.status)}</TableCell>
               </TableRow>
             ))
           ) : (
