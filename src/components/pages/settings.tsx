@@ -1,13 +1,18 @@
 // Copyright 2025 NetApp, Inc. All Rights Reserved.
 "use client"
 
-import { IconSettings } from "@tabler/icons-react"
+import {
+    IconSettings,
+    IconCheck,
+    IconAlertTriangle
+} from "@tabler/icons-react"
 import { useState, useEffect } from "react"
 import { useSettings } from "@/context/settings-context"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import {
@@ -49,6 +54,7 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
     // Setup Tab State
     // Setup Tab State
     const [licenseKey, setLicenseKey] = useState("")
+    const [saveResult, setSaveResult] = useState<{ success: boolean; message: string } | null>(null)
 
     // M365 Copilot Graph Setup State
     const [m365Enabled, setM365Enabled] = useState(false)
@@ -57,7 +63,7 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
     const [clientSecret, setClientSecret] = useState("")
     const [connectorId, setConnectorId] = useState("")
     const [connectorName, setConnectorName] = useState("")
-    const [connectorDescription, setConnectorDescription] = useState("")
+    const [connectorDescription, setConnectorDescription] = useState("The connector contains information contained in the on premises or on-prem file share server. This drive is called J drive and this contains documents and files. These are of type DOC, DOCM, DOCX, DOT, DOTX, EML, GIF, HTML, JPEG, JPG, MHT, MHTML, MSG, NWS, OBD, OBT, ODP, ODS, ODT, ONE, PDF, PNG, POT, PPS, PPT, PPTM, PPTX, TXT, XLB, XLC, XLSB, XLS, XLSX, XLT, XLXM, XML, XPS, and ZIP.")
 
     // Proxy Setup State
     const [proxyEnabled, setProxyEnabled] = useState(false)
@@ -90,27 +96,23 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
     }
 
     const handleSaveNeoCore = async () => {
+        setSaveResult(null) // Clear previous result
         if (!licenseKey) {
-            toast.error("Please enter a license key")
+            setSaveResult({ success: false, message: "Please enter a license key" })
             return
         }
 
         try {
-            await handlers.setupLicense({ license_key: licenseKey })
-            toast.success("License configured successfully.")
+            const response = await handlers.setupLicense({ license_key: licenseKey })
+            setSaveResult({ success: response.success, message: response.message })
 
-            // Refresh setup status
-            // Assuming useNeoApi or dataLoader handles refresh automatically or we need to trigger it.
-            // Since dataLoader is used, we might need a method to invalidate or force fetch.
-            // For now, let's try calling getSetupStatus again if exposed, or rely on a state update if we had one.
-            // The userNeoApi hook doesn't expose a direct refresh for setupStatus, but it exposes the state.
-            // Let's modify useNeoApi to expose a refresh method if needed, or just assume the next poll/interaction updates it.
-            // Wait, the hook exposes handlers which call the service. We need to trigger the fetch again.
-            // Ideally, success should trigger a re-fetch.
-            // Let's add an explicit re-fetch call if possible, or assume the user will see generic success.
-            // Actually, the requirements say "A refresh of the GET /api/v1/setup/status should be done".
-            // I should assume I can call something to refresh.
-            // useNeoApi state is updated by loaders.
+            if (response.success) {
+                // Refresh the page after a short delay to allow the user to see the alert
+                // and to update the Setup status.
+                setTimeout(() => {
+                    window.location.reload()
+                }, 1500)
+            }
             // I will manually call fetchSetupStatus if I can access it? No, it's hidden.
             // I'll leave the refresh logic implicit for now or add a manual re-fetch hack if needed (like force update).
             // Better: update setupStatus in local state if I could, but it comes from hook.
@@ -185,6 +187,15 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
                                             <CardContent className="space-y-6">
                                                 {/* License Key Setup */}
                                                 <div className="space-y-4">
+                                                    {saveResult && (
+                                                        <Alert variant={saveResult.success ? "default" : "destructive"} className={saveResult.success ? "border-green-500 text-green-600 dark:border-green-500 dark:text-green-500" : ""}>
+                                                            {saveResult.success ? <IconCheck className="h-4 w-4" /> : <IconAlertTriangle className="h-4 w-4" />}
+                                                            <AlertTitle>{saveResult.success ? "Success" : "Error"}</AlertTitle>
+                                                            <AlertDescription>
+                                                                {saveResult.message}
+                                                            </AlertDescription>
+                                                        </Alert>
+                                                    )}
                                                     <div className="grid gap-2">
                                                         <Label htmlFor="license-key">License Key</Label>
                                                         <Input
@@ -192,6 +203,7 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
                                                             value={licenseKey}
                                                             onChange={(e) => setLicenseKey(e.target.value)}
                                                             placeholder="Enter license key..."
+                                                            type="password"
                                                         />
                                                     </div>
                                                 </div>
@@ -202,7 +214,7 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
                                                 <div className="space-y-4">
                                                     <div className="flex items-center justify-between">
                                                         <div className="space-y-1">
-                                                            <h4 className="text-sm font-medium">M365 Copilot Graph Setup</h4>
+                                                            <h4 className="text-sm font-medium">M365 Copilot Graph Setup (optional)</h4>
                                                             <p className="text-sm text-muted-foreground">
                                                                 Configure settings for Microsoft 365 Copilot Graph integration.
                                                             </p>
@@ -284,7 +296,7 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
                                                 <div className="space-y-4">
                                                     <div className="flex items-center justify-between">
                                                         <div className="space-y-1">
-                                                            <h4 className="text-sm font-medium">Proxy Setup</h4>
+                                                            <h4 className="text-sm font-medium">Proxy Setup (optional)</h4>
                                                             <p className="text-sm text-muted-foreground">
                                                                 Configure proxy settings for outbound connections.
                                                             </p>
@@ -295,32 +307,34 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
                                                         />
                                                     </div>
                                                     {proxyEnabled && (
-                                                        <div className="grid gap-4 md:grid-cols-3 pt-4">
-                                                            <div className="grid gap-2">
-                                                                <Label htmlFor="proxy-url">Proxy URL</Label>
-                                                                <Input
-                                                                    id="proxy-url"
-                                                                    value={proxyUrl}
-                                                                    onChange={(e) => setProxyUrl(e.target.value)}
-                                                                    placeholder="http://proxy.example.com:8080"
-                                                                />
-                                                            </div>
-                                                            <div className="grid gap-2">
-                                                                <Label htmlFor="proxy-username">Proxy Username</Label>
-                                                                <Input
-                                                                    id="proxy-username"
-                                                                    value={proxyUsername}
-                                                                    onChange={(e) => setProxyUsername(e.target.value)}
-                                                                />
-                                                            </div>
-                                                            <div className="grid gap-2">
-                                                                <Label htmlFor="proxy-password">Proxy Password</Label>
-                                                                <Input
-                                                                    id="proxy-password"
-                                                                    type="password"
-                                                                    value={proxyPassword}
-                                                                    onChange={(e) => setProxyPassword(e.target.value)}
-                                                                />
+                                                        <div className="space-y-4 pt-4">
+                                                            <div className="grid gap-4 md:grid-cols-2">
+                                                                <div className="grid gap-2">
+                                                                    <Label htmlFor="proxy-url">Proxy URL</Label>
+                                                                    <Input
+                                                                        id="proxy-url"
+                                                                        value={proxyUrl}
+                                                                        onChange={(e) => setProxyUrl(e.target.value)}
+                                                                        placeholder="http://proxy.example.com:8080"
+                                                                    />
+                                                                </div>
+                                                                <div className="grid gap-2">
+                                                                    <Label htmlFor="proxy-username">Username (Optional)</Label>
+                                                                    <Input
+                                                                        id="proxy-username"
+                                                                        value={proxyUsername}
+                                                                        onChange={(e) => setProxyUsername(e.target.value)}
+                                                                    />
+                                                                </div>
+                                                                <div className="grid gap-2">
+                                                                    <Label htmlFor="proxy-password">Password (Optional)</Label>
+                                                                    <Input
+                                                                        id="proxy-password"
+                                                                        type="password"
+                                                                        value={proxyPassword}
+                                                                        onChange={(e) => setProxyPassword(e.target.value)}
+                                                                    />
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     )}
@@ -332,9 +346,9 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
                                                 <div className="space-y-4">
                                                     <div className="flex items-center justify-between">
                                                         <div className="space-y-1">
-                                                            <h4 className="text-sm font-medium">SSL Setup</h4>
+                                                            <h4 className="text-sm font-medium">SSL Setup (optional)</h4>
                                                             <p className="text-sm text-muted-foreground">
-                                                                Configure SSL/TLS verification options.
+                                                                Configure SSL/TLS settings for secure connections.
                                                             </p>
                                                         </div>
                                                         <Switch
