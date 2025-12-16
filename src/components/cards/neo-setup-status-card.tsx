@@ -28,6 +28,9 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog"
+import {
+    IconCopy
+} from "@tabler/icons-react"
 import type { SetupStatusResponse } from "@/services/neo-api"
 import { useNeoApi } from "@/hooks/useNeoApi"
 import { useState } from "react"
@@ -44,6 +47,10 @@ export function NeoSetupStatusCard({ status, className }: NeoSetupStatusCardProp
     const [resetResult, setResetResult] = useState<{ success: boolean; message: string } | null>(null)
     const [completeResult, setCompleteResult] = useState<{ success: boolean; message: string } | null>(null)
     const [isCompleteDialogOpen, setIsCompleteDialogOpen] = useState(false)
+
+    const [isFetchingCredentials, setIsFetchingCredentials] = useState(false)
+    const [credentialsInit, setCredentialsInit] = useState<{ username: string; password: string; message: string } | null>(null)
+    const [isCredentialsDialogOpen, setIsCredentialsDialogOpen] = useState(false)
 
     const handleReset = async () => {
         setIsResetting(true)
@@ -91,6 +98,23 @@ export function NeoSetupStatusCard({ status, className }: NeoSetupStatusCardProp
         } finally {
             setIsCompleting(false)
         }
+    }
+
+    const handleGetCredentials = async () => {
+        setIsFetchingCredentials(true)
+        try {
+            const response = await handlers.getInitialCredentials()
+            setCredentialsInit(response)
+            setIsCredentialsDialogOpen(true)
+        } catch (error) {
+            console.error("Failed to fetch initial credentials", error)
+        } finally {
+            setIsFetchingCredentials(false)
+        }
+    }
+
+    const copyToClipboard = (text: string) => {
+        navigator.clipboard.writeText(text)
     }
 
     if (!status) return null
@@ -230,41 +254,84 @@ export function NeoSetupStatusCard({ status, className }: NeoSetupStatusCardProp
                         </Alert>
                     )}
                     <div className="flex gap-2">
-                        <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={handleReset}
-                            className="flex-1"
-                            disabled={isResetting || isCompleting}
-                        >
-                            {isResetting ? "Resetting..." : "Reset Setup"}
-                        </Button>
+                        {status.setup_complete ? (
+                            <>
+                                <Button
+                                    className="flex-1"
+                                    onClick={handleGetCredentials}
+                                    disabled={isFetchingCredentials}
+                                >
+                                    {isFetchingCredentials ? "Fetching Credentials..." : "Admin Credentials"}
+                                </Button>
 
-                        {status.steps_completed.includes("license") && (
-                            <Dialog open={isCompleteDialogOpen} onOpenChange={setIsCompleteDialogOpen}>
-                                <DialogTrigger asChild>
-                                    <Button
-                                        variant="default"
-                                        size="sm"
-                                        className="flex-1 bg-green-600 hover:bg-green-700"
-                                        disabled={isResetting || isCompleting}
-                                    >
-                                        {isCompleting ? "Completing..." : "Setup Complete"}
-                                    </Button>
-                                </DialogTrigger>
-                                <DialogContent>
-                                    <DialogHeader>
-                                        <DialogTitle>Complete Setup & Restart?</DialogTitle>
-                                        <DialogDescription>
-                                            This will conclude the setup of Neo Core and trigger a restart of the container with the current configuration.
-                                        </DialogDescription>
-                                    </DialogHeader>
-                                    <DialogFooter>
-                                        <Button variant="outline" onClick={() => setIsCompleteDialogOpen(false)}>Cancel</Button>
-                                        <Button onClick={handleCompleteSetup} className="bg-green-600 hover:bg-green-700">Confirm & Restart</Button>
-                                    </DialogFooter>
-                                </DialogContent>
-                            </Dialog>
+                                <Dialog open={isCredentialsDialogOpen} onOpenChange={setIsCredentialsDialogOpen}>
+                                    <DialogContent>
+                                        <DialogHeader>
+                                            <DialogTitle>Initial Admin Credentials</DialogTitle>
+                                            <DialogDescription>
+                                                {credentialsInit?.message}
+                                            </DialogDescription>
+                                        </DialogHeader>
+                                        <div className="bg-slate-950 p-4 rounded-md font-mono text-sm space-y-2">
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-slate-400">Username:</span>
+                                                <span className="text-white">{credentialsInit?.username}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-slate-400">Password:</span>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-white">{credentialsInit?.password}</span>
+                                                    <button onClick={() => credentialsInit?.password && copyToClipboard(credentialsInit.password)} className="text-slate-400 hover:text-white transition-colors">
+                                                        <IconCopy size={16} />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <DialogFooter>
+                                            <Button onClick={() => setIsCredentialsDialogOpen(false)}>Close</Button>
+                                        </DialogFooter>
+                                    </DialogContent>
+                                </Dialog>
+                            </>
+                        ) : (
+                            <>
+                                <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    onClick={handleReset}
+                                    className="flex-1"
+                                    disabled={isResetting || isCompleting}
+                                >
+                                    {isResetting ? "Resetting..." : "Reset Setup"}
+                                </Button>
+
+                                {status.steps_completed.includes("license") && (
+                                    <Dialog open={isCompleteDialogOpen} onOpenChange={setIsCompleteDialogOpen}>
+                                        <DialogTrigger asChild>
+                                            <Button
+                                                variant="default"
+                                                size="sm"
+                                                className="flex-1 bg-green-600 hover:bg-green-700"
+                                                disabled={isResetting || isCompleting}
+                                            >
+                                                {isCompleting ? "Completing..." : "Setup Complete"}
+                                            </Button>
+                                        </DialogTrigger>
+                                        <DialogContent>
+                                            <DialogHeader>
+                                                <DialogTitle>Complete Setup & Restart?</DialogTitle>
+                                                <DialogDescription>
+                                                    This will conclude the setup of Neo Core and trigger a restart of the container with the current configuration.
+                                                </DialogDescription>
+                                            </DialogHeader>
+                                            <DialogFooter>
+                                                <Button variant="outline" onClick={() => setIsCompleteDialogOpen(false)}>Cancel</Button>
+                                                <Button onClick={handleCompleteSetup} className="bg-green-600 hover:bg-green-700">Confirm & Restart</Button>
+                                            </DialogFooter>
+                                        </DialogContent>
+                                    </Dialog>
+                                )}
+                            </>
                         )}
                     </div>
                 </div>

@@ -73,6 +73,12 @@ export interface SetupCompleteResponse {
   note?: string
 }
 
+export interface InitialCredentialsResponse {
+  username: string
+  password: string
+  message: string
+}
+
 export interface MonitoringData {
   // Add properties here if needed, or leave it effectively empty for now
   [key: string]: any

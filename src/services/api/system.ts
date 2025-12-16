@@ -14,6 +14,7 @@ import type {
   SetupResetResponse,
   SetupFactoryResetRequest,
   SetupCompleteResponse,
+  InitialCredentialsResponse,
 } from "@/services/models"
 
 export class SystemApiClient extends BaseApiClient {
@@ -59,6 +60,13 @@ export class SystemApiClient extends BaseApiClient {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(payload),
+    })
+  }
+
+  getInitialCredentials() {
+    appLogger.debug("Fetching initial credentials")
+    return this.request<InitialCredentialsResponse>("/api/v1/setup/initial-credentials", {
+      method: "GET",
     })
   }
 

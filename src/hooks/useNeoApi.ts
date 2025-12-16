@@ -1084,6 +1084,9 @@ export function useNeoApi() {
       factoryReset: useCallback(async (payload: SetupFactoryResetRequest) => {
         return apiRef.current.factoryReset(payload)
       }, []),
+      getInitialCredentials: useCallback(async () => {
+        return apiRef.current.getInitialCredentials()
+      }, []),
       completeSetup: useCallback(async () => {
         return apiRef.current.completeSetup()
       }, []),
