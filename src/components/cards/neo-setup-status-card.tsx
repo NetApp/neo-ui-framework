@@ -37,7 +37,7 @@ export function NeoSetupStatusCard({ status, className }: NeoSetupStatusCardProp
                     Setup
                 </CardTitle>
                 <CardDescription>
-                    Current configuration status of the Neo Core connector
+                    Current setup status of the Neo Core connector
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -87,8 +87,8 @@ export function NeoSetupStatusCard({ status, className }: NeoSetupStatusCardProp
                         {status.required_steps.map((step, index) => (
                             <div key={index} className="flex items-center gap-2 text-sm">
                                 <div className={`h-2 w-2 rounded-full ${status.steps_completed.includes(step)
-                                        ? "bg-green-500"
-                                        : "bg-muted-foreground/30"
+                                    ? "bg-green-500"
+                                    : "bg-muted-foreground/30"
                                     }`} />
                                 <span className={status.steps_completed.includes(step) ? "text-foreground" : "text-muted-foreground"}>
                                     {step}
