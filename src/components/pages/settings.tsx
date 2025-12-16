@@ -1,6 +1,7 @@
 // Copyright 2025 NetApp, Inc. All Rights Reserved.
 "use client"
 
+import { IconSettings } from "@tabler/icons-react"
 import { useState, useEffect } from "react"
 import { useSettings } from "@/context/settings-context"
 import { Button } from "@/components/ui/button"
@@ -23,6 +24,9 @@ import type { LogLevel } from "@/services/app-logger"
 import type { MonitoringOverviewResponse } from "@/services/neo-api"
 import { OverviewCard } from "@/components/cards/overview-card"
 import { useSearchParams } from "react-router-dom"
+import { useNeoApi } from "@/hooks/useNeoApi"
+import { NeoSetupStatusCard } from "@/components/cards/neo-setup-status-card"
+import { Separator } from "@/components/ui/separator"
 
 interface SettingsProps {
     monitoringOverview: MonitoringOverviewResponse | null
@@ -34,6 +38,7 @@ interface SettingsProps {
 
 export default function Settings({ monitoringOverview }: SettingsProps) {
     const { monitoringTtl, filesTtl, cacheMaxSize, logLevel, updateSettings } = useSettings()
+    const { state } = useNeoApi()
     const [searchParams, setSearchParams] = useSearchParams()
 
     const [localMonitoringTtl, setLocalMonitoringTtl] = useState(monitoringTtl)
@@ -41,6 +46,7 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
     const [localCacheMaxSize, setLocalCacheMaxSize] = useState(cacheMaxSize)
     const [localLogLevel, setLocalLogLevel] = useState<LogLevel>(logLevel)
 
+    // Setup Tab State
     // Setup Tab State
     const [licenseKey, setLicenseKey] = useState("")
 
@@ -116,210 +122,220 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
                                     <TabsTrigger value="logging">Logging Configuration</TabsTrigger>
                                 </TabsList>
                                 <TabsContent value="neo-core">
-                                    <div className="flex flex-col gap-6">
-                                        {/* License Setup */}
-                                        <Card>
+                                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
+                                        {/* Status Card */}
+                                        <NeoSetupStatusCard
+                                            status={state.setupStatus}
+                                            className="col-span-1"
+                                        />
+
+                                        {/* Connector Configuration */}
+                                        <Card className="col-span-1 lg:col-span-3">
                                             <CardHeader>
-                                                <CardTitle>License Setup</CardTitle>
+                                                <CardTitle className="flex items-center gap-2">
+                                                    <IconSettings className="h-5 w-5" />
+                                                    Configuration
+                                                </CardTitle>
                                                 <CardDescription>
-                                                    Enter your license key to activate the application.
+                                                    Configure the Neo Core connector settings.
                                                 </CardDescription>
                                             </CardHeader>
-                                            <CardContent className="space-y-4">
-                                                <div className="grid gap-2">
-                                                    <Label htmlFor="license-key">License Key</Label>
-                                                    <Input
-                                                        id="license-key"
-                                                        value={licenseKey}
-                                                        onChange={(e) => setLicenseKey(e.target.value)}
-                                                        placeholder="Enter license key..."
-                                                    />
+                                            <CardContent className="space-y-6">
+                                                {/* License Key Setup */}
+                                                <div className="space-y-4">
+                                                    <div className="grid gap-2">
+                                                        <Label htmlFor="license-key">License Key</Label>
+                                                        <Input
+                                                            id="license-key"
+                                                            value={licenseKey}
+                                                            onChange={(e) => setLicenseKey(e.target.value)}
+                                                            placeholder="Enter license key..."
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                <Separator />
+
+                                                {/* M365 Copilot Graph Setup */}
+                                                <div className="space-y-4">
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="space-y-1">
+                                                            <h4 className="text-sm font-medium">M365 Copilot Graph Setup</h4>
+                                                            <p className="text-sm text-muted-foreground">
+                                                                Configure settings for Microsoft 365 Copilot Graph integration.
+                                                            </p>
+                                                        </div>
+                                                        <Switch
+                                                            checked={m365Enabled}
+                                                            onCheckedChange={setM365Enabled}
+                                                        />
+                                                    </div>
+                                                    {m365Enabled && (
+                                                        <div className="space-y-4 pt-4">
+                                                            <div className="space-y-4">
+                                                                <h4 className="text-xs font-medium uppercase text-muted-foreground">Required Fields</h4>
+                                                                <div className="grid gap-4 md:grid-cols-3">
+                                                                    <div className="grid gap-2">
+                                                                        <Label htmlFor="tenant-id">Tenant ID</Label>
+                                                                        <Input
+                                                                            id="tenant-id"
+                                                                            value={tenantId}
+                                                                            onChange={(e) => setTenantId(e.target.value)}
+                                                                        />
+                                                                    </div>
+                                                                    <div className="grid gap-2">
+                                                                        <Label htmlFor="client-id">Client ID</Label>
+                                                                        <Input
+                                                                            id="client-id"
+                                                                            value={clientId}
+                                                                            onChange={(e) => setClientId(e.target.value)}
+                                                                        />
+                                                                    </div>
+                                                                    <div className="grid gap-2">
+                                                                        <Label htmlFor="client-secret">Client Secret</Label>
+                                                                        <Input
+                                                                            id="client-secret"
+                                                                            type="password"
+                                                                            value={clientSecret}
+                                                                            onChange={(e) => setClientSecret(e.target.value)}
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="space-y-4">
+                                                                <h4 className="text-xs font-medium uppercase text-muted-foreground">Optional Fields</h4>
+                                                                <div className="grid gap-4 md:grid-cols-3">
+                                                                    <div className="grid gap-2">
+                                                                        <Label htmlFor="connector-id">Connector ID</Label>
+                                                                        <Input
+                                                                            id="connector-id"
+                                                                            value={connectorId}
+                                                                            onChange={(e) => setConnectorId(e.target.value)}
+                                                                        />
+                                                                    </div>
+                                                                    <div className="grid gap-2">
+                                                                        <Label htmlFor="connector-name">Connector Name</Label>
+                                                                        <Input
+                                                                            id="connector-name"
+                                                                            value={connectorName}
+                                                                            onChange={(e) => setConnectorName(e.target.value)}
+                                                                        />
+                                                                    </div>
+                                                                    <div className="grid gap-2">
+                                                                        <Label htmlFor="connector-description">Connector Description</Label>
+                                                                        <Input
+                                                                            id="connector-description"
+                                                                            value={connectorDescription}
+                                                                            onChange={(e) => setConnectorDescription(e.target.value)}
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                <Separator />
+
+                                                {/* Proxy Setup */}
+                                                <div className="space-y-4">
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="space-y-1">
+                                                            <h4 className="text-sm font-medium">Proxy Setup</h4>
+                                                            <p className="text-sm text-muted-foreground">
+                                                                Configure proxy settings for outbound connections.
+                                                            </p>
+                                                        </div>
+                                                        <Switch
+                                                            checked={proxyEnabled}
+                                                            onCheckedChange={setProxyEnabled}
+                                                        />
+                                                    </div>
+                                                    {proxyEnabled && (
+                                                        <div className="grid gap-4 md:grid-cols-3 pt-4">
+                                                            <div className="grid gap-2">
+                                                                <Label htmlFor="proxy-url">Proxy URL</Label>
+                                                                <Input
+                                                                    id="proxy-url"
+                                                                    value={proxyUrl}
+                                                                    onChange={(e) => setProxyUrl(e.target.value)}
+                                                                    placeholder="http://proxy.example.com:8080"
+                                                                />
+                                                            </div>
+                                                            <div className="grid gap-2">
+                                                                <Label htmlFor="proxy-username">Proxy Username</Label>
+                                                                <Input
+                                                                    id="proxy-username"
+                                                                    value={proxyUsername}
+                                                                    onChange={(e) => setProxyUsername(e.target.value)}
+                                                                />
+                                                            </div>
+                                                            <div className="grid gap-2">
+                                                                <Label htmlFor="proxy-password">Proxy Password</Label>
+                                                                <Input
+                                                                    id="proxy-password"
+                                                                    type="password"
+                                                                    value={proxyPassword}
+                                                                    onChange={(e) => setProxyPassword(e.target.value)}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                <Separator />
+
+                                                {/* SSL Setup */}
+                                                <div className="space-y-4">
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="space-y-1">
+                                                            <h4 className="text-sm font-medium">SSL Setup</h4>
+                                                            <p className="text-sm text-muted-foreground">
+                                                                Configure SSL/TLS verification options.
+                                                            </p>
+                                                        </div>
+                                                        <Switch
+                                                            checked={sslEnabled}
+                                                            onCheckedChange={setSslEnabled}
+                                                        />
+                                                    </div>
+                                                    {sslEnabled && (
+                                                        <div className="space-y-4 pt-4">
+                                                            <div className="flex items-center space-x-2">
+                                                                <Switch
+                                                                    id="verify-ssl"
+                                                                    checked={verifySsl}
+                                                                    onCheckedChange={setVerifySsl}
+                                                                />
+                                                                <Label htmlFor="verify-ssl">Verify SSL Certificates</Label>
+                                                            </div>
+
+                                                            <div className="grid gap-2">
+                                                                <Label htmlFor="ssl-timeout">Timeout (seconds)</Label>
+                                                                <Input
+                                                                    id="ssl-timeout"
+                                                                    type="number"
+                                                                    min="1"
+                                                                    value={sslTimeout}
+                                                                    onChange={(e) => setSslTimeout(Number(e.target.value))}
+                                                                />
+                                                            </div>
+
+                                                            <div className="grid gap-2">
+                                                                <Label htmlFor="ca-certificate">CA Certificate</Label>
+                                                                <Textarea
+                                                                    id="ca-certificate"
+                                                                    value={caCertificate}
+                                                                    onChange={(e) => setCaCertificate(e.target.value)}
+                                                                    placeholder="-----BEGIN CERTIFICATE-----..."
+                                                                    className="min-h-[100px] font-mono text-xs"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </CardContent>
-                                        </Card>
-
-                                        {/* M365 Copilot Graph Setup */}
-                                        <Card>
-                                            <CardHeader>
-                                                <div className="flex items-center justify-between">
-                                                    <div className="space-y-1">
-                                                        <CardTitle>M365 Copilot Graph Setup</CardTitle>
-                                                        <CardDescription>
-                                                            Configure settings for Microsoft 365 Copilot Graph integration.
-                                                        </CardDescription>
-                                                    </div>
-                                                    <Switch
-                                                        checked={m365Enabled}
-                                                        onCheckedChange={setM365Enabled}
-                                                    />
-                                                </div>
-                                            </CardHeader>
-                                            {m365Enabled && (
-                                                <CardContent className="space-y-4">
-                                                    <div className="space-y-4">
-                                                        <h4 className="text-sm font-medium">Required Fields</h4>
-                                                        <div className="grid gap-4 md:grid-cols-3">
-                                                            <div className="grid gap-2">
-                                                                <Label htmlFor="tenant-id">Tenant ID</Label>
-                                                                <Input
-                                                                    id="tenant-id"
-                                                                    value={tenantId}
-                                                                    onChange={(e) => setTenantId(e.target.value)}
-                                                                />
-                                                            </div>
-                                                            <div className="grid gap-2">
-                                                                <Label htmlFor="client-id">Client ID</Label>
-                                                                <Input
-                                                                    id="client-id"
-                                                                    value={clientId}
-                                                                    onChange={(e) => setClientId(e.target.value)}
-                                                                />
-                                                            </div>
-                                                            <div className="grid gap-2">
-                                                                <Label htmlFor="client-secret">Client Secret</Label>
-                                                                <Input
-                                                                    id="client-secret"
-                                                                    type="password"
-                                                                    value={clientSecret}
-                                                                    onChange={(e) => setClientSecret(e.target.value)}
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="space-y-4">
-                                                        <h4 className="text-sm font-medium">Optional Fields</h4>
-                                                        <div className="grid gap-4 md:grid-cols-3">
-                                                            <div className="grid gap-2">
-                                                                <Label htmlFor="connector-id">Connector ID</Label>
-                                                                <Input
-                                                                    id="connector-id"
-                                                                    value={connectorId}
-                                                                    onChange={(e) => setConnectorId(e.target.value)}
-                                                                />
-                                                            </div>
-                                                            <div className="grid gap-2">
-                                                                <Label htmlFor="connector-name">Connector Name</Label>
-                                                                <Input
-                                                                    id="connector-name"
-                                                                    value={connectorName}
-                                                                    onChange={(e) => setConnectorName(e.target.value)}
-                                                                />
-                                                            </div>
-                                                            <div className="grid gap-2">
-                                                                <Label htmlFor="connector-description">Connector Description</Label>
-                                                                <Input
-                                                                    id="connector-description"
-                                                                    value={connectorDescription}
-                                                                    onChange={(e) => setConnectorDescription(e.target.value)}
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </CardContent>
-                                            )}
-                                        </Card>
-
-                                        {/* Proxy Setup */}
-                                        <Card>
-                                            <CardHeader>
-                                                <div className="flex items-center justify-between">
-                                                    <div className="space-y-1">
-                                                        <CardTitle>Proxy Setup</CardTitle>
-                                                        <CardDescription>
-                                                            Configure proxy settings for outbound connections.
-                                                        </CardDescription>
-                                                    </div>
-                                                    <Switch
-                                                        checked={proxyEnabled}
-                                                        onCheckedChange={setProxyEnabled}
-                                                    />
-                                                </div>
-                                            </CardHeader>
-                                            {proxyEnabled && (
-                                                <CardContent className="space-y-4">
-                                                    <div className="grid gap-4 md:grid-cols-3">
-                                                        <div className="grid gap-2">
-                                                            <Label htmlFor="proxy-url">Proxy URL</Label>
-                                                            <Input
-                                                                id="proxy-url"
-                                                                value={proxyUrl}
-                                                                onChange={(e) => setProxyUrl(e.target.value)}
-                                                                placeholder="http://proxy.example.com:8080"
-                                                            />
-                                                        </div>
-                                                        <div className="grid gap-2">
-                                                            <Label htmlFor="proxy-username">Proxy Username</Label>
-                                                            <Input
-                                                                id="proxy-username"
-                                                                value={proxyUsername}
-                                                                onChange={(e) => setProxyUsername(e.target.value)}
-                                                            />
-                                                        </div>
-                                                        <div className="grid gap-2">
-                                                            <Label htmlFor="proxy-password">Proxy Password</Label>
-                                                            <Input
-                                                                id="proxy-password"
-                                                                type="password"
-                                                                value={proxyPassword}
-                                                                onChange={(e) => setProxyPassword(e.target.value)}
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                </CardContent>
-                                            )}
-                                        </Card>
-
-                                        {/* SSL Setup */}
-                                        <Card>
-                                            <CardHeader>
-                                                <div className="flex items-center justify-between">
-                                                    <div className="space-y-1">
-                                                        <CardTitle>SSL Setup</CardTitle>
-                                                        <CardDescription>
-                                                            Configure SSL/TLS verification options.
-                                                        </CardDescription>
-                                                    </div>
-                                                    <Switch
-                                                        checked={sslEnabled}
-                                                        onCheckedChange={setSslEnabled}
-                                                    />
-                                                </div>
-                                            </CardHeader>
-                                            {sslEnabled && (
-                                                <CardContent className="space-y-4">
-                                                    <div className="flex items-center space-x-2">
-                                                        <Switch
-                                                            id="verify-ssl"
-                                                            checked={verifySsl}
-                                                            onCheckedChange={setVerifySsl}
-                                                        />
-                                                        <Label htmlFor="verify-ssl">Verify SSL Certificates</Label>
-                                                    </div>
-
-                                                    <div className="grid gap-2">
-                                                        <Label htmlFor="ssl-timeout">Timeout (seconds)</Label>
-                                                        <Input
-                                                            id="ssl-timeout"
-                                                            type="number"
-                                                            min="1"
-                                                            value={sslTimeout}
-                                                            onChange={(e) => setSslTimeout(Number(e.target.value))}
-                                                        />
-                                                    </div>
-
-                                                    <div className="grid gap-2">
-                                                        <Label htmlFor="ca-certificate">CA Certificate</Label>
-                                                        <Textarea
-                                                            id="ca-certificate"
-                                                            value={caCertificate}
-                                                            onChange={(e) => setCaCertificate(e.target.value)}
-                                                            placeholder="-----BEGIN CERTIFICATE-----..."
-                                                            className="min-h-[100px] font-mono text-xs"
-                                                        />
-                                                    </div>
-                                                </CardContent>
-                                            )}
                                         </Card>
                                     </div>
                                 </TabsContent>
@@ -414,6 +430,6 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
                     </div>
                 </div>
             </div>
-        </div>
+        </div >
     )
 }

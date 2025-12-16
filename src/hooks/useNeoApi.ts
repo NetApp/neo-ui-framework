@@ -31,6 +31,7 @@ import {
   type TasksResponse,
   type TaskStatisticsResponse,
   type AclCacheStatisticsResponse,
+  type SetupStatusResponse,
   AuthenticationError,
 } from "@/services/neo-api"
 
@@ -52,7 +53,7 @@ export function useNeoApi() {
   const [license, setLicense] = useState<LicenseResponse | null>(null)
   const [version, setVersion] = useState<VersionResponse | null>(null)
   const [helmChartVersion, setHelmChartVersion] = useState<HelmChartVersionResponse | null>(null)
-  const [setupConfigured, setSetupConfigured] = useState<boolean | null>(null)
+  const [setupStatus, setSetupStatus] = useState<SetupStatusResponse | null>(null)
 
   // Use singleton instance
   const apiRef = useRef(neoApiService)
@@ -86,7 +87,7 @@ export function useNeoApi() {
         if (licenseResult.status === "fulfilled") setLicense(licenseResult.value)
         if (versionResult.status === "fulfilled") setVersion(versionResult.value)
         if (helmResult.status === "fulfilled") setHelmChartVersion(helmResult.value)
-        if (setupResult.status === "fulfilled") setSetupConfigured(setupResult.value.setup_complete)
+        if (setupResult.status === "fulfilled") setSetupStatus(setupResult.value)
 
         appLogger.info("Public system data fetched", undefined, {
           health: healthResult.status,
@@ -1024,7 +1025,7 @@ export function useNeoApi() {
       license,
       version,
       helmChartVersion,
-      setupConfigured,
+      setupStatus,
       databaseSize,
       users,
       me,

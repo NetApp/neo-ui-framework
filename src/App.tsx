@@ -53,7 +53,7 @@ function App() {
               isConnected={!!state.token}
               cacheStats={state.cacheStats}
             />
-            {state.setupConfigured === false && (
+            {state.setupStatus?.setup_complete === false && (
               <div className="px-4 pt-4 lg:px-6 lg:pt-6">
                 <Alert variant="destructive">
                   <IconAlertCircle className="h-4 w-4" />
@@ -64,7 +64,7 @@ function App() {
                 </Alert>
               </div>
             )}
-            {!state.token && state.setupConfigured !== false && (
+            {!state.token && state.setupStatus?.setup_complete !== false && (
               <div className="px-4 pt-4 lg:px-6 lg:pt-6">
                 <Alert variant="destructive">
                   <IconAlertTriangle className="h-4 w-4" />
