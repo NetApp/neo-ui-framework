@@ -3,7 +3,6 @@
 
 import {
     Activity,
-    Server,
     ListChecks,
     Info
 } from "lucide-react"
@@ -84,6 +83,16 @@ export function NeoSetupStatusCard({ status, className }: NeoSetupStatusCardProp
                         <span className="text-sm font-medium">Required Steps</span>
                     </div>
                     <div className="grid gap-2">
+                        {/* Database Step (Manually added) */}
+                        <div className="flex items-center gap-2 text-sm">
+                            <div className={`h-2 w-2 rounded-full ${status.database_configured
+                                ? "bg-green-500"
+                                : "bg-muted-foreground/30"
+                                }`} />
+                            <span className={status.database_configured ? "text-foreground" : "text-muted-foreground"}>
+                                database
+                            </span>
+                        </div>
                         {status.required_steps.map((step, index) => (
                             <div key={index} className="flex items-center gap-2 text-sm">
                                 <div className={`h-2 w-2 rounded-full ${status.steps_completed.includes(step)
@@ -98,35 +107,28 @@ export function NeoSetupStatusCard({ status, className }: NeoSetupStatusCardProp
                     </div>
                 </div>
 
-                <Separator />
-
-                {/* Configuration Details */}
-                <div>
-                    <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
-                        <Server className="h-4 w-4" />
-                        Configuration Details
-                    </h4>
-                    <div className="grid gap-3 text-sm">
-                        <div className="flex items-center justify-between">
-                            <span className="text-muted-foreground">Database Configured:</span>
-                            <Badge variant="outline" className={status.database_configured ? "text-green-600 border-green-200" : "text-destructive border-destructive/50"}>
-                                {status.database_configured ? "Yes" : "No"}
-                            </Badge>
+                {/* Optional Steps */}
+                {status.optional_steps.length > 0 && (
+                    <div className="mt-4">
+                        <div className="flex items-center gap-2 mb-3">
+                            <ListChecks className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm font-medium">Optional Steps</span>
                         </div>
-                        <div className="flex items-center justify-between">
-                            <span className="text-muted-foreground">Config Storage:</span>
-                            <Badge variant="outline" className="text-blue-600 border-blue-200">
-                                {status.config_storage}
-                            </Badge>
-                        </div>
-                        <div className="flex items-center justify-between">
-                            <span className="text-muted-foreground">Persistent:</span>
-                            <Badge variant="outline" className={status.persistence_info.persistent ? "text-green-600 border-green-200" : "text-orange-600 border-orange-200"}>
-                                {status.persistence_info.persistent ? "Yes" : "No"}
-                            </Badge>
+                        <div className="grid gap-2">
+                            {status.optional_steps.map((step, index) => (
+                                <div key={index} className="flex items-center gap-2 text-sm">
+                                    <div className={`h-2 w-2 rounded-full ${status.steps_completed.includes(step)
+                                        ? "bg-green-500"
+                                        : "bg-muted-foreground/30"
+                                        }`} />
+                                    <span className={status.steps_completed.includes(step) ? "text-foreground" : "text-muted-foreground"}>
+                                        {step}
+                                    </span>
+                                </div>
+                            ))}
                         </div>
                     </div>
-                </div>
+                )}
 
                 {status.message && (
                     <div className="rounded-md bg-muted p-3">
