@@ -29,6 +29,8 @@ import type {
   TokenResponse,
   ContentSearchRequest,
   ContentSearchResponse,
+  SetupLicenseRequest,
+  SetupLicenseResponse,
   SetupStatusResponse,
   // TaskCancelResponse,
 } from "./models"
@@ -78,6 +80,8 @@ export type {
   TaskCancelResponse,
   ContentSearchRequest,
   ContentSearchResponse,
+  SetupLicenseRequest,
+  SetupLicenseResponse,
 }
 export { AuthenticationError, AuthorizationError }
 
@@ -123,6 +127,10 @@ export class NeoApiService extends BaseApiClient {
 
   getCacheStats() {
     return this.dataLoader.getStats()
+  }
+
+  async setupLicense(request: SetupLicenseRequest): Promise<SetupLicenseResponse> {
+    return this.system.setupLicense(request)
   }
 
   authenticate(username: string, password: string) {

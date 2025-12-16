@@ -26,9 +26,23 @@ export interface SetupStatusResponse { // only for v3
     database_url_set: boolean
     persistent: boolean
     message: string
+    license_reconfiguration_mode: boolean
   }
-  license_reconfiguration_mode: boolean
   connector_id: string | null
+}
+
+export interface SetupLicenseRequest {
+  license_key: string
+}
+
+export interface SetupLicenseResponse {
+  success: boolean
+  message: string
+}
+
+export interface MonitoringData {
+  // Add properties here if needed, or leave it effectively empty for now
+  [key: string]: any
 }
 
 export interface ReadyResponse { // only for v3

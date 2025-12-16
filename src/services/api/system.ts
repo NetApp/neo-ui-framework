@@ -7,12 +7,25 @@ import type {
   VersionResponse,
   DatabaseSizeResponse,
   SetupStatusResponse,
+  SetupLicenseRequest,
+  SetupLicenseResponse,
 } from "@/services/models"
 
 export class SystemApiClient extends BaseApiClient {
   getSetupStatus() {
     appLogger.debug("Fetching setup status")
     return this.request<SetupStatusResponse>("/api/v1/setup/status")
+  }
+
+  setupLicense(request: SetupLicenseRequest) {
+    appLogger.debug("Setting up license")
+    return this.request<SetupLicenseResponse>("/api/v1/setup/license", {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(request)
+    })
   }
 
   getHealth(token?: string) {

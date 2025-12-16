@@ -23,6 +23,7 @@ import {
   type FileSearchResponse,
   type ContentSearchRequest,
   type ContentSearchResponse,
+  type SetupLicenseRequest,
   type MonitoringOverviewResponse,
   type MonitoringWorkersResponse,
   type MonitoringEnumerationResponse,
@@ -1061,6 +1062,13 @@ export function useNeoApi() {
       handleDeleteDataset,
       handleContentSearch,
       handleRetryWorkItems,
+      clearCache: useCallback(() => apiRef.current.clearCache(), []),
+      setupLicense: useCallback(
+        async (request: SetupLicenseRequest) => {
+          return apiRef.current.setupLicense(request)
+        },
+        []
+      ),
     },
   }
 }
