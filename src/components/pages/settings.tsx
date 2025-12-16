@@ -103,14 +103,6 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
                                 showCacheStats={false}
                             />
 
-                            <div className="flex items-center justify-between">
-                                <div />
-                                <Button onClick={handleSave}>
-                                    <Save className="mr-2 size-4" />
-                                    Save Changes
-                                </Button>
-                            </div>
-
                             <Tabs
                                 value={currentTab}
                                 onValueChange={(value) => setSearchParams({ tab: value })}
@@ -336,6 +328,12 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
                                                     )}
                                                 </div>
                                             </CardContent>
+                                            <div className="border-t p-6 flex justify-end">
+                                                <Button onClick={() => toast.info("Save functionality to be implemented")}>
+                                                    <Save className="mr-2 size-4" />
+                                                    Save Configuration
+                                                </Button>
+                                            </div>
                                         </Card>
                                     </div>
                                 </TabsContent>
@@ -390,6 +388,12 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
                                                 </p>
                                             </div>
                                         </CardContent>
+                                        <div className="border-t p-6 flex justify-end">
+                                            <Button onClick={handleSave}>
+                                                <Save className="mr-2 size-4" />
+                                                Save Changes
+                                            </Button>
+                                        </div>
                                     </Card>
                                 </TabsContent>
                                 <TabsContent value="logging">
@@ -423,6 +427,12 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
                                                 </p>
                                             </div>
                                         </CardContent>
+                                        <div className="border-t p-6 flex justify-end">
+                                            <Button onClick={handleSave}>
+                                                <Save className="mr-2 size-4" />
+                                                Save Changes
+                                            </Button>
+                                        </div>
                                     </Card>
                                 </TabsContent>
                             </Tabs>
