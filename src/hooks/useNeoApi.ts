@@ -36,6 +36,7 @@ import {
   AuthenticationError,
   type SetupGraphRequest,
   type SetupGraphResponse,
+  type SetupFactoryResetRequest,
 } from "@/services/neo-api"
 
 
@@ -1079,6 +1080,12 @@ export function useNeoApi() {
       ),
       resetSetup: useCallback(async () => {
         return apiRef.current.resetSetup()
+      }, []),
+      factoryReset: useCallback(async (payload: SetupFactoryResetRequest) => {
+        return apiRef.current.factoryReset(payload)
+      }, []),
+      completeSetup: useCallback(async () => {
+        return apiRef.current.completeSetup()
       }, []),
     },
   }

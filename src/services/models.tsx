@@ -59,6 +59,20 @@ export interface SetupResetResponse {
   message: string
 }
 
+export interface SetupFactoryResetRequest {
+  confirm: boolean
+  preserve_encryption_key: boolean
+}
+
+export interface SetupCompleteResponse {
+  success: boolean
+  message: string
+  configured_steps: string[]
+  restart_countdown_seconds: number
+  database_url_configured: boolean
+  note?: string
+}
+
 export interface MonitoringData {
   // Add properties here if needed, or leave it effectively empty for now
   [key: string]: any

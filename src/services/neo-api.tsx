@@ -35,6 +35,8 @@ import type {
   SetupGraphRequest,
   SetupGraphResponse,
   SetupResetResponse,
+  SetupFactoryResetRequest,
+  SetupCompleteResponse,
 } from "./models"
 import { BaseApiClient, AuthenticationError, AuthorizationError } from "./api/base"
 import { AuthApiClient } from "./api/auth"
@@ -87,6 +89,8 @@ export type {
   SetupGraphRequest,
   SetupGraphResponse,
   SetupResetResponse,
+  SetupFactoryResetRequest,
+  SetupCompleteResponse,
 }
 export { AuthenticationError, AuthorizationError }
 
@@ -144,6 +148,14 @@ export class NeoApiService extends BaseApiClient {
 
   resetSetup() {
     return this.system.resetSetup()
+  }
+
+  factoryReset(request: SetupFactoryResetRequest) {
+    return this.system.factoryReset(request)
+  }
+
+  completeSetup() {
+    return this.system.completeSetup()
   }
 
   authenticate(username: string, password: string) {

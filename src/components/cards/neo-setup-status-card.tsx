@@ -19,6 +19,15 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog"
 import type { SetupStatusResponse } from "@/services/neo-api"
 import { useNeoApi } from "@/hooks/useNeoApi"
 import { useState } from "react"
@@ -31,13 +40,25 @@ interface NeoSetupStatusCardProps {
 export function NeoSetupStatusCard({ status, className }: NeoSetupStatusCardProps) {
     const { handlers } = useNeoApi()
     const [isResetting, setIsResetting] = useState(false)
+    const [isCompleting, setIsCompleting] = useState(false)
     const [resetResult, setResetResult] = useState<{ success: boolean; message: string } | null>(null)
+    const [completeResult, setCompleteResult] = useState<{ success: boolean; message: string } | null>(null)
+    const [isCompleteDialogOpen, setIsCompleteDialogOpen] = useState(false)
 
     const handleReset = async () => {
         setIsResetting(true)
         setResetResult(null)
         try {
-            const response = await handlers.resetSetup()
+            let response
+            if (status?.message === "LICENSE RECONFIGURATION MODE: Configure a valid license for connector ID: netappneo") {
+                response = await handlers.factoryReset({
+                    confirm: true,
+                    preserve_encryption_key: true
+                })
+            } else {
+                response = await handlers.resetSetup()
+            }
+
             setResetResult(response)
             if (response.success) {
                 setTimeout(() => {
@@ -48,6 +69,27 @@ export function NeoSetupStatusCard({ status, className }: NeoSetupStatusCardProp
             setResetResult({ success: false, message: "Failed to reset setup." })
         } finally {
             setIsResetting(false)
+        }
+    }
+
+    const handleCompleteSetup = async () => {
+        setIsCompleting(true)
+        setIsCompleteDialogOpen(false)
+        setCompleteResult(null)
+        try {
+            const response = await handlers.completeSetup()
+            if (response.success) {
+                setCompleteResult({ success: true, message: "Setup completed successfully. Application will restart automatically in 30 seconds." })
+                setTimeout(() => {
+                    window.location.reload()
+                }, 30000)
+            } else {
+                setCompleteResult({ success: false, message: response.message || "Failed to complete setup." })
+            }
+        } catch (error) {
+            setCompleteResult({ success: false, message: "Failed to complete setup." })
+        } finally {
+            setIsCompleting(false)
         }
     }
 
@@ -167,7 +209,7 @@ export function NeoSetupStatusCard({ status, className }: NeoSetupStatusCardProp
                     </div>
                 )}
 
-                {/* Reset Section */}
+                {/* Reset and Complete Section */}
                 <div className="mt-6 pt-4 border-t space-y-4">
                     {resetResult && (
                         <Alert variant={resetResult.success ? "default" : "destructive"} className={resetResult.success ? "border-green-500 text-green-600 dark:border-green-500 dark:text-green-500" : ""}>
@@ -178,15 +220,53 @@ export function NeoSetupStatusCard({ status, className }: NeoSetupStatusCardProp
                             </AlertDescription>
                         </Alert>
                     )}
-                    <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={handleReset}
-                        className="w-full"
-                        disabled={isResetting}
-                    >
-                        {isResetting ? "Resetting..." : "Reset Setup"}
-                    </Button>
+                    {completeResult && (
+                        <Alert variant={completeResult.success ? "default" : "destructive"} className={completeResult.success ? "border-green-500 text-green-600 dark:border-green-500 dark:text-green-500" : ""}>
+                            {completeResult.success ? <CheckCircle2 className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
+                            <AlertTitle>{completeResult.success ? "Success" : "Error"}</AlertTitle>
+                            <AlertDescription>
+                                {completeResult.message}
+                            </AlertDescription>
+                        </Alert>
+                    )}
+                    <div className="flex gap-2">
+                        <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={handleReset}
+                            className="flex-1"
+                            disabled={isResetting || isCompleting}
+                        >
+                            {isResetting ? "Resetting..." : "Reset Setup"}
+                        </Button>
+
+                        {status.steps_completed.includes("license") && (
+                            <Dialog open={isCompleteDialogOpen} onOpenChange={setIsCompleteDialogOpen}>
+                                <DialogTrigger asChild>
+                                    <Button
+                                        variant="default"
+                                        size="sm"
+                                        className="flex-1 bg-green-600 hover:bg-green-700"
+                                        disabled={isResetting || isCompleting}
+                                    >
+                                        {isCompleting ? "Completing..." : "Setup Complete"}
+                                    </Button>
+                                </DialogTrigger>
+                                <DialogContent>
+                                    <DialogHeader>
+                                        <DialogTitle>Complete Setup & Restart?</DialogTitle>
+                                        <DialogDescription>
+                                            This will conclude the setup of Neo Core and trigger a restart of the container with the current configuration.
+                                        </DialogDescription>
+                                    </DialogHeader>
+                                    <DialogFooter>
+                                        <Button variant="outline" onClick={() => setIsCompleteDialogOpen(false)}>Cancel</Button>
+                                        <Button onClick={handleCompleteSetup} className="bg-green-600 hover:bg-green-700">Confirm & Restart</Button>
+                                    </DialogFooter>
+                                </DialogContent>
+                            </Dialog>
+                        )}
+                    </div>
                 </div>
             </CardContent>
         </Card>

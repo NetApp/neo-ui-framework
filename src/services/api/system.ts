@@ -12,6 +12,8 @@ import type {
   SetupGraphRequest,
   SetupGraphResponse,
   SetupResetResponse,
+  SetupFactoryResetRequest,
+  SetupCompleteResponse,
 } from "@/services/models"
 
 export class SystemApiClient extends BaseApiClient {
@@ -45,6 +47,24 @@ export class SystemApiClient extends BaseApiClient {
   resetSetup() {
     appLogger.debug("Resetting setup state")
     return this.request<SetupResetResponse>("/api/v1/setup/reset", {
+      method: "POST",
+    })
+  }
+
+  factoryReset(payload: SetupFactoryResetRequest) {
+    appLogger.debug("Performing factory reset")
+    return this.request<SetupResetResponse>("/api/v1/setup/factory-reset", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    })
+  }
+
+  completeSetup() {
+    appLogger.debug("Completing setup")
+    return this.request<SetupCompleteResponse>("/api/v1/setup/complete", {
       method: "POST",
     })
   }
