@@ -34,6 +34,7 @@ import type {
   SetupStatusResponse,
   SetupGraphRequest,
   SetupGraphResponse,
+  SetupResetResponse,
 } from "./models"
 import { BaseApiClient, AuthenticationError, AuthorizationError } from "./api/base"
 import { AuthApiClient } from "./api/auth"
@@ -85,6 +86,7 @@ export type {
   SetupLicenseResponse,
   SetupGraphRequest,
   SetupGraphResponse,
+  SetupResetResponse,
 }
 export { AuthenticationError, AuthorizationError }
 
@@ -138,6 +140,10 @@ export class NeoApiService extends BaseApiClient {
 
   async setupGraph(request: SetupGraphRequest): Promise<SetupGraphResponse> {
     return this.system.setupGraph(request)
+  }
+
+  resetSetup() {
+    return this.system.resetSetup()
   }
 
   authenticate(username: string, password: string) {

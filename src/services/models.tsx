@@ -54,6 +54,11 @@ export interface SetupGraphResponse {
   message: string
 }
 
+export interface SetupResetResponse {
+  success: boolean
+  message: string
+}
+
 export interface MonitoringData {
   // Add properties here if needed, or leave it effectively empty for now
   [key: string]: any

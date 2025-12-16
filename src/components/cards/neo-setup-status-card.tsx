@@ -4,7 +4,9 @@
 import {
     Activity,
     ListChecks,
-    Info
+    Info,
+    AlertTriangle,
+    CheckCircle2
 } from "lucide-react"
 import {
     Card,
@@ -14,8 +16,12 @@ import {
     CardTitle,
 } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import type { SetupStatusResponse } from "@/services/neo-api"
+import { useNeoApi } from "@/hooks/useNeoApi"
+import { useState } from "react"
 
 interface NeoSetupStatusCardProps {
     status: SetupStatusResponse | null
@@ -23,6 +29,28 @@ interface NeoSetupStatusCardProps {
 }
 
 export function NeoSetupStatusCard({ status, className }: NeoSetupStatusCardProps) {
+    const { handlers } = useNeoApi()
+    const [isResetting, setIsResetting] = useState(false)
+    const [resetResult, setResetResult] = useState<{ success: boolean; message: string } | null>(null)
+
+    const handleReset = async () => {
+        setIsResetting(true)
+        setResetResult(null)
+        try {
+            const response = await handlers.resetSetup()
+            setResetResult(response)
+            if (response.success) {
+                setTimeout(() => {
+                    window.location.reload()
+                }, 1500)
+            }
+        } catch (error) {
+            setResetResult({ success: false, message: "Failed to reset setup." })
+        } finally {
+            setIsResetting(false)
+        }
+    }
+
     if (!status) return null
 
     const stepsCompletedCount = status.steps_completed.length
@@ -138,6 +166,28 @@ export function NeoSetupStatusCard({ status, className }: NeoSetupStatusCardProp
                         </div>
                     </div>
                 )}
+
+                {/* Reset Section */}
+                <div className="mt-6 pt-4 border-t space-y-4">
+                    {resetResult && (
+                        <Alert variant={resetResult.success ? "default" : "destructive"} className={resetResult.success ? "border-green-500 text-green-600 dark:border-green-500 dark:text-green-500" : ""}>
+                            {resetResult.success ? <CheckCircle2 className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
+                            <AlertTitle>{resetResult.success ? "Success" : "Error"}</AlertTitle>
+                            <AlertDescription>
+                                {resetResult.message}
+                            </AlertDescription>
+                        </Alert>
+                    )}
+                    <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={handleReset}
+                        className="w-full"
+                        disabled={isResetting}
+                    >
+                        {isResetting ? "Resetting..." : "Reset Setup"}
+                    </Button>
+                </div>
             </CardContent>
         </Card>
     )

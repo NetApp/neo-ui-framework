@@ -11,6 +11,7 @@ import type {
   SetupLicenseResponse,
   SetupGraphRequest,
   SetupGraphResponse,
+  SetupResetResponse,
 } from "@/services/models"
 
 export class SystemApiClient extends BaseApiClient {
@@ -38,6 +39,13 @@ export class SystemApiClient extends BaseApiClient {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(request),
+    })
+  }
+
+  resetSetup() {
+    appLogger.debug("Resetting setup state")
+    return this.request<SetupResetResponse>("/api/v1/setup/reset", {
+      method: "POST",
     })
   }
 

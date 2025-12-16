@@ -1077,6 +1077,9 @@ export function useNeoApi() {
         },
         []
       ),
+      resetSetup: useCallback(async () => {
+        return apiRef.current.resetSetup()
+      }, []),
     },
   }
 }
