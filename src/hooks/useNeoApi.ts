@@ -52,6 +52,7 @@ export function useNeoApi() {
   const [license, setLicense] = useState<LicenseResponse | null>(null)
   const [version, setVersion] = useState<VersionResponse | null>(null)
   const [helmChartVersion, setHelmChartVersion] = useState<HelmChartVersionResponse | null>(null)
+  const [setupConfigured, setSetupConfigured] = useState<boolean | null>(null)
 
   // Use singleton instance
   const apiRef = useRef(neoApiService)
@@ -76,20 +77,23 @@ export function useNeoApi() {
           api.getLicenseStatus(),
           api.getVersion(),
           api.getLatestHelmVersion(),
+          api.getSetupStatus(),
         ])
 
-        const [healthResult, licenseResult, versionResult, helmResult] = results
+        const [healthResult, licenseResult, versionResult, helmResult, setupResult] = results
 
         if (healthResult.status === "fulfilled") setHealth(healthResult.value)
         if (licenseResult.status === "fulfilled") setLicense(licenseResult.value)
         if (versionResult.status === "fulfilled") setVersion(versionResult.value)
         if (helmResult.status === "fulfilled") setHelmChartVersion(helmResult.value)
+        if (setupResult.status === "fulfilled") setSetupConfigured(setupResult.value.setup_complete)
 
         appLogger.info("Public system data fetched", undefined, {
           health: healthResult.status,
           license: licenseResult.status,
           version: versionResult.status,
-          helm: helmResult.status
+          helm: helmResult.status,
+          setup: setupResult.status
         })
       } catch (error) {
         appLogger.warn("Unexpected error fetching public system data", error instanceof Error ? error.message : "Unknown error")
@@ -1020,6 +1024,7 @@ export function useNeoApi() {
       license,
       version,
       helmChartVersion,
+      setupConfigured,
       databaseSize,
       users,
       me,

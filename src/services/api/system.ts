@@ -6,9 +6,15 @@ import type {
   LicenseResponse,
   VersionResponse,
   DatabaseSizeResponse,
+  SetupStatusResponse,
 } from "@/services/models"
 
 export class SystemApiClient extends BaseApiClient {
+  getSetupStatus() {
+    appLogger.debug("Fetching setup status")
+    return this.request<SetupStatusResponse>("/api/v1/setup/status")
+  }
+
   getHealth(token?: string) {
     appLogger.debug("Fetching health status")
     if (token) {

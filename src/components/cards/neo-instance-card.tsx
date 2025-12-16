@@ -85,9 +85,7 @@ export function NeoInstanceCard({ health, license, className }: NeoInstanceCardP
                                 {license?.details.days_remaining ?? "Unknown"} days
                             </Badge>
                         </div>
-                        <p className="text-xs text-muted-foreground">
-                            ID: {license?.details.connection_id ?? "Unknown"}
-                        </p>
+
                     </div>
                 </div>
 

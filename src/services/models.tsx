@@ -12,6 +12,25 @@ export interface ConnectionCredentials {
 
 
 
+
+export interface SetupStatusResponse { // only for v3
+  setup_complete: boolean
+  database_configured: boolean
+  database_url_environment_set: boolean
+  config_storage: string
+  steps_completed: string[]
+  required_steps: string[]
+  optional_steps: string[]
+  message: string
+  persistence_info: {
+    database_url_set: boolean
+    persistent: boolean
+    message: string
+  }
+  license_reconfiguration_mode: boolean
+  connector_id: string | null
+}
+
 export interface ReadyResponse { // only for v3
   ready: boolean
   checks: {

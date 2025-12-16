@@ -29,6 +29,7 @@ import type {
   TokenResponse,
   ContentSearchRequest,
   ContentSearchResponse,
+  SetupStatusResponse,
   // TaskCancelResponse,
 } from "./models"
 import { BaseApiClient, AuthenticationError, AuthorizationError } from "./api/base"
@@ -51,6 +52,7 @@ export type {
   LicenseResponse,
   VersionResponse,
   DatabaseSizeResponse,
+  SetupStatusResponse,
   UserResponse,
   MeResponse,
   OperationResponse,
@@ -145,6 +147,10 @@ export class NeoApiService extends BaseApiClient {
 
   getDatabaseSize(token: string) {
     return this.dataLoader.load(`databaseSize:${token}`, () => this.system.getDatabaseSize(token), this.monitoringTtl)
+  }
+
+  getSetupStatus() {
+    return this.dataLoader.load("setupStatus", () => this.system.getSetupStatus(), this.monitoringTtl)
   }
 
   getUsers(token: string) {
