@@ -34,6 +34,8 @@ import {
   type AclCacheStatisticsResponse,
   type SetupStatusResponse,
   AuthenticationError,
+  type SetupGraphRequest,
+  type SetupGraphResponse,
 } from "@/services/neo-api"
 
 
@@ -1066,6 +1068,12 @@ export function useNeoApi() {
       setupLicense: useCallback(
         async (request: SetupLicenseRequest) => {
           return apiRef.current.setupLicense(request)
+        },
+        []
+      ),
+      setupGraph: useCallback(
+        async (request: SetupGraphRequest): Promise<SetupGraphResponse> => {
+          return apiRef.current.setupGraph(request)
         },
         []
       ),

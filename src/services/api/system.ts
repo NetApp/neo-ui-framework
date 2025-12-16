@@ -9,6 +9,8 @@ import type {
   SetupStatusResponse,
   SetupLicenseRequest,
   SetupLicenseResponse,
+  SetupGraphRequest,
+  SetupGraphResponse,
 } from "@/services/models"
 
 export class SystemApiClient extends BaseApiClient {
@@ -25,6 +27,17 @@ export class SystemApiClient extends BaseApiClient {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(request)
+    })
+  }
+
+  setupGraph(request: SetupGraphRequest) {
+    appLogger.debug("Setting up graph connection")
+    return this.request<SetupGraphResponse>("/api/v1/setup/graph", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(request),
     })
   }
 

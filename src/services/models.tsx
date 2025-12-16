@@ -40,6 +40,20 @@ export interface SetupLicenseResponse {
   message: string
 }
 
+export interface SetupGraphRequest {
+  tenant_id: string
+  client_id: string
+  client_secret: string
+  connector_id: string
+  connector_name: string
+  connector_description: string
+}
+
+export interface SetupGraphResponse {
+  success: boolean
+  message: string
+}
+
 export interface MonitoringData {
   // Add properties here if needed, or leave it effectively empty for now
   [key: string]: any

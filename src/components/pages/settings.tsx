@@ -54,28 +54,31 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
     // Setup Tab State
     // Setup Tab State
     const [licenseKey, setLicenseKey] = useState("")
-    const [saveResult, setSaveResult] = useState<{ success: boolean; message: string } | null>(null)
+    const [licenseSaveResult, setLicenseSaveResult] = useState<{ success: boolean; message: string } | null>(null)
 
     // M365 Copilot Graph Setup State
     const [m365Enabled, setM365Enabled] = useState(false)
-    const [tenantId, setTenantId] = useState("")
-    const [clientId, setClientId] = useState("")
-    const [clientSecret, setClientSecret] = useState("")
-    const [connectorId, setConnectorId] = useState("")
-    const [connectorName, setConnectorName] = useState("")
+    const [tenantId, setTenantId] = useState("your-tenant-id")
+    const [clientId, setClientId] = useState("your-client-id")
+    const [clientSecret, setClientSecret] = useState("your-client-secret")
+    const [connectorId, setConnectorId] = useState("netappneo")
+    const [connectorName, setConnectorName] = useState("NetApp NEO Connector")
     const [connectorDescription, setConnectorDescription] = useState("The connector contains information contained in the on premises or on-prem file share server. This drive is called J drive and this contains documents and files. These are of type DOC, DOCM, DOCX, DOT, DOTX, EML, GIF, HTML, JPEG, JPG, MHT, MHTML, MSG, NWS, OBD, OBT, ODP, ODS, ODT, ONE, PDF, PNG, POT, PPS, PPT, PPTM, PPTX, TXT, XLB, XLC, XLSB, XLS, XLSX, XLT, XLXM, XML, XPS, and ZIP.")
+    const [graphSaveResult, setGraphSaveResult] = useState<{ success: boolean; message: string } | null>(null)
 
     // Proxy Setup State
     const [proxyEnabled, setProxyEnabled] = useState(false)
     const [proxyUrl, setProxyUrl] = useState("")
     const [proxyUsername, setProxyUsername] = useState("")
     const [proxyPassword, setProxyPassword] = useState("")
+    const [proxySaveResult, setProxySaveResult] = useState<{ success: boolean; message: string } | null>(null)
 
     // SSL Setup State
     const [sslEnabled, setSslEnabled] = useState(false)
     const [verifySsl, setVerifySsl] = useState(true)
     const [sslTimeout, setSslTimeout] = useState(30)
     const [caCertificate, setCaCertificate] = useState("")
+    const [sslSaveResult, setSslSaveResult] = useState<{ success: boolean; message: string } | null>(null)
 
     // Sync local state with context when context changes (e.g. initial load)
     useEffect(() => {
@@ -95,50 +98,71 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
         toast.success("Settings saved successfully")
     }
 
-    const handleSaveNeoCore = async () => {
-        setSaveResult(null) // Clear previous result
+    const handleSaveLicense = async () => {
+        setLicenseSaveResult(null)
         if (!licenseKey) {
-            setSaveResult({ success: false, message: "Please enter a license key" })
+            setLicenseSaveResult({ success: false, message: "Please enter a license key." })
             return
         }
 
+        const payload = { license_key: licenseKey }
         try {
-            const response = await handlers.setupLicense({ license_key: licenseKey })
-            setSaveResult({ success: response.success, message: response.message })
-
+            const response = await handlers.setupLicense(payload)
             if (response.success) {
-                // Refresh the page after a short delay to allow the user to see the alert
-                // and to update the Setup status.
+                setLicenseSaveResult({ success: true, message: response.message })
                 setTimeout(() => {
                     window.location.reload()
                 }, 1500)
+            } else {
+                setLicenseSaveResult({ success: false, message: response.message || "License setup failed." })
             }
-            // I will manually call fetchSetupStatus if I can access it? No, it's hidden.
-            // I'll leave the refresh logic implicit for now or add a manual re-fetch hack if needed (like force update).
-            // Better: update setupStatus in local state if I could, but it comes from hook.
-            // I'll rely on a page reload or subsequent interactions for now, OR I can add a refresh function to the hook.
-            // Let's stick to the save call first.
-
-            // Wait, I can't easily force refresh without exposing it.
-            // I'll add a window.location.reload() as a crude refresh or just show success.
-            // Given the user constraint, I'll update the hook to expose a refresh mechanism in a follow-up if needed.
-            // For now, let's just show success.
-
-            // Actually, I can use the `api` object from `useNeoApi` if I had it.
-            // I only have `handlers`.
-            // Let's check `useNeoApi` again. It returns `handlers`.
-            // I added `setupLicense` to `handlers`.
-            // I didn't add a way to refresh setup status.
-
-            // Let's modify useNeoApi to return a refreshSetupStatus function or similar?
-            // Or just trigger a re-render.
-
-            // Revisiting the prompt: "If the success is true, a refresh of the GET ... should be done"
-            // I'll implement the save first.
-
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : "Failed to configure license")
+            setLicenseSaveResult({ success: false, message: "Failed to configure license." })
         }
+    }
+
+    const handleSaveGraph = async () => {
+        setGraphSaveResult(null)
+        const payload = {
+            tenant_id: tenantId,
+            client_id: clientId,
+            client_secret: clientSecret,
+            connector_id: connectorId,
+            connector_name: connectorName,
+            connector_description: connectorDescription
+        }
+
+        try {
+            const response = await handlers.setupGraph(payload)
+            if (response.success) {
+                setGraphSaveResult({ success: true, message: response.message || "Graph configured successfully." })
+                setTimeout(() => {
+                    window.location.reload()
+                }, 1500)
+            } else {
+                setGraphSaveResult({ success: false, message: response.message || "Graph setup failed." })
+            }
+        } catch (error) {
+            setGraphSaveResult({ success: false, message: "Failed to configure Graph." })
+        }
+    }
+
+    const handleSaveProxy = async () => {
+        setProxySaveResult(null)
+        // Placeholder implementation
+        setProxySaveResult({ success: true, message: "Proxy settings saved (placeholder)." })
+        setTimeout(() => {
+            window.location.reload()
+        }, 1500)
+    }
+
+    const handleSaveSSL = async () => {
+        setSslSaveResult(null)
+        // Placeholder implementation
+        setSslSaveResult({ success: true, message: "SSL settings saved (placeholder)." })
+        setTimeout(() => {
+            window.location.reload()
+        }, 1500)
     }
 
     const currentTab = searchParams.get("tab") || "neo-core"
@@ -187,24 +211,27 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
                                             <CardContent className="space-y-6">
                                                 {/* License Key Setup */}
                                                 <div className="space-y-4">
-                                                    {saveResult && (
-                                                        <Alert variant={saveResult.success ? "default" : "destructive"} className={saveResult.success ? "border-green-500 text-green-600 dark:border-green-500 dark:text-green-500" : ""}>
-                                                            {saveResult.success ? <IconCheck className="h-4 w-4" /> : <IconAlertTriangle className="h-4 w-4" />}
-                                                            <AlertTitle>{saveResult.success ? "Success" : "Error"}</AlertTitle>
+                                                    {licenseSaveResult && (
+                                                        <Alert variant={licenseSaveResult.success ? "default" : "destructive"} className={licenseSaveResult.success ? "border-green-500 text-green-600 dark:border-green-500 dark:text-green-500" : ""}>
+                                                            {licenseSaveResult.success ? <IconCheck className="h-4 w-4" /> : <IconAlertTriangle className="h-4 w-4" />}
+                                                            <AlertTitle>{licenseSaveResult.success ? "Success" : "Error"}</AlertTitle>
                                                             <AlertDescription>
-                                                                {saveResult.message}
+                                                                {licenseSaveResult.message}
                                                             </AlertDescription>
                                                         </Alert>
                                                     )}
                                                     <div className="grid gap-2">
                                                         <Label htmlFor="license-key">License Key</Label>
-                                                        <Input
-                                                            id="license-key"
-                                                            value={licenseKey}
-                                                            onChange={(e) => setLicenseKey(e.target.value)}
-                                                            placeholder="Enter license key..."
-                                                            type="password"
-                                                        />
+                                                        <div className="flex gap-2">
+                                                            <Input
+                                                                id="license-key"
+                                                                value={licenseKey}
+                                                                onChange={(e) => setLicenseKey(e.target.value)}
+                                                                placeholder="Enter license key..."
+                                                                type="password"
+                                                            />
+                                                            <Button onClick={handleSaveLicense}>Save</Button>
+                                                        </div>
                                                     </div>
                                                 </div>
 
@@ -226,6 +253,15 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
                                                     </div>
                                                     {m365Enabled && (
                                                         <div className="space-y-4 pt-4">
+                                                            {graphSaveResult && (
+                                                                <Alert variant={graphSaveResult.success ? "default" : "destructive"} className={graphSaveResult.success ? "border-green-500 text-green-600 dark:border-green-500 dark:text-green-500" : ""}>
+                                                                    {graphSaveResult.success ? <IconCheck className="h-4 w-4" /> : <IconAlertTriangle className="h-4 w-4" />}
+                                                                    <AlertTitle>{graphSaveResult.success ? "Success" : "Error"}</AlertTitle>
+                                                                    <AlertDescription>
+                                                                        {graphSaveResult.message}
+                                                                    </AlertDescription>
+                                                                </Alert>
+                                                            )}
                                                             <div className="space-y-4">
                                                                 <h4 className="text-xs font-medium uppercase text-muted-foreground">Required Fields</h4>
                                                                 <div className="grid gap-4 md:grid-cols-3">
@@ -286,6 +322,9 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
                                                                     </div>
                                                                 </div>
                                                             </div>
+                                                            <div className="flex justify-end">
+                                                                <Button onClick={handleSaveGraph}>Save M365 Settings</Button>
+                                                            </div>
                                                         </div>
                                                     )}
                                                 </div>
@@ -308,6 +347,15 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
                                                     </div>
                                                     {proxyEnabled && (
                                                         <div className="space-y-4 pt-4">
+                                                            {proxySaveResult && (
+                                                                <Alert variant={proxySaveResult.success ? "default" : "destructive"} className={proxySaveResult.success ? "border-green-500 text-green-600 dark:border-green-500 dark:text-green-500" : ""}>
+                                                                    {proxySaveResult.success ? <IconCheck className="h-4 w-4" /> : <IconAlertTriangle className="h-4 w-4" />}
+                                                                    <AlertTitle>{proxySaveResult.success ? "Success" : "Error"}</AlertTitle>
+                                                                    <AlertDescription>
+                                                                        {proxySaveResult.message}
+                                                                    </AlertDescription>
+                                                                </Alert>
+                                                            )}
                                                             <div className="grid gap-4 md:grid-cols-2">
                                                                 <div className="grid gap-2">
                                                                     <Label htmlFor="proxy-url">Proxy URL</Label>
@@ -336,6 +384,9 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
                                                                     />
                                                                 </div>
                                                             </div>
+                                                            <div className="flex justify-end">
+                                                                <Button onClick={handleSaveProxy}>Save Proxy Settings</Button>
+                                                            </div>
                                                         </div>
                                                     )}
                                                 </div>
@@ -358,6 +409,15 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
                                                     </div>
                                                     {sslEnabled && (
                                                         <div className="space-y-4 pt-4">
+                                                            {sslSaveResult && (
+                                                                <Alert variant={sslSaveResult.success ? "default" : "destructive"} className={sslSaveResult.success ? "border-green-500 text-green-600 dark:border-green-500 dark:text-green-500" : ""}>
+                                                                    {sslSaveResult.success ? <IconCheck className="h-4 w-4" /> : <IconAlertTriangle className="h-4 w-4" />}
+                                                                    <AlertTitle>{sslSaveResult.success ? "Success" : "Error"}</AlertTitle>
+                                                                    <AlertDescription>
+                                                                        {sslSaveResult.message}
+                                                                    </AlertDescription>
+                                                                </Alert>
+                                                            )}
                                                             <div className="flex items-center space-x-2">
                                                                 <Switch
                                                                     id="verify-ssl"
@@ -388,16 +448,13 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
                                                                     className="min-h-[100px] font-mono text-xs"
                                                                 />
                                                             </div>
+                                                            <div className="flex justify-end">
+                                                                <Button onClick={handleSaveSSL}>Save SSL Settings</Button>
+                                                            </div>
                                                         </div>
                                                     )}
                                                 </div>
                                             </CardContent>
-                                            <div className="border-t p-6 flex justify-end">
-                                                <Button onClick={handleSaveNeoCore}>
-                                                    <Save className="mr-2 size-4" />
-                                                    Save Configuration
-                                                </Button>
-                                            </div>
                                         </Card>
                                     </div>
                                 </TabsContent>
