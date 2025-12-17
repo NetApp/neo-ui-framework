@@ -82,6 +82,7 @@ export default function MyDatasets({
 
         let successCount = 0
         let failCount = 0
+        const failedFiles: string[] = []
 
         try {
             for (const dataset of targetDatasets) {
@@ -93,11 +94,23 @@ export default function MyDatasets({
                         } catch (error) {
                             console.error(`Failed to warm cache for file ${file.id}`, error)
                             failCount++
+                            failedFiles.push(file.filename || file.id)
                         }
                     }
                 }
             }
-            toast.success(`Cache warmup complete. ${successCount} cached, ${failCount} failed.`)
+
+            if (failCount > 0) {
+                const limit = 3
+                const fileList = failedFiles.slice(0, limit).join(", ")
+                const remaining = failedFiles.length - limit
+                const detail = remaining > 0 ? `${fileList} and ${remaining} more` : fileList
+
+                toast.warning(`Cache warmup finished with errors. ${successCount} cached, ${failCount} failed.`)
+                toast.error(`Failed files: ${detail}`)
+            } else {
+                toast.success(`Cache warmup complete. ${successCount} files cached.`)
+            }
         } catch (error) {
             toast.error("Cache warmup interrupted due to an error")
         } finally {
