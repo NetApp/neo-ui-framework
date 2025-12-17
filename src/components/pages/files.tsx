@@ -88,7 +88,7 @@ interface FilesProps {
   onFetchFileMetadata: (shareId: string, fileId: string) => Promise<FileMetadataResponse> // Fix parameter order
   onSearchFiles: (params: FileSearchParams) => Promise<FileSearchResponse>
   onPageChange?: (page: number) => Promise<void>
-  onCreateDataset: (name: string, files: FileEntry[]) => void
+  onCreateDataset: (name: string, files: FileEntry[]) => Promise<void>
   onRefresh: () => Promise<void>
   monitoringOverview: MonitoringOverviewResponse | null
   cacheStats?: {
@@ -227,7 +227,7 @@ export default function Files({
 
   const handleCreateDataset = async (name: string) => {
     if (searchResults?.files) {
-      onCreateDataset(name, searchResults.files)
+      await onCreateDataset(name, searchResults.files)
       toast.success(`Dataset "${name}" created`)
     }
   }

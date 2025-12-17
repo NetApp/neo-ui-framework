@@ -52,7 +52,7 @@ import { CreateDatasetDialog } from "@/components/dialogs/create-dataset-dialog"
 interface ContentSearchProps {
     shares: SharesResponse[] | null
     onContentSearch: (payload: ContentSearchRequest) => Promise<ContentSearchResponse>
-    onCreateDataset: (name: string, files: FileEntry[]) => void
+    onCreateDataset: (name: string, files: FileEntry[]) => Promise<void>
     monitoringOverview: MonitoringOverviewResponse | null
     version: VersionResponse | null
 }
@@ -164,7 +164,7 @@ export default function ContentSearch({ shares, onContentSearch, onCreateDataset
             share_id: r.share_id
         }))
 
-        onCreateDataset(name, files)
+        await onCreateDataset(name, files)
         toast.success(`Dataset "${name}" created with ${files.length} files`)
         setSelectedIds(new Set())
     }
