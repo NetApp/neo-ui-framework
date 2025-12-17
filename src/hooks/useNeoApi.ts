@@ -231,6 +231,13 @@ export function useNeoApi() {
     }
   }, [token])
 
+  // Use refs for stable access to callbacks in effects to avoid infinite loops
+  const applySystemDataRef = useRef(applySystemData)
+  applySystemDataRef.current = applySystemData
+
+  const clearSystemDataRef = useRef(clearSystemData)
+  clearSystemDataRef.current = clearSystemData
+
   /*
    * Restore session: specific effect to fetch system data on mount if a token exists
    * but we don't have user data yet (typical reload/new tab scenario).
@@ -243,19 +250,19 @@ export function useNeoApi() {
           const api = apiRef.current
           // We need to fetch system data to populate the state (user info, etc.)
           const data = await api.fetchSystemData(token)
-          applySystemData(data)
+          applySystemDataRef.current(data)
           setCacheStats(api.getCacheStats())
           appLogger.info("Session restored successfully")
         } catch (error) {
           appLogger.warn("Failed to restore session, invalidating token", error instanceof Error ? error.message : "Unknown error")
           // If the token is invalid (e.g. expired), clear it so the user is prompted to login
           setToken(null)
-          clearSystemData()
+          clearSystemDataRef.current()
         }
       }
       restoreSession()
     }
-  }, [token, me, applySystemData, clearSystemData])
+  }, [token, me])
 
   const handleConnect = useCallback(
     async (credentials: ConnectionCredentials) => {
