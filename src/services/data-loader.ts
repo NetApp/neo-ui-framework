@@ -1,6 +1,7 @@
+// Copyright 2025 NetApp, Inc. All Rights Reserved.
 import { appLogger } from "./app-logger"
 
-interface CacheEntry<T> {
+export interface CacheEntry<T> {
   data: T
   timestamp: number
   expiresAt: number
@@ -73,12 +74,14 @@ export class DataLoader {
 
     // Return cached data if valid
     if (cached && now < cached.expiresAt) {
-      appLogger.debug(`[DataLoader] Cache hit for ${key}`)
+      appLogger.debug(`[DataLoader] Cache HIT for ${key}`)
       // Refresh LRU order by deleting and re-inserting
       this.cache.delete(key)
       this.cache.set(key, cached)
       return cached.data as T
     }
+
+    appLogger.debug(`[DataLoader] Cache MISS for ${key}`)
 
     // If a request is already in flight for this key, return that promise
     if (this.pendingRequests.has(key)) {
@@ -101,6 +104,7 @@ export class DataLoader {
             size,
           })
           this.currentSizeBytes += size
+          appLogger.debug(`[DataLoader] Cached ${key} (TTL: ${ttl}ms, Size: ${size}b)`)
         }
 
         this.pendingRequests.delete(key)
@@ -154,6 +158,13 @@ export class DataLoader {
       maxSizeBytes: this.maxSizeBytes,
       items: this.cache.size
     }
+  }
+
+  /**
+   * Returns a specific cache entry metadata if it exists
+   */
+  getEntry<T>(key: string): CacheEntry<T> | undefined {
+    return this.cache.get(key)
   }
 
   /**

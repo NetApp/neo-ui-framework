@@ -1,3 +1,4 @@
+// Copyright 2025 NetApp, Inc. All Rights Reserved.
 "use client"
 
 import {
@@ -67,8 +68,7 @@ export default function Logs({ operations, monitoringOverview }: { operations: O
             <div className="mb-4">
               <OverviewCard
                 overview={monitoringOverview}
-                title="Logs Overview"
-                description="Recent system operations and audit logs."
+                title="System Logs"
                 showCacheStats={false}
               />
             </div>
@@ -91,7 +91,7 @@ export default function Logs({ operations, monitoringOverview }: { operations: O
                 </p>
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={onDownloadLogs}>
+                <Button variant="default" size="sm" onClick={onDownloadLogs}>
                   <IconDownload className="mr-2 size-4" />
                   Download
                 </Button>

@@ -1,23 +1,8 @@
-"use client"
-
-import { useState } from "react"
-import { IconInfoCircle, IconTrash, IconMenu2 } from "@tabler/icons-react"
+import { useState, useRef, useCallback, useEffect } from "react"
 import { CheckCircle2, XCircle, Clock, Loader2, Ban } from "lucide-react"
-
 import type { TasksResponse } from "@/services/neo-api"
 
-import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import { Separator } from "@/components/ui/separator"
-import { Spinner } from "@/components/ui/spinner"
 import {
   Table,
   TableBody,
@@ -26,21 +11,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 
 interface TasksTableProps {
   tasks: TasksResponse[] | null
-  onDeleteTask: (taskId: string) => Promise<void>
+  onTaskClick: (task: TasksResponse) => void
 }
 
-function getStatusIcon(status: string) {
+export function getStatusIcon(status: string) {
   switch (status.toLowerCase()) {
     case "completed":
       return <CheckCircle2 className="size-4 text-green-600" />
@@ -57,28 +34,20 @@ function getStatusIcon(status: string) {
   }
 }
 
-function getStatusBadge(status: string) {
+export function getStatusBadge(status: string) {
   const statusLower = status.toLowerCase()
 
-  const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-    completed: "default",
-    failed: "destructive",
-    running: "secondary",
-    pending: "outline",
-    cancelled: "secondary",
-  }
-
   const colors: Record<string, string> = {
-    completed: "bg-green-500 hover:bg-green-600 text-white",
-    failed: "bg-red-500 hover:bg-red-600 text-white",
-    running: "bg-blue-500 hover:bg-blue-600 text-white",
-    pending: "bg-yellow-500 hover:bg-yellow-600 text-white",
-    cancelled: "bg-gray-500 hover:bg-gray-600 text-white",
+    completed: "text-green-600 border-green-200 dark:text-green-400 dark:border-green-800",
+    failed: "text-destructive border-destructive/50",
+    running: "text-blue-600 border-blue-200 dark:text-blue-400 dark:border-blue-800",
+    pending: "text-yellow-600 border-yellow-200 dark:text-yellow-400 dark:border-yellow-800",
+    cancelled: "text-gray-600 border-gray-200 dark:text-gray-400 dark:border-gray-800",
   }
 
   return (
     <Badge
-      variant={variants[statusLower] || "outline"}
+      variant="outline"
       className={`gap-1 ${colors[statusLower] || ""}`}
     >
       {getStatusIcon(status)}
@@ -87,7 +56,7 @@ function getStatusBadge(status: string) {
   )
 }
 
-function formatDuration(startedAt: string | null, completedAt: string | null): string {
+export function formatDuration(startedAt: string | null, completedAt: string | null): string {
   if (!startedAt || !completedAt) return "N/A"
 
   const start = new Date(startedAt).getTime()
@@ -102,290 +71,155 @@ function formatDuration(startedAt: string | null, completedAt: string | null): s
   return `${(durationMs / 3600000).toFixed(2)}h`
 }
 
-export function TasksTable({ tasks, onDeleteTask }: TasksTableProps) {
+export function TasksTable({ tasks, onTaskClick }: TasksTableProps) {
   const rows = tasks ?? []
-  const [selectedTask, setSelectedTask] = useState<TasksResponse | null>(null)
-  const [confirmOpen, setConfirmOpen] = useState(false)
-  const [pendingId, setPendingId] = useState<string | null>(null)
-  const [submitting, setSubmitting] = useState(false)
-  const [deletingId, setDeletingId] = useState<string | null>(null)
 
-  const closeDialog = () => setSelectedTask(null)
+  const [columnWidths, setColumnWidths] = useState<Record<string, number>>({
+    name: 250,
+    share_id: 150,
+    status: 120,
+    created_at: 180,
+    duration: 100,
+  })
 
-  const openConfirm = (taskId: string) => {
-    setPendingId(taskId)
-    setConfirmOpen(true)
-  }
+  const resizingRef = useRef<{
+    column: string
+    startX: number
+    startWidth: number
+  } | null>(null)
 
-  const handleConfirm = async () => {
-    if (!pendingId) return
-    setSubmitting(true)
-    setDeletingId(pendingId)
-    try {
-      await onDeleteTask(pendingId)
-      setConfirmOpen(false)
-      setPendingId(null)
-    } finally {
-      setSubmitting(false)
-      setDeletingId(null)
+  const handleResizeStart = (e: React.MouseEvent, column: string) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    resizingRef.current = {
+      column,
+      startX: e.clientX,
+      startWidth: columnWidths[column] || 100
     }
+
+    document.addEventListener('mousemove', handleResizeMove)
+    document.addEventListener('mouseup', handleResizeEnd)
+    document.body.style.cursor = 'col-resize'
   }
 
-  const isTaskBusy = (taskId: string) => {
-    return deletingId === taskId
-  }
+  const animationFrameRef = useRef<number | null>(null)
 
-  const canCancelTask = (status: string) => {
-    const statusLower = status.toLowerCase()
-    return statusLower === "pending" || statusLower === "running"
-  }
+  const handleResizeMove = useCallback((e: MouseEvent) => {
+    if (!resizingRef.current) return
+
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current)
+    }
+
+    animationFrameRef.current = requestAnimationFrame(() => {
+      if (!resizingRef.current) return
+
+      const { column, startX, startWidth } = resizingRef.current
+      const diff = e.clientX - startX
+      const newWidth = Math.max(50, startWidth + diff)
+
+      setColumnWidths(prev => {
+        if (prev[column] === newWidth) return prev
+        return {
+          ...prev,
+          [column]: newWidth
+        }
+      })
+    })
+  }, [])
+
+  const handleResizeEnd = useCallback(() => {
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current)
+    }
+    resizingRef.current = null
+    document.removeEventListener('mousemove', handleResizeMove)
+    document.removeEventListener('mouseup', handleResizeEnd)
+    document.body.style.cursor = ''
+  }, [handleResizeMove])
+
+  useEffect(() => {
+    return () => {
+      document.removeEventListener('mousemove', handleResizeMove)
+      document.removeEventListener('mouseup', handleResizeEnd)
+    }
+  }, [handleResizeMove, handleResizeEnd])
 
   return (
-    <>
-      <div className="overflow-hidden rounded-lg border">
-        <Table>
-          <TableHeader className="sticky top-0 z-10 bg-muted">
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Created</TableHead>
-              <TableHead>Duration</TableHead>
-              <TableHead>Share ID</TableHead>
-              <TableHead className="w-[80px] text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rows.length ? (
-              rows.map((task) => (
-                <TableRow
-                  key={task.id}
-                  onClick={() => setSelectedTask(task)}
-                  className="cursor-pointer hover:bg-muted/50"
-                >
-                  <TableCell className="font-medium">{task.name}</TableCell>
-                  <TableCell>{getStatusBadge(task.status)}</TableCell>
-                  <TableCell className="text-sm">
-                    {new Date(task.created_at).toLocaleString()}
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {formatDuration(task.started_at, task.completed_at)}
-                  </TableCell>
-                  <TableCell className="font-mono text-xs">
-                    {task.share_id ? task.share_id.substring(0, 8) + "..." : "—"}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu modal={false}>
-                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          aria-label="Task actions"
-                          disabled={isTaskBusy(task.id)}
-                        >
-                          {isTaskBusy(task.id) ? (
-                            <Spinner className="size-4" />
-                          ) : (
-                            <IconMenu2 className="size-4" />
-                          )}
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-40">
-                        <DropdownMenuGroup>
-                          <DropdownMenuItem
-                            onSelect={() => setSelectedTask(task)}
-                            disabled={deletingId === task.id}
-                          >
-                            <IconInfoCircle className="mr-2 size-4" />
-                            Details
-                          </DropdownMenuItem>
-                          {canCancelTask(task.status) && (
-                            <>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                onSelect={() => openConfirm(task.id)}
-                                disabled={deletingId === task.id}
-                                className="text-red-600 focus:text-red-600"
-                              >
-                                <IconTrash className="mr-2 size-4" />
-                                {deletingId === task.id ? "Cancelling..." : "Cancel"}
-                              </DropdownMenuItem>
-                            </>
-                          )}
-                        </DropdownMenuGroup>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center text-sm text-muted-foreground">
-                  No tasks available.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
-
-      <Dialog
-        open={confirmOpen}
-        onOpenChange={(open) => {
-          if (!submitting) {
-            setConfirmOpen(open)
-            if (!open) {
-              setPendingId(null)
-            }
-          }
-        }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Cancel task?</DialogTitle>
-            <DialogDescription className="text-destructive mb-4">
-              <br />
-              <p>This will attempt to cancel the running or pending task.</p>
-              <p>Already completed or failed tasks cannot be cancelled.</p>
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button
-              variant="outline"
-              onClick={() => setConfirmOpen(false)}
-              disabled={submitting}
-            >
-              Close
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleConfirm}
-              disabled={submitting}
-              aria-busy={submitting}
-            >
-              {submitting ? (
-                <>
-                  <Spinner className="mr-2 size-4" />
-                  Cancelling…
-                </>
-              ) : (
-                "Cancel Task"
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={selectedTask !== null} onOpenChange={(open) => (open ? null : closeDialog())}>
-        <DialogContent className="sm:max-w-[90vw] lg:max-w-[70vw] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-center">Task Details</DialogTitle>
-            <DialogDescription className="text-center mb-4">
-              Full information about the selected task
-            </DialogDescription>
-          </DialogHeader>
-          <Separator />
-          {selectedTask ? (
-            <div className="space-y-6 mt-4">
-              <dl className="grid grid-cols-1 gap-y-4 text-sm sm:grid-cols-2 sm:gap-x-6">
-                <div className="rounded-lg border p-3">
-                  <dt className="font-medium text-muted-foreground mb-1">Task ID</dt>
-                  <dd className="font-mono text-xs break-all">{selectedTask.id}</dd>
-                </div>
-                <div className="rounded-lg border p-3">
-                  <dt className="font-medium text-muted-foreground mb-1">Name</dt>
-                  <dd className="font-medium">{selectedTask.name}</dd>
-                </div>
-                <div className="rounded-lg border p-3">
-                  <dt className="font-medium text-muted-foreground mb-1">Status</dt>
-                  <dd>{getStatusBadge(selectedTask.status)}</dd>
-                </div>
-                <div className="rounded-lg border p-3">
-                  <dt className="font-medium text-muted-foreground mb-1">Share ID</dt>
-                  <dd className="font-mono text-xs">{selectedTask.share_id ?? "N/A"}</dd>
-                </div>
-                <div className="rounded-lg border p-3">
-                  <dt className="font-medium text-muted-foreground mb-1">Created</dt>
-                  <dd>{new Date(selectedTask.created_at).toLocaleString()}</dd>
-                </div>
-                <div className="rounded-lg border p-3">
-                  <dt className="font-medium text-muted-foreground mb-1">Started</dt>
-                  <dd>
-                    {selectedTask.started_at
-                      ? new Date(selectedTask.started_at).toLocaleString()
-                      : "N/A"}
-                  </dd>
-                </div>
-                <div className="rounded-lg border p-3">
-                  <dt className="font-medium text-muted-foreground mb-1">Completed</dt>
-                  <dd>
-                    {selectedTask.completed_at
-                      ? new Date(selectedTask.completed_at).toLocaleString()
-                      : "N/A"}
-                  </dd>
-                </div>
-                <div className="rounded-lg border p-3">
-                  <dt className="font-medium text-muted-foreground mb-1">Duration</dt>
-                  <dd className="font-semibold">
-                    {formatDuration(selectedTask.started_at, selectedTask.completed_at)}
-                  </dd>
-                </div>
-                <div className="rounded-lg border p-3">
-                  <dt className="font-medium text-muted-foreground mb-1">Progress</dt>
-                  <dd>{selectedTask.progress ?? "N/A"}</dd>
-                </div>
-                <div className="rounded-lg border p-3">
-                  <dt className="font-medium text-muted-foreground mb-1">
-                    Cancellation Requested
-                  </dt>
-                  <dd>
-                    <Badge
-                      variant={
-                        selectedTask.cancellation_requested ? "destructive" : "secondary"
-                      }
-                    >
-                      {selectedTask.cancellation_requested ? "Yes" : "No"}
-                    </Badge>
-                  </dd>
-                </div>
-              </dl>
-
-              <Separator />
-
-              <div className="space-y-3">
-                <h3 className="font-semibold">Result</h3>
-                <div className="rounded-lg border bg-muted">
-                  <pre className="p-4 overflow-auto text-xs">
-                    {JSON.stringify(selectedTask.result, null, 2)}
-                  </pre>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <h3 className="font-semibold">Metadata</h3>
-                <div className="rounded-lg border bg-muted">
-                  <pre className="p-4 overflow-auto text-xs">
-                    {JSON.stringify(selectedTask.metadata, null, 2)}
-                  </pre>
-                </div>
-              </div>
-
-              {selectedTask.error && (
-                <div className="space-y-3">
-                  <h3 className="font-semibold text-destructive">Error</h3>
-                  <div className="rounded-lg border border-destructive bg-destructive/10 p-4">
-                    <p className="text-sm text-destructive">{selectedTask.error}</p>
+    <div className="overflow-hidden rounded-lg border">
+      <Table style={{ tableLayout: 'fixed', width: '100%' }}>
+        <TableHeader className="sticky top-0 z-10 bg-muted">
+          <TableRow>
+            <TableHead style={{ width: columnWidths.name, position: 'relative' }}>
+              Name
+              <div
+                className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-primary/50"
+                onMouseDown={(e) => handleResizeStart(e, 'name')}
+              />
+            </TableHead>
+            <TableHead style={{ width: columnWidths.share_id, position: 'relative' }}>
+              Share ID
+              <div
+                className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-primary/50"
+                onMouseDown={(e) => handleResizeStart(e, 'share_id')}
+              />
+            </TableHead>
+            <TableHead style={{ width: columnWidths.created_at, position: 'relative' }}>
+              Created
+              <div
+                className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-primary/50"
+                onMouseDown={(e) => handleResizeStart(e, 'created_at')}
+              />
+            </TableHead>
+            <TableHead style={{ width: columnWidths.duration, position: 'relative' }}>
+              Duration
+              <div
+                className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-primary/50"
+                onMouseDown={(e) => handleResizeStart(e, 'duration')}
+              />
+            </TableHead>
+            <TableHead style={{ width: columnWidths.status, position: 'relative' }}>
+              Status
+              <div
+                className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-primary/50"
+                onMouseDown={(e) => handleResizeStart(e, 'status')}
+              />
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {rows.length ? (
+            rows.map((task) => (
+              <TableRow
+                key={task.id}
+                onClick={() => onTaskClick(task)}
+                className="cursor-pointer hover:bg-muted/50"
+              >
+                <TableCell className="font-medium truncate" title={task.name}>{task.name}</TableCell>
+                <TableCell className="truncate" title={task.share_id ?? ""}>
+                  <div className="font-mono text-xs truncate">
+                    {task.share_id ? task.share_id : "—"}
                   </div>
-                </div>
-              )}
-            </div>
-          ) : null}
-          <DialogFooter>
-            <Button variant="outline" onClick={closeDialog}>
-              Close
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
+                </TableCell>
+                <TableCell className="text-sm truncate">
+                  {new Date(task.created_at).toLocaleString()}
+                </TableCell>
+                <TableCell className="text-sm truncate">
+                  {formatDuration(task.started_at, task.completed_at)}
+                </TableCell>
+                <TableCell className="truncate">{getStatusBadge(task.status)}</TableCell>
+              </TableRow>
+            ))
+          ) : (
+            <TableRow>
+              <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">
+                No tasks available.
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </div>
   )
 }

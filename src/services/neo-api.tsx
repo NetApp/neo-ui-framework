@@ -1,3 +1,4 @@
+// Copyright 2025 NetApp, Inc. All Rights Reserved.
 import { appLogger } from "@/services/app-logger"
 import type {
   HealthResponse,
@@ -23,11 +24,22 @@ import type {
   TasksResponse,
   TasksListResponse,
   TaskStatisticsResponse,
+  AclCacheStatisticsResponse,
   HelmChartVersionResponse,
   TokenResponse,
-  // TaskCancelResponse,
+  ContentSearchRequest,
+  ContentSearchResponse,
+  SetupLicenseRequest,
+  SetupLicenseResponse,
+  SetupStatusResponse,
+  SetupGraphRequest,
+  SetupGraphResponse,
+  SetupResetResponse,
+  SetupFactoryResetRequest,
+  SetupCompleteResponse,
+  InitialCredentialsResponse,
 } from "./models"
-import { BaseApiClient, AuthenticationError } from "./api/base"
+import { BaseApiClient, AuthenticationError, AuthorizationError } from "./api/base"
 import { AuthApiClient } from "./api/auth"
 import { SystemApiClient } from "./api/system"
 import { UsersApiClient } from "./api/users"
@@ -47,6 +59,7 @@ export type {
   LicenseResponse,
   VersionResponse,
   DatabaseSizeResponse,
+  SetupStatusResponse,
   UserResponse,
   MeResponse,
   OperationResponse,
@@ -66,11 +79,22 @@ export type {
   TasksResponse,
   TasksListResponse,
   TaskStatisticsResponse,
+  AclCacheStatisticsResponse,
   HelmChartVersionResponse,
   TokenResponse,
   TaskCancelResponse,
+  ContentSearchRequest,
+  ContentSearchResponse,
+  SetupLicenseRequest,
+  SetupLicenseResponse,
+  SetupGraphRequest,
+  SetupGraphResponse,
+  SetupResetResponse,
+  SetupFactoryResetRequest,
+  SetupCompleteResponse,
+  InitialCredentialsResponse,
 }
-export { AuthenticationError }
+export { AuthenticationError, AuthorizationError }
 
 export class NeoApiService extends BaseApiClient {
   private auth: AuthApiClient
@@ -116,6 +140,30 @@ export class NeoApiService extends BaseApiClient {
     return this.dataLoader.getStats()
   }
 
+  async setupLicense(request: SetupLicenseRequest): Promise<SetupLicenseResponse> {
+    return this.system.setupLicense(request)
+  }
+
+  async setupGraph(request: SetupGraphRequest): Promise<SetupGraphResponse> {
+    return this.system.setupGraph(request)
+  }
+
+  resetSetup() {
+    return this.system.resetSetup()
+  }
+
+  factoryReset(request: SetupFactoryResetRequest) {
+    return this.system.factoryReset(request)
+  }
+
+  getInitialCredentials() {
+    return this.system.getInitialCredentials()
+  }
+
+  completeSetup() {
+    return this.system.completeSetup()
+  }
+
   authenticate(username: string, password: string) {
     return this.auth.authenticate(username, password)
   }
@@ -125,19 +173,23 @@ export class NeoApiService extends BaseApiClient {
   }
 
   getHealth(token?: string) {
-    return this.dataLoader.load(`health:${token || "public"}`, () => this.system.getHealth(token))
+    return this.dataLoader.load(`health:${token || "public"}`, () => this.system.getHealth(token), this.monitoringTtl)
   }
 
   getLicenseStatus(token?: string) {
-    return this.dataLoader.load(`license:${token || "public"}`, () => this.system.getLicenseStatus(token))
+    return this.dataLoader.load(`license:${token || "public"}`, () => this.system.getLicenseStatus(token), this.monitoringTtl)
   }
 
   getVersion(token?: string) {
-    return this.dataLoader.load(`version:${token || "public"}`, () => this.system.getVersion(token))
+    return this.dataLoader.load(`version:${token || "public"}`, () => this.system.getVersion(token), this.monitoringTtl)
   }
 
   getDatabaseSize(token: string) {
-    return this.dataLoader.load(`databaseSize:${token}`, () => this.system.getDatabaseSize(token))
+    return this.dataLoader.load(`databaseSize:${token}`, () => this.system.getDatabaseSize(token), this.monitoringTtl)
+  }
+
+  getSetupStatus() {
+    return this.dataLoader.load("setupStatus", () => this.system.getSetupStatus(), this.monitoringTtl)
   }
 
   getUsers(token: string) {
@@ -204,6 +256,16 @@ export class NeoApiService extends BaseApiClient {
     return this.dataLoader.load(key, () => this.files.searchFiles(token, params), this.filesTtl)
   }
 
+  searchContent(token: string, payload: ContentSearchRequest) {
+    const key = `searchContent:${token}:${JSON.stringify(payload)}`
+    return this.dataLoader.load(key, () => this.files.searchContent(token, payload), this.filesTtl)
+  }
+
+  getMyDocuments(token: string, page: number = 1, pageSize: number = 100) {
+    const key = `myDocuments:${token}:${page}:${pageSize}`
+    return this.dataLoader.load(key, () => this.files.getMyDocuments(token, page, pageSize), this.filesTtl)
+  }
+
   getOperations(token: string) {
     return this.dataLoader.load(`operations:${token}`, () => this.operations.getOperations(token))
   }
@@ -228,12 +290,20 @@ export class NeoApiService extends BaseApiClient {
     return this.dataLoader.load(`monitoringFailedItems:${token}`, () => this.monitoring.getMonitoringFailedItems(token), this.monitoringTtl)
   }
 
+  retryWorkItems(token: string, shareId: string, workItemIds: string[]) {
+    return this.monitoring.retryWorkItems(token, shareId, workItemIds)
+  }
+
   getTasks(token: string) {
     return this.dataLoader.load(`tasks:${token}`, () => this.tasks.getTasks(token), this.monitoringTtl)
   }
 
   getTaskStatistics(token: string) {
     return this.dataLoader.load(`taskStatistics:${token}`, () => this.tasks.getTaskStatistics(token), this.monitoringTtl)
+  }
+
+  getAclCacheStatistics(token: string) {
+    return this.dataLoader.load(`aclCacheStatistics:${token}`, () => this.tasks.getAclCacheStatistics(token), this.monitoringTtl)
   }
 
   deleteTask(token: string, taskId: string) {
@@ -255,7 +325,29 @@ export class NeoApiService extends BaseApiClient {
   async fetchSystemData(token: string) {
     appLogger.info("Fetching system data")
 
+    // Helper to fetch data that might be restricted for non-admins
+    const fetchOptional = async <T,>(
+      promise: Promise<T>,
+      defaultValue: T | null = null
+    ): Promise<T | null> => {
+      try {
+        return await promise
+      } catch (error) {
+        if (error instanceof AuthorizationError) {
+          appLogger.warn("Access denied for optional resource", undefined, {
+            error: error.message,
+          })
+          return defaultValue
+        }
+        throw error
+      }
+    }
+
     try {
+      appLogger.debug("System fetch logic", undefined, {
+        reason: "Active token found - fetching full system data"
+      })
+
       const [
         health,
         license,
@@ -267,35 +359,35 @@ export class NeoApiService extends BaseApiClient {
         databaseSize,
         helmChartVersion,
       ] = await Promise.all([
-        this.getHealth(token),
-        this.getLicenseStatus(token),
-        this.getVersion(token),
-        this.getUsers(token),
-        this.getMeUsers(token),
-        this.getOperations(token),
-        this.getShares(token),
-        this.getDatabaseSize(token),
-        this.getLatestHelmVersion(),
+        fetchOptional(this.getHealth(token), null),
+        fetchOptional(this.getLicenseStatus(token), null),
+        fetchOptional(this.getVersion(token), null),
+        fetchOptional(this.getUsers(token), []),
+        fetchOptional(this.getMeUsers(token), null),
+        fetchOptional(this.getOperations(token), []),
+        fetchOptional(this.getShares(token), []),
+        fetchOptional(this.getDatabaseSize(token), null),
+        fetchOptional(this.getLatestHelmVersion(), null),
       ])
 
       appLogger.info("System data fetched successfully", undefined, {
-        users_count: users.length,
-        shares_count: shares.length,
-        operations_count: operations.length,
-        database_size_mb: databaseSize.database_file_size_mb,
-        total_files_tracked: databaseSize.total_files_tracked,
-        latest_app_version: helmChartVersion.app_version,
-        latest_chart_version: helmChartVersion.chart_version,
+        users_count: users?.length ?? 0,
+        shares_count: shares?.length ?? 0,
+        operations_count: operations?.length ?? 0,
+        database_size_mb: databaseSize?.database_file_size_mb ?? 0,
+        total_files_tracked: databaseSize?.total_files_tracked ?? 0,
+        latest_app_version: helmChartVersion?.app_version ?? "unknown",
+        latest_chart_version: helmChartVersion?.chart_version ?? "unknown",
       })
 
       return {
         health,
         license,
         version,
-        users,
+        users: (users && users.length > 0) ? users : (me ? [me] : []),
         me,
-        operations,
-        shares,
+        operations: operations || [],
+        shares: shares || [],
         files: null as FilesResponse | null,
         databaseSize,
         helmChartVersion,
@@ -323,6 +415,7 @@ export class NeoApiService extends BaseApiClient {
         taskStats,
         fileAnalytics,
         sharesAnalytics,
+        aclCacheStats,
       ] = await Promise.all([
         this.getMonitoringOverview(token),
         this.getMonitoringWorkers(token),
@@ -333,6 +426,7 @@ export class NeoApiService extends BaseApiClient {
         this.getTaskStatistics(token),
         this.getFileAnalytics(token),
         this.getSharesAnalytics(token),
+        this.getAclCacheStatistics(token),
       ])
 
       appLogger.info("Monitoring data fetched successfully", undefined, {
@@ -342,6 +436,7 @@ export class NeoApiService extends BaseApiClient {
         failed_items: failedItems.total_failed_items,
         file_types: fileAnalytics.length,
         shares_with_files: sharesAnalytics.length,
+        acl_cache_stats: true,
       })
 
       return {
@@ -354,6 +449,7 @@ export class NeoApiService extends BaseApiClient {
         taskStats,
         fileAnalytics,
         sharesAnalytics,
+        aclCacheStats,
       }
     } catch (error) {
       appLogger.error(
@@ -363,4 +459,5 @@ export class NeoApiService extends BaseApiClient {
       throw error
     }
   }
+
 }

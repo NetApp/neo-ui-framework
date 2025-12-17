@@ -1,3 +1,4 @@
+// Copyright 2025 NetApp, Inc. All Rights Reserved.
 import { appLogger } from "@/services/app-logger"
 import yaml from "js-yaml"
 import type { HelmChartVersionResponse } from "@/services/models"

@@ -1,15 +1,19 @@
+// Copyright 2025 NetApp, Inc. All Rights Reserved.
 "use client"
 
 import {
-  IconChartBar,
-  IconServer,
   IconFileText,
   IconHelp,
-  IconListDetails,
   IconUsers,
   IconListCheck,
   IconActivity,
   IconSettings,
+  IconFileSearch,
+  IconFolders,
+  IconFolderCode,
+  // IconArrowsJoin,
+  IconFolderShare,
+  IconFiles,
 } from "@tabler/icons-react"
 
 import {
@@ -23,30 +27,46 @@ import {
 
 const data = {
   navMain: [
-    {
-      name: "Connector",
-      url: "#/connector",
-      icon: IconServer,
-    },
+    // {
+    //   name: "Connector",
+    //   url: "#/connector",
+    //   icon: IconArrowsJoin,
+    // },
     {
       name: "Monitoring",
       url: "#/monitoring",
       icon: IconActivity,
     },
     {
-      name: "Shares",
-      url: "#/shares",
-      icon: IconListDetails,
-    },
-    {
       name: "Tasks",
       url: "#/tasks",
       icon: IconListCheck,
     },
+  ],
+  navDataEstate: [
     {
-      name: "Files",
-      url: "#/files",
-      icon: IconChartBar,
+      name: "Sources",
+      url: "#/shares",
+      icon: IconFolderShare,
+    },
+    {
+      name: "Data Corpus",
+      url: "#/my-datasets/data-corpus",
+      icon: IconFiles,
+    },
+  ],
+  navDiscovery: [
+    {
+      name: "Content Search",
+      url: "#/my-datasets/content-search",
+      icon: IconFileSearch,
+    },
+  ],
+  navDatasets: [
+    {
+      name: "My Datasets",
+      url: "#/my-datasets/my-datasets",
+      icon: IconFolders,
     },
   ],
   navSecondary: [
@@ -73,10 +93,30 @@ const data = {
   ],
 }
 
-export function AppSidebarContent({ ...props }: React.ComponentProps<typeof SidebarContent>) {
+import type { Dataset } from "@/services/models"
+
+interface AppSidebarContentProps extends React.ComponentProps<typeof SidebarContent> {
+  datasets?: Dataset[]
+}
+
+export function AppSidebarContent({ datasets = [], ...props }: AppSidebarContentProps) {
+  const datasetItems = datasets.map((dataset) => ({
+    name: dataset.name,
+    url: `#/my-datasets/${dataset.id}`,
+    icon: IconFolderCode,
+  }))
+
+  const navDatasets = [
+    ...data.navDatasets,
+    ...datasetItems
+  ]
+
   return (
     <SidebarContent {...props}>
       <NavMain items={data.navMain} />
+      <NavMain items={data.navDataEstate} label="Data Estate" />
+      <NavMain items={data.navDiscovery} label="Discovery" />
+      <NavMain items={navDatasets} label="Datasets" />
       <NavMain items={data.navSecondary} className="mt-auto" />
     </SidebarContent>
   )

@@ -1,3 +1,4 @@
+// Copyright 2025 NetApp, Inc. All Rights Reserved.
 "use client"
 
 import {
@@ -20,12 +21,13 @@ import type { DatabaseSizeResponse } from "@/services/neo-api"
 
 interface DatabaseSizeCardProps {
   databaseSize: DatabaseSizeResponse | null
+  className?: string
 }
 
-export function DatabaseSizeCard({ databaseSize }: DatabaseSizeCardProps) {
+export function DatabaseSizeCard({ databaseSize, className }: DatabaseSizeCardProps) {
   if (!databaseSize) {
     return (
-      <Card className="lg:col-span-2">
+      <Card className={`lg:col-span-2 ${className || ""}`}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Database Statistics</CardTitle>
           <Database className="h-4 w-4 text-muted-foreground" />
@@ -38,7 +40,7 @@ export function DatabaseSizeCard({ databaseSize }: DatabaseSizeCardProps) {
   }
 
   return (
-    <Card className="lg:col-span-2">
+    <Card className={`lg:col-span-2 ${className || ""}`}>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Database className="h-5 w-5" />

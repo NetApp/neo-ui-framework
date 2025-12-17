@@ -1,3 +1,4 @@
+// Copyright 2025 NetApp, Inc. All Rights Reserved.
 "use client"
 
 import type { MeResponse } from "@/services/neo-api"
@@ -6,35 +7,38 @@ import {
   Sidebar,
 } from "@/components/ui/sidebar"
 
-import { 
-  AppSidebarHeader 
+import {
+  AppSidebarHeader
 } from "@/components/sidebars/sidebarheader"
 
-import { 
-  AppSidebarContent 
+import {
+  AppSidebarContent
 } from "@/components/sidebars/sidebar-content"
 
-import { 
+import {
   AppSidebarFooter
 } from "@/components/sidebars/sidebar-footer"
+
+import type { Dataset } from "@/services/models"
 
 interface AppSidebarProps {
   me?: MeResponse | null
   isConnected?: boolean
   onConnect?: (credentials: ConnectionCredentials) => Promise<void>
   onLogout?: () => void
+  datasets?: Dataset[]
 }
 
-export function AppSidebar({ me, isConnected = false, onConnect, onLogout }: AppSidebarProps) {
+export function AppSidebar({ me, isConnected = false, onConnect, onLogout, datasets }: AppSidebarProps) {
   return (
     <Sidebar collapsible="icon">
       <AppSidebarHeader />
-      <AppSidebarContent />
-      <AppSidebarFooter 
-        me={me} 
+      <AppSidebarContent datasets={datasets} />
+      <AppSidebarFooter
+        me={me}
         isConnected={isConnected}
         onConnect={onConnect}
-        onLogout={onLogout} 
+        onLogout={onLogout}
       />
     </Sidebar>
   )

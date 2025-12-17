@@ -1,3 +1,4 @@
+// Copyright 2025 NetApp, Inc. All Rights Reserved.
 "use client"
 
 import * as React from "react"
@@ -16,7 +17,7 @@ import {
   type ChartConfig,
   ChartContainer,
   ChartTooltip,
-//   ChartTooltipContent,
+  //   ChartTooltipContent,
 } from "@/components/ui/chart"
 
 interface SharesDistributionChartProps {
@@ -77,9 +78,7 @@ export function SharesDistributionChart({ sharesAnalytics }: SharesDistributionC
     return chartData.reduce((acc, curr) => acc + curr.count, 0)
   }, [chartData])
 
-  const totalSize = React.useMemo(() => {
-    return chartData.reduce((acc, curr) => acc + curr.totalSize, 0)
-  }, [chartData])
+
 
   const largestShare = React.useMemo(() => {
     if (chartData.length === 0) return null
@@ -92,7 +91,7 @@ export function SharesDistributionChart({ sharesAnalytics }: SharesDistributionC
       const data = payload[0].payload
       const percentage = ((data.count / totalFiles) * 100).toFixed(1)
       const sizeInMB = (data.totalSize / (1024 * 1024)).toFixed(1)
-      
+
       return (
         <div className="bg-background border border-border rounded-lg p-3 shadow-lg">
           <p className="font-medium">{data.shareName}</p>
@@ -187,7 +186,7 @@ export function SharesDistributionChart({ sharesAnalytics }: SharesDistributionC
           </div>
         )}
         <div className="text-muted-foreground leading-none">
-          Distribution of {totalFiles.toLocaleString()} files ({(totalSize / (1024 * 1024 * 1024)).toFixed(2)} GB) across {chartData.length} indexed shares
+          Distribution of {totalFiles.toLocaleString()} files across {chartData.length} indexed shares
         </div>
       </CardFooter>
     </Card>

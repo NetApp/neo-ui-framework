@@ -1,3 +1,4 @@
+// Copyright 2025 NetApp, Inc. All Rights Reserved.
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 

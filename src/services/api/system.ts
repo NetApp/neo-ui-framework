@@ -1,3 +1,4 @@
+// Copyright 2025 NetApp, Inc. All Rights Reserved.
 import { appLogger } from "@/services/app-logger"
 import { BaseApiClient } from "./base"
 import type {
@@ -5,9 +6,77 @@ import type {
   LicenseResponse,
   VersionResponse,
   DatabaseSizeResponse,
+  SetupStatusResponse,
+  SetupLicenseRequest,
+  SetupLicenseResponse,
+  SetupGraphRequest,
+  SetupGraphResponse,
+  SetupResetResponse,
+  SetupFactoryResetRequest,
+  SetupCompleteResponse,
+  InitialCredentialsResponse,
 } from "@/services/models"
 
 export class SystemApiClient extends BaseApiClient {
+  getSetupStatus() {
+    appLogger.debug("Fetching setup status")
+    return this.request<SetupStatusResponse>("/api/v1/setup/status")
+  }
+
+  setupLicense(request: SetupLicenseRequest) {
+    appLogger.debug("Setting up license")
+    return this.request<SetupLicenseResponse>("/api/v1/setup/license", {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(request)
+    })
+  }
+
+  setupGraph(request: SetupGraphRequest) {
+    appLogger.debug("Setting up graph connection")
+    return this.request<SetupGraphResponse>("/api/v1/setup/graph", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(request),
+    })
+  }
+
+  resetSetup() {
+    appLogger.debug("Resetting setup state")
+    return this.request<SetupResetResponse>("/api/v1/setup/reset", {
+      method: "POST",
+    })
+  }
+
+  factoryReset(payload: SetupFactoryResetRequest) {
+    appLogger.debug("Performing factory reset")
+    return this.request<SetupResetResponse>("/api/v1/setup/factory-reset", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    })
+  }
+
+  getInitialCredentials() {
+    appLogger.debug("Fetching initial credentials")
+    return this.request<InitialCredentialsResponse>("/api/v1/setup/initial-credentials", {
+      method: "GET",
+    })
+  }
+
+  completeSetup() {
+    appLogger.debug("Completing setup")
+    return this.request<SetupCompleteResponse>("/api/v1/setup/complete", {
+      method: "POST",
+    })
+  }
+
   getHealth(token?: string) {
     appLogger.debug("Fetching health status")
     if (token) {

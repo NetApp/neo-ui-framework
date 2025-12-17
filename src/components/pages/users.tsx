@@ -1,3 +1,4 @@
+// Copyright 2025 NetApp, Inc. All Rights Reserved.
 "use client"
 
 import {
@@ -26,6 +27,7 @@ import type {
   MeResponse,
   MonitoringOverviewResponse
 } from "@/services/neo-api"
+import { AuthenticationError } from "@/services/neo-api"
 import { OverviewCard } from "@/components/cards/overview-card"
 
 import {
@@ -44,6 +46,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 import {
   Input
@@ -161,6 +170,9 @@ export default function Users({ users, me, onAddUser, onChangePassword, onRefres
   useEffect(() => {
     if (users === null) {
       onRefresh().catch((error) => {
+        // Suppress alert for authentication errors
+        if (error instanceof AuthenticationError) return
+
         setAlertVariant("error")
         setAlertMessage(error instanceof Error ? error.message : "Failed to refresh users")
       })
@@ -185,15 +197,32 @@ export default function Users({ users, me, onAddUser, onChangePassword, onRefres
               <OverviewCard
                 overview={monitoringOverview}
                 title="Users Overview"
-                description="Overview of system users and their roles."
                 showCacheStats={false}
               />
             </div>
             <div className="mb-4 flex justify-end items-center">
-              <Button onClick={() => setAddDialogOpen(true)}>
-                <IconPlus className="mr-2 size-4" />
-                Add user
-              </Button>
+              {me?.is_admin ? (
+                <Button onClick={() => setAddDialogOpen(true)}>
+                  <IconPlus className="mr-2 size-4" />
+                  Add user
+                </Button>
+              ) : (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span tabIndex={0}>
+                        <Button disabled>
+                          <IconPlus className="mr-2 size-4" />
+                          Add user
+                        </Button>
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Admin privileges required</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
             </div>
             {alertMessage ? (
               <Alert

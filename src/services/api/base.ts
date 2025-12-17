@@ -1,3 +1,4 @@
+// Copyright 2025 NetApp, Inc. All Rights Reserved.
 import { appLogger } from "@/services/app-logger"
 
 interface RequestOptions {
@@ -9,6 +10,13 @@ export class AuthenticationError extends Error {
   constructor(message = "Authentication failed. Please log in again.") {
     super(message)
     this.name = "AuthenticationError"
+  }
+}
+
+export class AuthorizationError extends Error {
+  constructor(message = "You do not have permission to access this resource.") {
+    super(message)
+    this.name = "AuthorizationError"
   }
 }
 
@@ -38,8 +46,13 @@ export class BaseApiClient {
           `Status: ${response.status}, Body: ${body}`
         )
 
-        if (expectAuth && (response.status === 401 || response.status === 403)) {
-          throw new AuthenticationError()
+        if (expectAuth) {
+          if (response.status === 401) {
+            throw new AuthenticationError()
+          }
+          if (response.status === 403) {
+            throw new AuthorizationError()
+          }
         }
 
         throw new Error(`${endpoint} failed (${response.status} ${response.statusText})`)

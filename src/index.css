@@ -1,4 +1,6 @@
+/* Copyright 2025 NetApp, Inc. All Rights Reserved. */
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));

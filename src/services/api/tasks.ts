@@ -1,6 +1,7 @@
+// Copyright 2025 NetApp, Inc. All Rights Reserved.
 import { appLogger } from "@/services/app-logger"
 import { BaseApiClient } from "./base"
-import type { TasksListResponse, TaskStatisticsResponse } from "@/services/models"
+import type { TasksListResponse, TaskStatisticsResponse, AclCacheStatisticsResponse } from "@/services/models"
 
 export interface TaskCancelResponse {
   status: string
@@ -20,6 +21,11 @@ export class TasksApiClient extends BaseApiClient {
   getTaskStatistics(token: string) {
     appLogger.debug("Fetching task statistics")
     return this.requestWithToken<TaskStatisticsResponse>("/tasks/statistics/summary", token)
+  }
+
+  getAclCacheStatistics(token: string) {
+    appLogger.debug("Fetching ACL cache statistics")
+    return this.requestWithToken<AclCacheStatisticsResponse>("/tasks/statistics/acl-cache", token)
   }
 
   deleteTask(token: string, taskId: string) {

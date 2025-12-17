@@ -1,3 +1,4 @@
+// Copyright 2025 NetApp, Inc. All Rights Reserved.
 import { appLogger } from "@/services/app-logger"
 import { BaseApiClient } from "./base"
 import type { SharesResponse, ShareDetailsResponse } from "@/services/models"
@@ -64,15 +65,15 @@ export class SharesApiClient extends BaseApiClient {
     token: string,
     shareId: string,
     payload: {
-      share_path: string
-      username: string
-      password: string
-      crawl_schedule: string
-      rules: Record<string, unknown>
-      realm: string
-      use_kerberos: string
-      workgroup: string
-      resolve_order: string
+      share_path?: string
+      username?: string
+      password?: string
+      crawl_schedule?: string
+      rules?: Record<string, unknown>
+      realm?: string
+      use_kerberos?: string
+      workgroup?: string
+      resolve_order?: string
     }
   ) {
     appLogger.debug("Sending PATCH request to update share", undefined, {

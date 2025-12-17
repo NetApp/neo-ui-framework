@@ -1,3 +1,4 @@
+// Copyright 2025 NetApp, Inc. All Rights Reserved.
 export interface TokenResponse {
   access_token: string
   token_type: string
@@ -7,6 +8,80 @@ export interface ConnectionCredentials {
   endpoint?: string
   username: string
   password: string
+}
+
+
+
+
+export interface SetupStatusResponse { // only for v3
+  setup_complete: boolean
+  database_configured: boolean
+  database_url_environment_set: boolean
+  config_storage: string
+  steps_completed: string[]
+  required_steps: string[]
+  optional_steps: string[]
+  message: string
+  persistence_info: {
+    database_url_set: boolean
+    persistent: boolean
+    message: string
+    license_reconfiguration_mode: boolean
+  }
+  connector_id: string | null
+}
+
+export interface SetupLicenseRequest {
+  license_key: string
+}
+
+export interface SetupLicenseResponse {
+  success: boolean
+  message: string
+}
+
+export interface SetupGraphRequest {
+  tenant_id: string
+  client_id: string
+  client_secret: string
+  connector_id: string
+  connector_name: string
+  connector_description: string
+}
+
+export interface SetupGraphResponse {
+  success: boolean
+  message: string
+}
+
+export interface SetupResetResponse {
+  success: boolean
+  message: string
+}
+
+export interface SetupFactoryResetRequest {
+  confirm: boolean
+  preserve_encryption_key: boolean
+}
+
+export interface SetupCompleteResponse {
+  success: boolean
+  message: string
+  configured_steps: string[]
+  restart_countdown_seconds: number
+  database_url_configured: boolean
+  note?: string
+}
+
+export interface InitialCredentialsResponse {
+  username: string
+  password: string
+  message: string
+}
+
+export interface MonitoringData {
+  // Add properties here if needed, or leave it effectively empty for now
+  [key: string]: any
 }
 
 export interface ReadyResponse { // only for v3
@@ -319,24 +394,22 @@ export interface MonitoringGraphRateLimitResponse { // only for v3
 
 export interface MonitoringFailedItemsResponse { // only for v3
   total_failed_items: number
-  failed_items: [
-    {
-      id: string
-      share_id: string
-      file_inventory_id: string
-      work_type: string
-      priority: number
-      retry_count: number
-      max_retries: number
-      error_message: string
-      created_at: string
-      started_at: string
-      completed_at: string
-      claimed_by: string
-      file_path: string
-      filename: string
-    }
-  ]
+  failed_items: {
+    id: string
+    share_id: string
+    file_inventory_id: string
+    work_type: string
+    priority: number
+    retry_count: number
+    max_retries: number
+    error_message: string
+    created_at: string
+    started_at: string
+    completed_at: string
+    claimed_by: string
+    file_path: string
+    filename: string
+  }[]
   failure_summary: {
     additionalProp1: number
     additionalProp2: number
@@ -394,6 +467,19 @@ export interface TaskStatisticsResponse { // only for v3
   running_task_ids: number[]
 }
 
+export interface AclCacheStatisticsResponse {
+  size: number
+  max_size: number
+  hits: number
+  misses: number
+  evictions: number
+  hit_rate: number
+  total_requests: number
+  capacity_used_percent: number
+  status: "cold" | "warm" | "hot"
+  recommendations: string[]
+}
+
 // Users Page Models
 export interface UserResponse {
   id: number
@@ -403,6 +489,54 @@ export interface UserResponse {
   is_admin: boolean
   created_at: string
   last_login: string | null
+}
+
+// Content Search Models
+export interface ContentSearchRequest {
+  query: string
+  share_ids?: string[]
+  file_types?: string[]
+  modified_after?: string
+  modified_before?: string
+  sort_by?: "relevance" | "modified_time" | "filename" | "size"
+  page?: number
+  page_size?: number
+}
+
+export interface ContentSearchResult {
+  id: string
+  share_id: string
+  filename: string
+  file_path: string
+  unc_path: string
+  size: number
+  modified_time: string
+  file_type: string
+  indexed_at: string
+  relevance_score: number
+  snippet?: string
+  created_at?: string
+  accessed_at?: string
+}
+
+export interface ContentSearchResponse {
+  results: ContentSearchResult[]
+  total_count: number
+  page: number
+  page_size: number
+  total_pages: number
+  has_next: boolean
+  has_previous: boolean
+  query: string
+  search_time_ms: number
+  database_type?: string
+}
+
+export interface Dataset {
+  id: string
+  name: string
+  files: FileEntry[]
+  createdAt: string
 }
 
 export interface MeResponse {

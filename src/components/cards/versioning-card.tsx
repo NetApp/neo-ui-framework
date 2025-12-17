@@ -1,9 +1,8 @@
+// Copyright 2025 NetApp, Inc. All Rights Reserved.
 "use client"
 
 import {
     GitBranch,
-    Tag,
-    Layers,
     Box
 } from "lucide-react"
 import {
@@ -16,6 +15,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import type { VersionResponse, HelmChartVersionResponse } from "@/services/neo-api"
+import { IconDeviceDesktop, IconLayersDifference, IconPackage } from "@tabler/icons-react"
 
 interface VersioningCardProps {
     version: VersionResponse | null
@@ -60,7 +60,7 @@ export function VersioningCard({ version, helmChartVersion, className }: Version
 
                     <div className="space-y-2">
                         <div className="flex items-center gap-2">
-                            <Tag className="h-4 w-4 text-muted-foreground" />
+                            <IconDeviceDesktop className="h-4 w-4 text-muted-foreground" />
                             <span className="text-sm font-medium">UI Framework</span>
                         </div>
                         <div className="flex items-center justify-between">
@@ -81,7 +81,7 @@ export function VersioningCard({ version, helmChartVersion, className }: Version
                 {/* Latest Available Versions */}
                 <div>
                     <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
-                        <Layers className="h-4 w-4" />
+                        <IconLayersDifference className="h-4 w-4" />
                         Latest Available Versions
                     </h4>
 
@@ -89,7 +89,7 @@ export function VersioningCard({ version, helmChartVersion, className }: Version
                         {/* Helm Chart */}
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2 text-muted-foreground">
-                                <Box className="h-3 w-3" />
+                                <IconPackage className="h-3 w-3" />
                                 <span>Helm Chart</span>
                             </div>
                             <a
@@ -116,7 +116,7 @@ export function VersioningCard({ version, helmChartVersion, className }: Version
                         {/* UI Framework Placeholder */}
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2 text-muted-foreground">
-                                <Tag className="h-3 w-3" />
+                                <IconDeviceDesktop className="h-3 w-3" />
                                 <span>UI Framework</span>
                             </div>
                             <span className="font-mono bg-muted px-2 py-0.5 rounded text-xs text-muted-foreground">

@@ -1,3 +1,4 @@
+// Copyright 2025 NetApp, Inc. All Rights Reserved.
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'

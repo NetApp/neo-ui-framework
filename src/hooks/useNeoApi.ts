@@ -1,3 +1,4 @@
+// Copyright 2025 NetApp, Inc. All Rights Reserved.
 import { useCallback, useRef, useState, useEffect } from "react"
 
 import { toast } from "sonner"
@@ -9,7 +10,7 @@ import {
   type HealthResponse,
   type LicenseResponse,
   type VersionResponse,
-  type HelmChartVersionResponse,  // Add this import
+  type HelmChartVersionResponse,
   type DatabaseSizeResponse,
   type OperationResponse,
   type UserResponse,
@@ -20,6 +21,9 @@ import {
   type FileMetadataResponse,
   type FileSearchParams,
   type FileSearchResponse,
+  type ContentSearchRequest,
+  type ContentSearchResponse,
+  type SetupLicenseRequest,
   type MonitoringOverviewResponse,
   type MonitoringWorkersResponse,
   type MonitoringEnumerationResponse,
@@ -27,16 +31,25 @@ import {
   type MonitoringFailedItemsResponse,
   type TasksResponse,
   type TaskStatisticsResponse,
+  type AclCacheStatisticsResponse,
+  type SetupStatusResponse,
   AuthenticationError,
+  type SetupGraphRequest,
+  type SetupGraphResponse,
+  type SetupFactoryResetRequest,
 } from "@/services/neo-api"
 
 
 import type {
   ConnectionCredentials,
-  // FileEntry
+  FileEntry,
+  Dataset
 } from "@/services/models"
 
 import { useSettings } from "@/context/settings-context"
+
+// Create singleton instance outside the hook
+const neoApiService = new NeoApiService()
 
 export function useNeoApi() {
   const { monitoringTtl, filesTtl, cacheMaxSize } = useSettings()
@@ -44,12 +57,14 @@ export function useNeoApi() {
   const [license, setLicense] = useState<LicenseResponse | null>(null)
   const [version, setVersion] = useState<VersionResponse | null>(null)
   const [helmChartVersion, setHelmChartVersion] = useState<HelmChartVersionResponse | null>(null)
+  const [setupStatus, setSetupStatus] = useState<SetupStatusResponse | null>(null)
 
-  const apiRef = useRef(new NeoApiService())
+  // Use singleton instance
+  const apiRef = useRef(neoApiService)
 
   // Update API config when settings change
   useEffect(() => {
-    apiRef.current.updateConfig({
+    neoApiService.updateConfig({
       monitoringTtl,
       filesTtl,
       cacheMaxSize,
@@ -66,21 +81,24 @@ export function useNeoApi() {
           api.getHealth(),
           api.getLicenseStatus(),
           api.getVersion(),
-          api.getLatestHelmVersion()
+          api.getLatestHelmVersion(),
+          api.getSetupStatus(),
         ])
 
-        const [healthResult, licenseResult, versionResult, helmResult] = results
+        const [healthResult, licenseResult, versionResult, helmResult, setupResult] = results
 
         if (healthResult.status === "fulfilled") setHealth(healthResult.value)
         if (licenseResult.status === "fulfilled") setLicense(licenseResult.value)
         if (versionResult.status === "fulfilled") setVersion(versionResult.value)
         if (helmResult.status === "fulfilled") setHelmChartVersion(helmResult.value)
+        if (setupResult.status === "fulfilled") setSetupStatus(setupResult.value)
 
         appLogger.info("Public system data fetched", undefined, {
           health: healthResult.status,
           license: licenseResult.status,
           version: versionResult.status,
-          helm: helmResult.status
+          helm: helmResult.status,
+          setup: setupResult.status
         })
       } catch (error) {
         appLogger.warn("Unexpected error fetching public system data", error instanceof Error ? error.message : "Unknown error")
@@ -95,7 +113,20 @@ export function useNeoApi() {
   const [operations, setOperations] = useState<OperationResponse[] | null>(null)
   const [shares, setShares] = useState<SharesResponse[] | null>(null)
   const [files, setFiles] = useState<FilesResponse | null>(null)
-  const [token, setToken] = useState<string | null>(null)
+  const [myDocuments, setMyDocuments] = useState<FilesResponse | null>(null)
+  const [datasets, setDatasets] = useState<Dataset[]>([])
+  /*
+   * Initialize token from localStorage to support persistence across tabs/refresh.
+   * This fixes the issue where opening a new tab would require re-authentication.
+   */
+  const [token, setToken] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem("neo_token")
+    } catch (e) {
+      // Handle potential localStorage access errors (e.g. private mode)
+      return null
+    }
+  })
 
   const [cacheStats, setCacheStats] = useState<{ sizeBytes: number; maxSizeBytes: number; items: number }>({
     sizeBytes: 0,
@@ -111,6 +142,7 @@ export function useNeoApi() {
     failedItems: MonitoringFailedItemsResponse | null
     tasks: TasksResponse[] | null
     taskStats: TaskStatisticsResponse | null
+    aclCacheStats: AclCacheStatisticsResponse | null
     fileAnalytics: { file_type: string; count: number; total_size: number }[] | null
     sharesAnalytics: { share_id: string; share_name: string; share_path: string; count: number; total_size: number }[] | null
   }>({
@@ -121,6 +153,7 @@ export function useNeoApi() {
     failedItems: null,
     tasks: null,
     taskStats: null,
+    aclCacheStats: null,
     fileAnalytics: null,
     sharesAnalytics: null,
   })
@@ -129,21 +162,22 @@ export function useNeoApi() {
 
   const applySystemData = useCallback(
     (data: {
-      health: HealthResponse
-      license: LicenseResponse
-      version: VersionResponse
-      helmChartVersion: HelmChartVersionResponse  // Add this
-      databaseSize: DatabaseSizeResponse
+      health: HealthResponse | null
+      license: LicenseResponse | null
+      version: VersionResponse | null
+      helmChartVersion: HelmChartVersionResponse | null
+      databaseSize: DatabaseSizeResponse | null
       users: UserResponse[]
-      me: MeResponse
+      me: MeResponse | null
       operations: OperationResponse[]
       shares: SharesResponse[]
       files: FilesResponse | null
     }) => {
+      appLogger.debug("applySystemData received")
       setHealth(data.health)
       setLicense(data.license)
       setVersion(data.version)
-      setHelmChartVersion(data.helmChartVersion)  // Add this
+      setHelmChartVersion(data.helmChartVersion)
       setDatabaseSize(data.databaseSize)
       setUsers(data.users)
       setMe(data.me)
@@ -154,17 +188,20 @@ export function useNeoApi() {
     []
   )
 
+
   const clearSystemData = useCallback(() => {
     setHealth(null)
     setLicense(null)
     setVersion(null)
-    setHelmChartVersion(null)  // Add this
+    setHelmChartVersion(null)
     setDatabaseSize(null)
     setUsers(null)
     setMe(null)
     setOperations(null)
     setShares(null)
     setFiles(null)
+    setMyDocuments(null)
+    setDatasets([])
     setMonitoring({
       overview: null,
       workers: null,
@@ -173,10 +210,59 @@ export function useNeoApi() {
       failedItems: null,
       tasks: null,
       taskStats: null,
+      aclCacheStats: null,
       fileAnalytics: null,
       sharesAnalytics: null,
     })
   }, [])
+
+  /*
+   * Sync token to localStorage whenever it changes.
+   */
+  useEffect(() => {
+    try {
+      if (token) {
+        localStorage.setItem("neo_token", token)
+      } else {
+        localStorage.removeItem("neo_token")
+      }
+    } catch (e) {
+      appLogger.error("Failed to sync token to localStorage", e instanceof Error ? e.message : "Unknown error")
+    }
+  }, [token])
+
+  // Use refs for stable access to callbacks in effects to avoid infinite loops
+  const applySystemDataRef = useRef(applySystemData)
+  applySystemDataRef.current = applySystemData
+
+  const clearSystemDataRef = useRef(clearSystemData)
+  clearSystemDataRef.current = clearSystemData
+
+  /*
+   * Restore session: specific effect to fetch system data on mount if a token exists
+   * but we don't have user data yet (typical reload/new tab scenario).
+   */
+  useEffect(() => {
+    if (token && !me) {
+      const restoreSession = async () => {
+        try {
+          appLogger.info("Restoring session from persisted token")
+          const api = apiRef.current
+          // We need to fetch system data to populate the state (user info, etc.)
+          const data = await api.fetchSystemData(token)
+          applySystemDataRef.current(data)
+          setCacheStats(api.getCacheStats())
+          appLogger.info("Session restored successfully")
+        } catch (error) {
+          appLogger.warn("Failed to restore session, invalidating token", error instanceof Error ? error.message : "Unknown error")
+          // If the token is invalid (e.g. expired), clear it so the user is prompted to login
+          setToken(null)
+          clearSystemDataRef.current()
+        }
+      }
+      restoreSession()
+    }
+  }, [token, me])
 
   const handleConnect = useCallback(
     async (credentials: ConnectionCredentials) => {
@@ -197,7 +283,11 @@ export function useNeoApi() {
         applySystemData(data)
         setToken(newToken)
         setCacheStats(api.getCacheStats())
-        toast.success(`Welcome, ${data.me?.username}`)
+        if (data.me) {
+          toast.success(`Welcome, ${data.me.username}`)
+        } else {
+          toast.success("Welcome")
+        }
         appLogger.info("Successfully connected to NetApp Neo", undefined, {
           userId: data.me?.id,
           username: data.me?.username,
@@ -225,34 +315,87 @@ export function useNeoApi() {
     [applySystemData, clearSystemData]
   )
 
-  const handleRefresh = useCallback(async () => {
+  const handleFetchSystemData = useCallback(async () => {
+    if (!token) return null
+    const api = apiRef.current
+    try {
+      const data = await api.fetchSystemData(token)
+      applySystemData(data)
+      setCacheStats(api.getCacheStats())
+      appLogger.info("System data refreshed successfully")
+      return data
+    } catch (error) {
+      if (error instanceof AuthenticationError) {
+        clearSystemData()
+        setToken(null)
+      }
+      appLogger.error("Failed to fetch system data", error instanceof Error ? error.message : "Unknown error")
+      throw error
+    }
+  }, [token, applySystemData, clearSystemData])
+
+  const handleFetchMonitoring = useCallback(async (force?: boolean) => {
     if (!token) {
-      appLogger.warn("Refresh attempted without active token")
+      appLogger.warn("Fetch monitoring attempted without active token")
       throw new AuthenticationError()
     }
 
     const api = apiRef.current
 
     try {
-      appLogger.debug("Refreshing system data from Neo API")
-      api.clearCache()
-      const data = await api.fetchSystemData(token)
-      applySystemData(data)
+      appLogger.debug("Fetching monitoring data", undefined, { force })
+      if (force) {
+        api.clearCache()
+      }
+
+      const [monitoringData, databaseSizeData] = await Promise.all([
+        api.fetchMonitoringData(token),
+        api.getDatabaseSize(token)
+      ])
+
+      setMonitoring(monitoringData)
+      setDatabaseSize(databaseSizeData)
       setCacheStats(api.getCacheStats())
-      appLogger.info("System data refreshed successfully")
+      appLogger.info("Monitoring data fetched successfully")
     } catch (error) {
       if (error instanceof AuthenticationError) {
         clearSystemData()
         setToken(null)
-        appLogger.warn("Token expired during refresh")
+      }
+      appLogger.error("Failed to fetch monitoring data", error instanceof Error ? error.message : "Unknown error")
+      throw error
+    }
+  }, [token, clearSystemData])
+
+  const handleRefresh = useCallback(async (): Promise<void> => {
+    if (!token) {
+      appLogger.warn("Refresh attempted without active token")
+      throw new AuthenticationError()
+    }
+
+    try {
+      appLogger.debug("Refreshing system data from Neo API")
+      // Sequential logic: Fetch System Data first
+      await handleFetchSystemData()
+
+      // Always fetch monitoring data now
+      await handleFetchMonitoring(true)
+
+      appLogger.info("Refresh sequence completed")
+    } catch (error) {
+      // handleFetchSystemData already handles auth error/logging for itself
+      // handleFetchMonitoring handles its own errors
+      // Top level catch just for safety or bubbling
+      if (error instanceof AuthenticationError) {
+        // already handled
       }
       appLogger.error(
-        "Failed to refresh system data",
+        "Failed to complete refresh sequence",
         error instanceof Error ? error.message : "Unknown error"
       )
       throw error
     }
-  }, [applySystemData, clearSystemData, token])
+  }, [token, handleFetchSystemData, handleFetchMonitoring])
 
   const handleDeleteShare = useCallback(
     async (shareId: string) => {
@@ -342,15 +485,15 @@ export function useNeoApi() {
     async (
       shareId: string,
       share: {
-        share_path: string
-        username: string
-        password: string
-        crawl_schedule: string
-        rules: Record<string, unknown>
-        realm: string
-        use_kerberos: string
-        workgroup: string
-        resolve_order: string
+        share_path?: string
+        username?: string
+        password?: string
+        crawl_schedule?: string
+        rules?: Record<string, unknown>
+        realm?: string
+        use_kerberos?: string
+        workgroup?: string
+        resolve_order?: string
       }
     ) => {
       if (!token) {
@@ -387,6 +530,8 @@ export function useNeoApi() {
     },
     [applySystemData, clearSystemData, token]
   )
+
+
 
   const handleStartCrawl = useCallback(
     async (shareId: string) => {
@@ -538,6 +683,22 @@ export function useNeoApi() {
     [token]
   )
 
+  const handleContentSearch = useCallback(
+    async (payload: ContentSearchRequest): Promise<ContentSearchResponse> => {
+      if (!token) {
+        appLogger.warn("Content search attempted without active token")
+        throw new AuthenticationError()
+      }
+
+      const api = apiRef.current
+      appLogger.debug("Searching content", undefined, { query: payload.query })
+      const results = await api.searchContent(token, payload)
+      setCacheStats(api.getCacheStats())
+      return results
+    },
+    [token]
+  )
+
   const handleSelectFilesShare = useCallback(
     async (shareKey: string | "all" | null, page?: number) => {
       if (!token) {
@@ -618,6 +779,70 @@ export function useNeoApi() {
     [token, clearSystemData]
   )
 
+  const handleFetchMyDocuments = useCallback(
+    async (page: number = 1, pageSize: number = 100) => {
+      if (!token) {
+        appLogger.warn("Fetch my documents attempted without active token")
+        throw new AuthenticationError()
+      }
+
+      const api = apiRef.current
+
+      try {
+        appLogger.info("Fetching my documents", undefined, { page })
+        const response = await api.getMyDocuments(token, page, pageSize)
+
+        // Adapt FileSearchResponse to FilesResponse for consistency if needed, 
+        // or just return it. The FilesTable expects FilesResponse structure mostly.
+        // Let's return it as is, but we might need to adapt it in the component or here.
+        // FilesTable expects: share_id, path, files, total_count, etc.
+        // FileSearchResponse has: files, total_count, etc.
+        // We'll construct a pseudo-FilesResponse.
+
+        const result: FilesResponse = {
+          share_id: "my-documents",
+          path: "My Documents",
+          files: response.files,
+          total_count: response.total_count,
+          total_size: response.total_size,
+          page: response.page,
+          page_size: response.page_size,
+          total_pages: response.total_pages,
+          has_next: response.has_next,
+          has_previous: response.has_previous,
+        }
+
+        setMyDocuments(result)
+        return result
+      } catch (error) {
+        if (error instanceof AuthenticationError) {
+          setToken(null)
+        }
+        appLogger.error(
+          "Failed to fetch my documents",
+          error instanceof Error ? error.message : "Unknown error"
+        )
+        throw error
+      }
+    },
+    [token, clearSystemData]
+  )
+
+
+  const handleCreateDataset = useCallback(async (name: string, files: FileEntry[]) => {
+    const newDataset: Dataset = {
+      id: crypto.randomUUID(),
+      name: name, // Assuming 'name' from parameters should be used
+      files: files, // Assuming 'files' from parameters should be used
+      createdAt: new Date().toISOString(),
+    }
+    setDatasets((prev) => [...prev, newDataset])
+  }, [])
+
+  const handleDeleteDataset = useCallback((id: string) => {
+    setDatasets((prev) => prev.filter((d) => d.id !== id))
+  }, [])
+
   const handleFilesPageChange = useCallback(
     async (page: number) => {
       if (currentShareId !== null) {
@@ -627,35 +852,7 @@ export function useNeoApi() {
     [currentShareId, handleSelectFilesShare]
   )
 
-  const handleFetchMonitoring = useCallback(async (force?: boolean) => {
-    if (!token) {
-      appLogger.warn("Fetch monitoring attempted without active token")
-      throw new AuthenticationError()
-    }
 
-    const api = apiRef.current
-
-    try {
-      appLogger.debug("Fetching monitoring data", undefined, { force })
-      if (force) {
-        api.clearCache()
-      }
-      const data = await api.fetchMonitoringData(token)
-      setMonitoring(data)
-      appLogger.info("Monitoring data fetched successfully")
-    } catch (error) {
-      if (error instanceof AuthenticationError) {
-        clearSystemData()
-        setToken(null)
-        appLogger.warn("Token expired during monitoring fetch")
-      }
-      appLogger.error(
-        "Failed to fetch monitoring data",
-        error instanceof Error ? error.message : "Unknown error"
-      )
-      throw error
-    }
-  }, [token, clearSystemData])
 
   const handleFetchTasks = useCallback(async (force?: boolean) => {
     if (!token) {
@@ -670,20 +867,23 @@ export function useNeoApi() {
       if (force) {
         api.clearCache()
       }
-      const [tasks, taskStats] = await Promise.all([
+      const [tasks, taskStats, aclCacheStats] = await Promise.all([
         api.getTasks(token),
         api.getTaskStatistics(token),
+        api.getAclCacheStatistics(token),
       ])
 
       setMonitoring(prev => ({
         ...prev,
         tasks,
         taskStats,
+        aclCacheStats,
       }))
 
       appLogger.info("Tasks data fetched successfully", undefined, {
         total_tasks: taskStats.total_tasks,
         running_tasks: taskStats.by_status.running,
+        acl_cache_stats: true,
       })
     } catch (error) {
       if (error instanceof AuthenticationError) {
@@ -698,6 +898,40 @@ export function useNeoApi() {
       throw error
     }
   }, [token, clearSystemData])
+
+  const handleRetryWorkItems = useCallback(
+    async (shareId: string, workItemIds: string[]) => {
+      if (!token) {
+        appLogger.warn("Retry work items attempted without active token")
+        throw new AuthenticationError()
+      }
+
+      const api = apiRef.current
+
+      try {
+        appLogger.info("Retrying work items", undefined, { shareId, count: workItemIds.length })
+        await api.retryWorkItems(token, shareId, workItemIds)
+        toast.success("Retry initiated")
+        return true
+      } catch (error) {
+        if (error instanceof AuthenticationError) {
+          clearSystemData()
+          setToken(null)
+        }
+        toast.error("Failed to retry items")
+        appLogger.error(
+          "Retry work items failed",
+          error instanceof Error ? error.message : "Unknown error",
+          { shareId }
+        )
+        return false
+      }
+    },
+    [token, clearSystemData]
+  )
+
+
+
 
   const handleDeleteTask = useCallback(
     async (taskId: string) => {
@@ -714,15 +948,17 @@ export function useNeoApi() {
 
         // Refresh tasks after cancellation attempt
         api.clearCache()
-        const [tasks, taskStats] = await Promise.all([
+        const [tasks, taskStats, aclCacheStats] = await Promise.all([
           api.getTasks(token),
           api.getTaskStatistics(token),
+          api.getAclCacheStatistics(token),
         ])
 
         setMonitoring(prev => ({
           ...prev,
           tasks,
           taskStats,
+          aclCacheStats,
         }))
 
         if (response.status === "cancelled") {
@@ -736,6 +972,21 @@ export function useNeoApi() {
           status: response.status,
           graceful: response.graceful
         })
+        try {
+          await handleFetchSystemData()
+          await handleFetchMonitoring(true)
+        } catch (error) {
+          if (error instanceof AuthenticationError) {
+            clearSystemData()
+            setToken(null)
+          }
+          appLogger.error(
+            "Failed to refresh monitoring data after task cancellation",
+            error instanceof Error ? error.message : "Unknown error",
+            { taskId }
+          )
+          // Do not re-throw, as the task cancellation itself was successful
+        }
       } catch (error) {
         if (error instanceof AuthenticationError) {
           clearSystemData()
@@ -784,12 +1035,15 @@ export function useNeoApi() {
       license,
       version,
       helmChartVersion,
+      setupStatus,
       databaseSize,
       users,
       me,
       operations,
       shares,
       files,
+      myDocuments,
+      datasets,
       monitoring,
       token,
       cacheStats,
@@ -812,6 +1066,36 @@ export function useNeoApi() {
       handleDeleteTask,
       handleLogout,
       handleFilesPageChange,
+      handleFetchMyDocuments,
+      handleCreateDataset,
+      handleDeleteDataset,
+      handleContentSearch,
+      handleRetryWorkItems,
+      clearCache: useCallback(() => apiRef.current.clearCache(), []),
+      setupLicense: useCallback(
+        async (request: SetupLicenseRequest) => {
+          return apiRef.current.setupLicense(request)
+        },
+        []
+      ),
+      setupGraph: useCallback(
+        async (request: SetupGraphRequest): Promise<SetupGraphResponse> => {
+          return apiRef.current.setupGraph(request)
+        },
+        []
+      ),
+      resetSetup: useCallback(async () => {
+        return apiRef.current.resetSetup()
+      }, []),
+      factoryReset: useCallback(async (payload: SetupFactoryResetRequest) => {
+        return apiRef.current.factoryReset(payload)
+      }, []),
+      getInitialCredentials: useCallback(async () => {
+        return apiRef.current.getInitialCredentials()
+      }, []),
+      completeSetup: useCallback(async () => {
+        return apiRef.current.completeSetup()
+      }, []),
     },
   }
 }

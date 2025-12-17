@@ -1,3 +1,4 @@
+// Copyright 2025 NetApp, Inc. All Rights Reserved.
 export type LogLevel = "DEBUG" | "INFO" | "WARN" | "ERROR" | "OPERATION"
 
 export interface AppLogEntry {

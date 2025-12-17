@@ -1,3 +1,4 @@
+// Copyright 2025 NetApp, Inc. All Rights Reserved.
 "use client"
 
 import { NeoInstanceCard } from "@/components/cards/neo-instance-card"
@@ -29,7 +30,6 @@ export default function Connector({ health, license, version, helmChartVersion, 
               <OverviewCard
                 overview={monitoringOverview}
                 title="System Overview"
-                description="Overview of the NetApp Neo system status and health."
                 showCacheStats={false}
               />
               <NeoInstanceCard

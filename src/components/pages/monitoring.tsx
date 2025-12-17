@@ -1,3 +1,4 @@
+// Copyright 2025 NetApp, Inc. All Rights Reserved.
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
@@ -24,7 +25,13 @@ import type {
     MonitoringFailedItemsResponse,
     TasksResponse,
     TaskStatisticsResponse,
+    AclCacheStatisticsResponse,
+    HealthResponse,
+    LicenseResponse,
+    VersionResponse,
+    HelmChartVersionResponse,
 } from "@/services/neo-api"
+import { AuthenticationError } from "@/services/neo-api"
 
 interface MonitoringProps {
     databaseSize: DatabaseSizeResponse | null
@@ -36,6 +43,7 @@ interface MonitoringProps {
         failedItems: MonitoringFailedItemsResponse | null
         tasks: TasksResponse[] | null
         taskStats: TaskStatisticsResponse | null
+        aclCacheStats: AclCacheStatisticsResponse | null
         fileAnalytics: { file_type: string; count: number; total_size: number }[] | null
         sharesAnalytics: { share_id: string; share_name: string; share_path: string; count: number; total_size: number }[] | null
     }
@@ -44,6 +52,11 @@ interface MonitoringProps {
         sizeBytes: number
         items: number
     }
+    onRetryWorkItems: (shareId: string, workItemIds: string[]) => Promise<boolean>
+    health: HealthResponse | null
+    license: LicenseResponse | null
+    version: VersionResponse | null
+    helmChartVersion: HelmChartVersionResponse | null
 }
 
 export default function Monitoring({
@@ -51,6 +64,11 @@ export default function Monitoring({
     monitoring,
     onFetchMonitoring,
     cacheStats,
+    onRetryWorkItems,
+    health,
+    license,
+    version,
+    helmChartVersion,
 }: MonitoringProps) {
     const [alertMessage, setAlertMessage] = useState<string | null>(null)
     const [alertVariant, setAlertVariant] = useState<"success" | "error">("success")
@@ -58,9 +76,10 @@ export default function Monitoring({
     const handleFetchMonitoring = useCallback(async (force?: boolean) => {
         try {
             await onFetchMonitoring(force)
-            setAlertVariant("success")
-            setAlertMessage("Monitoring data refreshed successfully")
         } catch (error) {
+            // Suppress alert for authentication errors as they are handled globally
+            if (error instanceof AuthenticationError) return
+
             setAlertVariant("error")
             setAlertMessage(error instanceof Error ? error.message : "Failed to refresh monitoring data")
         }
@@ -100,7 +119,7 @@ export default function Monitoring({
                             <OverviewCard
                                 overview={monitoring.overview}
                                 title="Monitoring Overview"
-                                description="Real-time monitoring data for NetApp Neo operations. Auto-refreshes every 60 seconds."
+                                showCacheStats={false}
                                 cacheStats={cacheStats}
                             />
                         </div>
@@ -108,6 +127,12 @@ export default function Monitoring({
                             databaseSize={databaseSize}
                             monitoring={monitoring}
                             onRefreshMonitoring={onFetchMonitoring}
+                            onRetryWorkItems={onRetryWorkItems}
+                            health={health}
+                            license={license}
+                            version={version}
+                            helmChartVersion={helmChartVersion}
+                            cacheStats={cacheStats}
                         />
                     </div>
                 </div>

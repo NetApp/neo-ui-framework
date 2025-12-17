@@ -1,3 +1,4 @@
+// Copyright 2025 NetApp, Inc. All Rights Reserved.
 import {
     Card,
     CardContent,
@@ -25,7 +26,7 @@ interface OverviewCardProps {
 export function OverviewCard({
     overview,
     title = "Monitoring Overview",
-    description = "Real-time monitoring data for NetApp Neo operations. Auto-refreshes every 60 seconds.",
+    description = "",
     showCacheStats = true,
     variant = "default",
     cacheStats
@@ -51,6 +52,11 @@ export function OverviewCard({
                     {overview?.timestamp && (
                         <span className="block mt-1">
                             Last updated (UTC): {new Date(overview.timestamp).toLocaleString()}
+                        </span>
+                    )}
+                    {overview?.timestamp && (
+                        <span className="block">
+                            Next refresh (UTC): {new Date(new Date(overview.timestamp).getTime() + monitoringTtl * 60 * 1000).toLocaleString()}
                         </span>
                     )}
                 </CardDescription>
@@ -94,9 +100,9 @@ export function OverviewCard({
                                 <HardDrive className="h-4 w-4" />
                                 <span className="text-sm font-medium">Current Usage</span>
                             </div>
-                            <div className="flex items-baseline gap-2">
+                            <div className="flex flex-col">
                                 <div className="text-2xl font-bold">{formatBytes(cacheStats?.sizeBytes || 0)}</div>
-                                <div className="text-xs text-muted-foreground">({cacheStats?.items || 0} items)</div>
+                                <div className="text-xs text-muted-foreground">{cacheStats?.items || 0} items</div>
                             </div>
                         </div>
                     </div>

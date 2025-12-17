@@ -1,10 +1,10 @@
+// Copyright 2025 NetApp, Inc. All Rights Reserved.
 "use client"
 
 import {
     Activity,
     CheckIcon,
     AlertCircleIcon,
-    Server,
     HardDrive
 } from "lucide-react"
 import {
@@ -17,7 +17,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import type { HealthResponse, LicenseResponse } from "@/services/neo-api"
-import { IconCpu, IconRuler3 } from "@tabler/icons-react"
+import { IconCpu, IconRuler3, IconArrowsJoin } from "@tabler/icons-react"
 
 interface NeoInstanceCardProps {
     health: HealthResponse | null
@@ -38,11 +38,11 @@ export function NeoInstanceCard({ health, license, className }: NeoInstanceCardP
         <Card className={className}>
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                    <Server className="h-5 w-5" />
+                    <IconArrowsJoin className="h-5 w-5" />
                     Neo Instance
                 </CardTitle>
                 <CardDescription>
-                    System health, license status, and resource usage
+                    Health and resource information
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -55,18 +55,15 @@ export function NeoInstanceCard({ health, license, className }: NeoInstanceCardP
                         </div>
                         <div className="flex items-center gap-2">
                             <Badge
-                                variant={health?.status === "healthy" ? "default" : "destructive"}
+                                variant="outline"
                                 className={`${health?.status === "healthy"
-                                    ? "bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700"
-                                    : ""
+                                    ? "text-green-600 border-green-200 dark:text-green-400 dark:border-green-800"
+                                    : "text-destructive border-destructive/50"
                                     } text-xl px-3 py-1`}
                             >
                                 {healthStatus}
                             </Badge>
                         </div>
-                        <p className="text-xs text-muted-foreground">
-                            Last check: {health?.timestamp ? new Date(health.timestamp).toLocaleString() : "Unknown"}
-                        </p>
                     </div>
 
                     <div className="space-y-2">
@@ -88,9 +85,7 @@ export function NeoInstanceCard({ health, license, className }: NeoInstanceCardP
                                 {license?.details.days_remaining ?? "Unknown"} days
                             </Badge>
                         </div>
-                        <p className="text-xs text-muted-foreground">
-                            ID: {license?.details.connection_id ?? "Unknown"}
-                        </p>
+
                     </div>
                 </div>
 
