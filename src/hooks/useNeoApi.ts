@@ -829,7 +829,7 @@ export function useNeoApi() {
   )
 
 
-  const handleCreateDataset = useCallback((name: string, files: FileEntry[]) => {
+  const handleCreateDataset = useCallback(async (name: string, files: FileEntry[]) => {
     const newDataset: Dataset = {
       id: crypto.randomUUID(),
       name: name, // Assuming 'name' from parameters should be used
@@ -837,7 +837,6 @@ export function useNeoApi() {
       createdAt: new Date().toISOString(),
     }
     setDatasets((prev) => [...prev, newDataset])
-    return newDataset
   }, [])
 
   const handleDeleteDataset = useCallback((id: string) => {

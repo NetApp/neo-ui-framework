@@ -51,7 +51,9 @@ export function NeoSetupStatusCard({ status, className }: NeoSetupStatusCardProp
     const [isFetchingCredentials, setIsFetchingCredentials] = useState(false)
     const [credentialsInit, setCredentialsInit] = useState<{ username: string; password: string; message: string } | null>(null)
     const [isCredentialsDialogOpen, setIsCredentialsDialogOpen] = useState(false)
+    const [isExpiredDialogOpen, setIsExpiredDialogOpen] = useState(false)
 
+    // ... (reset handler code is unchanged)
     const handleReset = async () => {
         setIsResetting(true)
         setResetResult(null)
@@ -106,8 +108,12 @@ export function NeoSetupStatusCard({ status, className }: NeoSetupStatusCardProp
             const response = await handlers.getInitialCredentials()
             setCredentialsInit(response)
             setIsCredentialsDialogOpen(true)
-        } catch (error) {
+        } catch (error: any) {
             console.error("Failed to fetch initial credentials", error)
+            // Check for 403 Forbidden which indicates credentials have been used
+            if (error?.status === 403 || error?.response?.status === 403 || error?.message?.includes("403")) {
+                setIsExpiredDialogOpen(true)
+            }
         } finally {
             setIsFetchingCredentials(false)
         }
@@ -268,8 +274,8 @@ export function NeoSetupStatusCard({ status, className }: NeoSetupStatusCardProp
                                     <DialogContent>
                                         <DialogHeader>
                                             <DialogTitle>Initial Admin Credentials</DialogTitle>
-                                            <DialogDescription>
-                                                {credentialsInit?.message}
+                                            <DialogDescription className="text-red-500 font-medium">
+                                                Please change this password immediately after logging in. This endpoint will be disabled after first login.
                                             </DialogDescription>
                                         </DialogHeader>
                                         <div className="bg-slate-950 p-4 rounded-md font-mono text-sm space-y-2">
@@ -289,6 +295,25 @@ export function NeoSetupStatusCard({ status, className }: NeoSetupStatusCardProp
                                         </div>
                                         <DialogFooter>
                                             <Button onClick={() => setIsCredentialsDialogOpen(false)}>Close</Button>
+                                        </DialogFooter>
+                                    </DialogContent>
+                                </Dialog>
+
+                                <Dialog open={isExpiredDialogOpen} onOpenChange={setIsExpiredDialogOpen}>
+                                    <DialogContent>
+                                        <DialogHeader>
+                                            <DialogTitle className="flex items-center gap-2 text-destructive">
+                                                <AlertTriangle className="h-5 w-5" />
+                                                Credentials Expired
+                                            </DialogTitle>
+                                            <DialogDescription>
+                                                The initial admin credentials have already been used and cannot be recovered.
+                                                <br /><br />
+                                                If you have lost your password, you will need to perform a factory reset to restore access.
+                                            </DialogDescription>
+                                        </DialogHeader>
+                                        <DialogFooter>
+                                            <Button variant="outline" onClick={() => setIsExpiredDialogOpen(false)}>Close</Button>
                                         </DialogFooter>
                                     </DialogContent>
                                 </Dialog>
@@ -336,6 +361,6 @@ export function NeoSetupStatusCard({ status, className }: NeoSetupStatusCardProp
                     </div>
                 </div>
             </CardContent>
-        </Card>
+        </Card >
     )
 }
