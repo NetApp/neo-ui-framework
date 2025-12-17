@@ -66,6 +66,24 @@ const FILE_TYPE_ICONS: Record<string, React.ReactNode> = {
     txt: <IconFileText className="h-4 w-4 text-gray-500" />,
 }
 
+const renderSnippet = (snippet: string) => {
+    // Split by <b>...</b> tags. Capturing group ensures content is included in the array.
+    const parts = snippet.split(/<b>(.*?)<\/b>/g)
+
+    return parts.map((part, index) => {
+        // Odd indices are the captured content inside <b> tags
+        if (index % 2 === 1) {
+            return (
+                <b key={index} className="text-red-500 font-bold">
+                    {part}
+                </b>
+            )
+        }
+        // Even indices are plain text
+        return <span key={index}>{part}</span>
+    })
+}
+
 export default function ContentSearch({ shares, onContentSearch, onCreateDataset, version }: ContentSearchProps) {
     const [query, setQuery] = useState("")
     const [results, setResults] = useState<ContentSearchResponse | null>(null)
@@ -383,10 +401,9 @@ export default function ContentSearch({ shares, onContentSearch, onCreateDataset
                                                 </CardHeader>
                                                 {result.snippet && (
                                                     <CardContent>
-                                                        <div
-                                                            className="text-sm text-muted-foreground bg-muted/50 p-2 rounded-md font-mono whitespace-pre-wrap [&_b]:text-red-500 [&_b]:font-bold"
-                                                            dangerouslySetInnerHTML={{ __html: result.snippet }}
-                                                        />
+                                                        <div className="text-sm text-muted-foreground bg-muted/50 p-2 rounded-md font-mono whitespace-pre-wrap">
+                                                            {renderSnippet(result.snippet)}
+                                                        </div>
                                                     </CardContent>
                                                 )}
                                             </Card>
