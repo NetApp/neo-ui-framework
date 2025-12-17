@@ -48,6 +48,13 @@ import {
 } from "@/components/ui/dialog"
 
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+
+import {
   Input
 } from "@/components/ui/input"
 
@@ -194,10 +201,28 @@ export default function Users({ users, me, onAddUser, onChangePassword, onRefres
               />
             </div>
             <div className="mb-4 flex justify-end items-center">
-              <Button onClick={() => setAddDialogOpen(true)} disabled={!me?.is_admin}>
-                <IconPlus className="mr-2 size-4" />
-                Add user
-              </Button>
+              {me?.is_admin ? (
+                <Button onClick={() => setAddDialogOpen(true)}>
+                  <IconPlus className="mr-2 size-4" />
+                  Add user
+                </Button>
+              ) : (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span tabIndex={0}>
+                        <Button disabled>
+                          <IconPlus className="mr-2 size-4" />
+                          Add user
+                        </Button>
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Admin privileges required</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
             </div>
             {alertMessage ? (
               <Alert
