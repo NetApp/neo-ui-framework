@@ -824,7 +824,7 @@ export function useNeoApi() {
 
   const handleCreateDataset = useCallback((name: string, files: FileEntry[]) => {
     const newDataset: Dataset = {
-      id: Math.random().toString(36).substring(7),
+      id: crypto.randomUUID(),
       name: name, // Assuming 'name' from parameters should be used
       files: files, // Assuming 'files' from parameters should be used
       createdAt: new Date().toISOString(),
