@@ -5,7 +5,8 @@ import {
   useEffect,
   useMemo,
   useState,
-  useCallback
+  useCallback,
+  useRef
 } from "react"
 
 import {
@@ -134,10 +135,13 @@ export default function Files({
     [shares]
   )
 
+  const onSelectShareRef = useRef(onSelectShare)
+  onSelectShareRef.current = onSelectShare
+
   useEffect(() => {
     // Reset to "No selection" on mount to clear previous state
-    onSelectShare(null).catch(console.error)
-  }, [onSelectShare])
+    onSelectShareRef.current(null).catch(console.error)
+  }, [])
 
   useEffect(() => {
     if (!shares?.length) {
