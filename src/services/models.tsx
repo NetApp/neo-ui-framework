@@ -515,6 +515,8 @@ export interface ContentSearchResult {
   indexed_at: string
   relevance_score: number
   snippet?: string
+  created_at?: string
+  accessed_at?: string
 }
 
 export interface ContentSearchResponse {

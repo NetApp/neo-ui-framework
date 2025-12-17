@@ -155,9 +155,9 @@ export default function ContentSearch({ shares, onContentSearch, onCreateDataset
             unc_path: r.unc_path,
             filename: r.filename,
             size: r.size,
-            created_at: new Date().toISOString(), // Fallback as not returned by search
+            created_at: r.created_at || r.modified_time || new Date().toISOString(),
             modified_time: r.modified_time,
-            accessed_at: new Date().toISOString(), // Fallback as not returned by search
+            accessed_at: r.accessed_at || r.modified_time || new Date().toISOString(),
             is_directory: false,
             file_type: r.file_type,
             indexed_at: r.indexed_at,
