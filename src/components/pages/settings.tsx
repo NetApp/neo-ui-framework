@@ -52,6 +52,7 @@ import type { MonitoringOverviewResponse } from "@/services/neo-api"
 import { OverviewCard } from "@/components/cards/overview-card"
 import { useSearchParams } from "react-router-dom"
 import { useNeoApi } from "@/hooks/useNeoApi"
+import { NeoApiService } from "@/services/neo-api"
 import { Separator } from "@/components/ui/separator"
 
 interface SettingsProps {
@@ -82,6 +83,10 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
     const [credentialsInit, setCredentialsInit] = useState<{ username: string; password: string; message: string } | null>(null)
     const [isCredentialsDialogOpen, setIsCredentialsDialogOpen] = useState(false)
     const [isExpiredDialogOpen, setIsExpiredDialogOpen] = useState(false)
+    const [newPassword, setNewPassword] = useState("")
+    const [confirmPassword, setConfirmPassword] = useState("")
+    const [passwordError, setPasswordError] = useState<string | null>(null)
+    const [isUpdatingPassword, setIsUpdatingPassword] = useState(false)
 
     // Setup Tab State
     const [licenseKey, setLicenseKey] = useState("")
@@ -189,6 +194,44 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
             }
         } finally {
             setIsFetchingCredentials(false)
+        }
+    }
+
+    const handleUpdatePassword = async () => {
+        setPasswordError(null)
+        if (!newPassword || !confirmPassword) {
+            setPasswordError("Please enter both password fields.")
+            return
+        }
+        if (newPassword !== confirmPassword) {
+            setPasswordError("Passwords do not match.")
+            return
+        }
+        if (!credentialsInit?.username || !credentialsInit?.password) {
+            setPasswordError("Initial credentials not found.")
+            return
+        }
+
+        setIsUpdatingPassword(true)
+        try {
+            // We need to authenticate manually here because we are likely not logged in yet,
+            // or we are logged in with the wrong context. We want to use the JUST retrieved credentials.
+            const api = new NeoApiService()
+            const token = await api.authenticate(credentialsInit.username, credentialsInit.password)
+
+            await api.changeMyPassword(token, {
+                current_password: credentialsInit.password,
+                new_password: newPassword
+            })
+
+            setIsCredentialsDialogOpen(false)
+            setNewPassword("")
+            setConfirmPassword("")
+            toast.success("Password updated successfully. You can now log in.")
+        } catch (error: any) {
+            setPasswordError(error.message || "Failed to update password.")
+        } finally {
+            setIsUpdatingPassword(false)
         }
     }
 
@@ -678,8 +721,43 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
                                                                                     </div>
                                                                                 </div>
                                                                             </div>
+
+                                                                            <Separator className="my-4" />
+
+                                                                            <div className="space-y-4">
+                                                                                <div className="space-y-2">
+                                                                                    <Label htmlFor="new-password">New Password</Label>
+                                                                                    <Input
+                                                                                        id="new-password"
+                                                                                        type="password"
+                                                                                        value={newPassword}
+                                                                                        onChange={(e) => setNewPassword(e.target.value)}
+                                                                                        placeholder="Enter new password"
+                                                                                    />
+                                                                                </div>
+                                                                                <div className="space-y-2">
+                                                                                    <Label htmlFor="confirm-password">Confirm Password</Label>
+                                                                                    <Input
+                                                                                        id="confirm-password"
+                                                                                        type="password"
+                                                                                        value={confirmPassword}
+                                                                                        onChange={(e) => setConfirmPassword(e.target.value)}
+                                                                                        placeholder="Confirm new password"
+                                                                                    />
+                                                                                </div>
+                                                                                {passwordError && (
+                                                                                    <p className="text-sm text-destructive font-medium">{passwordError}</p>
+                                                                                )}
+                                                                                <Button
+                                                                                    className="w-full bg-green-600 hover:bg-green-700"
+                                                                                    onClick={handleUpdatePassword}
+                                                                                    disabled={isUpdatingPassword}
+                                                                                >
+                                                                                    {isUpdatingPassword ? "Updating Password..." : "Update Password"}
+                                                                                </Button>
+                                                                            </div>
                                                                             <DialogFooter>
-                                                                                <Button onClick={() => setIsCredentialsDialogOpen(false)}>Close</Button>
+                                                                                <Button onClick={() => setIsCredentialsDialogOpen(false)} variant="outline">Close</Button>
                                                                             </DialogFooter>
                                                                         </DialogContent>
                                                                     </Dialog>
@@ -724,7 +802,7 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
                                                                                     className="flex-1 bg-green-600 hover:bg-green-700"
                                                                                     disabled={isResetting || isCompleting}
                                                                                 >
-                                                                                    {isCompleting ? "Completing..." : "Setup Complete"}
+                                                                                    {isCompleting ? "Completing..." : "Setup Completed"}
                                                                                 </Button>
                                                                             </DialogTrigger>
                                                                             <DialogContent>
