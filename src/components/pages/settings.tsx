@@ -752,102 +752,106 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
                                     </div>
                                 </TabsContent>
                                 <TabsContent value="cache">
-                                    <Card>
-                                        <CardHeader>
-                                            <CardTitle>Cache Configuration</CardTitle>
-                                            <CardDescription>
-                                                Manage the performance and memory usage of the application cache.
-                                            </CardDescription>
-                                        </CardHeader>
-                                        <CardContent className="space-y-4">
-                                            <div className="grid gap-2">
-                                                <Label htmlFor="monitoring-ttl">Monitoring Data TTL (minutes)</Label>
-                                                <Input
-                                                    id="monitoring-ttl"
-                                                    type="number"
-                                                    min="1"
-                                                    value={localMonitoringTtl}
-                                                    onChange={(e) => setLocalMonitoringTtl(Number(e.target.value))}
-                                                />
-                                                <p className="text-sm text-muted-foreground">
-                                                    How long to keep monitoring data (tasks, workers, etc.) in memory.
-                                                </p>
-                                            </div>
+                                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
+                                        <Card className="col-span-1 lg:col-span-3">
+                                            <CardHeader>
+                                                <CardTitle>Cache Configuration</CardTitle>
+                                                <CardDescription>
+                                                    Manage the performance and memory usage of the application cache.
+                                                </CardDescription>
+                                            </CardHeader>
+                                            <CardContent className="space-y-4">
+                                                <div className="grid gap-2">
+                                                    <Label htmlFor="monitoring-ttl">Monitoring Data TTL (minutes)</Label>
+                                                    <Input
+                                                        id="monitoring-ttl"
+                                                        type="number"
+                                                        min="1"
+                                                        value={localMonitoringTtl}
+                                                        onChange={(e) => setLocalMonitoringTtl(Number(e.target.value))}
+                                                    />
+                                                    <p className="text-sm text-muted-foreground">
+                                                        How long to keep monitoring data (tasks, workers, etc.) in memory.
+                                                    </p>
+                                                </div>
 
-                                            <div className="grid gap-2">
-                                                <Label htmlFor="files-ttl">Files Data TTL (minutes)</Label>
-                                                <Input
-                                                    id="files-ttl"
-                                                    type="number"
-                                                    min="1"
-                                                    value={localFilesTtl}
-                                                    onChange={(e) => setLocalFilesTtl(Number(e.target.value))}
-                                                />
-                                                <p className="text-sm text-muted-foreground">
-                                                    How long to keep file lists and metadata in memory.
-                                                </p>
-                                            </div>
+                                                <div className="grid gap-2">
+                                                    <Label htmlFor="files-ttl">Files Data TTL (minutes)</Label>
+                                                    <Input
+                                                        id="files-ttl"
+                                                        type="number"
+                                                        min="1"
+                                                        value={localFilesTtl}
+                                                        onChange={(e) => setLocalFilesTtl(Number(e.target.value))}
+                                                    />
+                                                    <p className="text-sm text-muted-foreground">
+                                                        How long to keep file lists and metadata in memory.
+                                                    </p>
+                                                </div>
 
-                                            <div className="grid gap-2">
-                                                <Label htmlFor="cache-size">Max Cache Size (MB)</Label>
-                                                <Input
-                                                    id="cache-size"
-                                                    type="number"
-                                                    min="10"
-                                                    value={localCacheMaxSize}
-                                                    onChange={(e) => setLocalCacheMaxSize(Number(e.target.value))}
-                                                />
-                                                <p className="text-sm text-muted-foreground">
-                                                    Maximum approximate memory usage for the cache before eviction starts.
-                                                </p>
+                                                <div className="grid gap-2">
+                                                    <Label htmlFor="cache-size">Max Cache Size (MB)</Label>
+                                                    <Input
+                                                        id="cache-size"
+                                                        type="number"
+                                                        min="10"
+                                                        value={localCacheMaxSize}
+                                                        onChange={(e) => setLocalCacheMaxSize(Number(e.target.value))}
+                                                    />
+                                                    <p className="text-sm text-muted-foreground">
+                                                        Maximum approximate memory usage for the cache before eviction starts.
+                                                    </p>
+                                                </div>
+                                            </CardContent>
+                                            <div className="border-t p-6 flex justify-end">
+                                                <Button onClick={handleSave}>
+                                                    <Save className="mr-2 size-4" />
+                                                    Save Changes
+                                                </Button>
                                             </div>
-                                        </CardContent>
-                                        <div className="border-t p-6 flex justify-end">
-                                            <Button onClick={handleSave}>
-                                                <Save className="mr-2 size-4" />
-                                                Save Changes
-                                            </Button>
-                                        </div>
-                                    </Card>
+                                        </Card>
+                                    </div>
                                 </TabsContent>
                                 <TabsContent value="logging">
-                                    <Card>
-                                        <CardHeader>
-                                            <CardTitle>Logging Configuration</CardTitle>
-                                            <CardDescription>
-                                                Control the verbosity of application logs.
-                                            </CardDescription>
-                                        </CardHeader>
-                                        <CardContent className="space-y-4">
-                                            <div className="grid gap-2">
-                                                <Label htmlFor="log-level">Minimum Log Level</Label>
-                                                <Select
-                                                    value={localLogLevel}
-                                                    onValueChange={(value) => setLocalLogLevel(value as LogLevel)}
-                                                >
-                                                    <SelectTrigger id="log-level">
-                                                        <SelectValue placeholder="Select log level" />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem value="DEBUG">DEBUG (All logs)</SelectItem>
-                                                        <SelectItem value="INFO">INFO (Standard logs)</SelectItem>
-                                                        <SelectItem value="WARN">WARN (Warnings only)</SelectItem>
-                                                        <SelectItem value="ERROR">ERROR (Errors only)</SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                                <p className="text-sm text-muted-foreground">
-                                                    Set the minimum severity level for logs to be recorded and displayed.
-                                                    Higher levels reduce console noise and memory usage.
-                                                </p>
+                                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
+                                        <Card className="col-span-1 lg:col-span-3">
+                                            <CardHeader>
+                                                <CardTitle>Logging Configuration</CardTitle>
+                                                <CardDescription>
+                                                    Control the verbosity of application logs.
+                                                </CardDescription>
+                                            </CardHeader>
+                                            <CardContent className="space-y-4">
+                                                <div className="grid gap-2">
+                                                    <Label htmlFor="log-level">Minimum Log Level</Label>
+                                                    <Select
+                                                        value={localLogLevel}
+                                                        onValueChange={(value) => setLocalLogLevel(value as LogLevel)}
+                                                    >
+                                                        <SelectTrigger id="log-level">
+                                                            <SelectValue placeholder="Select log level" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="DEBUG">DEBUG (All logs)</SelectItem>
+                                                            <SelectItem value="INFO">INFO (Standard logs)</SelectItem>
+                                                            <SelectItem value="WARN">WARN (Warnings only)</SelectItem>
+                                                            <SelectItem value="ERROR">ERROR (Errors only)</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <p className="text-sm text-muted-foreground">
+                                                        Set the minimum severity level for logs to be recorded and displayed.
+                                                        Higher levels reduce console noise and memory usage.
+                                                    </p>
+                                                </div>
+                                            </CardContent>
+                                            <div className="border-t p-6 flex justify-end">
+                                                <Button onClick={handleSave}>
+                                                    <Save className="mr-2 size-4" />
+                                                    Save Changes
+                                                </Button>
                                             </div>
-                                        </CardContent>
-                                        <div className="border-t p-6 flex justify-end">
-                                            <Button onClick={handleSave}>
-                                                <Save className="mr-2 size-4" />
-                                                Save Changes
-                                            </Button>
-                                        </div>
-                                    </Card>
+                                        </Card>
+                                    </div>
                                 </TabsContent>
                             </Tabs>
                         </div>
