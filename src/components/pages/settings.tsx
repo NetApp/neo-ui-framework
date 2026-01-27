@@ -52,12 +52,10 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
     const [localLogLevel, setLocalLogLevel] = useState<LogLevel>(logLevel)
 
     // Setup Tab State
-    // Setup Tab State
     const [licenseKey, setLicenseKey] = useState("")
     const [licenseSaveResult, setLicenseSaveResult] = useState<{ success: boolean; message: string } | null>(null)
 
     // M365 Copilot Graph Setup State
-    const [m365Enabled, setM365Enabled] = useState(false)
     const [tenantId, setTenantId] = useState("your-tenant-id")
     const [clientId, setClientId] = useState("your-client-id")
     const [clientSecret, setClientSecret] = useState("your-client-secret")
@@ -67,14 +65,12 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
     const [graphSaveResult, setGraphSaveResult] = useState<{ success: boolean; message: string } | null>(null)
 
     // Proxy Setup State
-    const [proxyEnabled, setProxyEnabled] = useState(false)
     const [proxyUrl, setProxyUrl] = useState("")
     const [proxyUsername, setProxyUsername] = useState("")
     const [proxyPassword, setProxyPassword] = useState("")
     const [proxySaveResult, setProxySaveResult] = useState<{ success: boolean; message: string } | null>(null)
 
     // SSL Setup State
-    const [sslEnabled, setSslEnabled] = useState(false)
     const [verifySsl, setVerifySsl] = useState(true)
     const [sslTimeout, setSslTimeout] = useState(30)
     const [caCertificate, setCaCertificate] = useState("")
@@ -239,220 +235,199 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
 
                                                 {/* M365 Copilot Graph Setup */}
                                                 <div className="space-y-4">
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="space-y-1">
-                                                            <h4 className="text-sm font-medium">M365 Copilot Graph Setup (optional)</h4>
-                                                            <p className="text-sm text-muted-foreground">
-                                                                Configure settings for Microsoft 365 Copilot Graph integration.
-                                                            </p>
-                                                        </div>
-                                                        <Switch
-                                                            checked={m365Enabled}
-                                                            onCheckedChange={setM365Enabled}
-                                                        />
+                                                    <div className="space-y-1">
+                                                        <h4 className="text-sm font-medium">M365 Copilot Graph Setup (optional)</h4>
+                                                        <p className="text-sm text-muted-foreground">
+                                                            Configure settings for Microsoft 365 Copilot Graph integration.
+                                                        </p>
                                                     </div>
-                                                    {m365Enabled && (
-                                                        <div className="space-y-4 pt-4">
-                                                            {graphSaveResult && (
-                                                                <Alert variant={graphSaveResult.success ? "default" : "destructive"} className={graphSaveResult.success ? "border-green-500 text-green-600 dark:border-green-500 dark:text-green-500" : ""}>
-                                                                    {graphSaveResult.success ? <IconCheck className="h-4 w-4" /> : <IconAlertTriangle className="h-4 w-4" />}
-                                                                    <AlertTitle>{graphSaveResult.success ? "Success" : "Error"}</AlertTitle>
-                                                                    <AlertDescription>
-                                                                        {graphSaveResult.message}
-                                                                    </AlertDescription>
-                                                                </Alert>
-                                                            )}
-                                                            <div className="space-y-4">
-                                                                <h4 className="text-xs font-medium uppercase text-muted-foreground">Required Fields</h4>
-                                                                <div className="grid gap-4 md:grid-cols-3">
-                                                                    <div className="grid gap-2">
-                                                                        <Label htmlFor="tenant-id">Tenant ID</Label>
-                                                                        <Input
-                                                                            id="tenant-id"
-                                                                            value={tenantId}
-                                                                            onChange={(e) => setTenantId(e.target.value)}
-                                                                        />
-                                                                    </div>
-                                                                    <div className="grid gap-2">
-                                                                        <Label htmlFor="client-id">Client ID</Label>
-                                                                        <Input
-                                                                            id="client-id"
-                                                                            value={clientId}
-                                                                            onChange={(e) => setClientId(e.target.value)}
-                                                                        />
-                                                                    </div>
-                                                                    <div className="grid gap-2">
-                                                                        <Label htmlFor="client-secret">Client Secret</Label>
-                                                                        <Input
-                                                                            id="client-secret"
-                                                                            type="password"
-                                                                            value={clientSecret}
-                                                                            onChange={(e) => setClientSecret(e.target.value)}
-                                                                        />
-                                                                    </div>
-                                                                </div>
-                                                            </div>
 
-                                                            <div className="space-y-4">
-                                                                <h4 className="text-xs font-medium uppercase text-muted-foreground">Optional Fields</h4>
-                                                                <div className="grid gap-4 md:grid-cols-3">
-                                                                    <div className="grid gap-2">
-                                                                        <Label htmlFor="connector-id">Connector ID</Label>
-                                                                        <Input
-                                                                            id="connector-id"
-                                                                            value={connectorId}
-                                                                            onChange={(e) => setConnectorId(e.target.value)}
-                                                                        />
-                                                                    </div>
-                                                                    <div className="grid gap-2">
-                                                                        <Label htmlFor="connector-name">Connector Name</Label>
-                                                                        <Input
-                                                                            id="connector-name"
-                                                                            value={connectorName}
-                                                                            onChange={(e) => setConnectorName(e.target.value)}
-                                                                        />
-                                                                    </div>
-                                                                    <div className="grid gap-2">
-                                                                        <Label htmlFor="connector-description">Connector Description</Label>
-                                                                        <Input
-                                                                            id="connector-description"
-                                                                            value={connectorDescription}
-                                                                            onChange={(e) => setConnectorDescription(e.target.value)}
-                                                                        />
-                                                                    </div>
+                                                    <div className="space-y-4 pt-4">
+                                                        {graphSaveResult && (
+                                                            <Alert variant={graphSaveResult.success ? "default" : "destructive"} className={graphSaveResult.success ? "border-green-500 text-green-600 dark:border-green-500 dark:text-green-500" : ""}>
+                                                                {graphSaveResult.success ? <IconCheck className="h-4 w-4" /> : <IconAlertTriangle className="h-4 w-4" />}
+                                                                <AlertTitle>{graphSaveResult.success ? "Success" : "Error"}</AlertTitle>
+                                                                <AlertDescription>
+                                                                    {graphSaveResult.message}
+                                                                </AlertDescription>
+                                                            </Alert>
+                                                        )}
+                                                        <div className="space-y-4">
+                                                            <h4 className="text-xs font-medium uppercase text-muted-foreground">Required Fields</h4>
+                                                            <div className="grid gap-4 md:grid-cols-3">
+                                                                <div className="grid gap-2">
+                                                                    <Label htmlFor="tenant-id">Tenant ID</Label>
+                                                                    <Input
+                                                                        id="tenant-id"
+                                                                        value={tenantId}
+                                                                        onChange={(e) => setTenantId(e.target.value)}
+                                                                    />
                                                                 </div>
-                                                            </div>
-                                                            <div className="flex justify-end">
-                                                                <Button onClick={handleSaveGraph}>Save M365 Settings</Button>
+                                                                <div className="grid gap-2">
+                                                                    <Label htmlFor="client-id">Client ID</Label>
+                                                                    <Input
+                                                                        id="client-id"
+                                                                        value={clientId}
+                                                                        onChange={(e) => setClientId(e.target.value)}
+                                                                    />
+                                                                </div>
+                                                                <div className="grid gap-2">
+                                                                    <Label htmlFor="client-secret">Client Secret</Label>
+                                                                    <Input
+                                                                        id="client-secret"
+                                                                        type="password"
+                                                                        value={clientSecret}
+                                                                        onChange={(e) => setClientSecret(e.target.value)}
+                                                                    />
+                                                                </div>
                                                             </div>
                                                         </div>
-                                                    )}
+
+                                                        <div className="space-y-4">
+                                                            <h4 className="text-xs font-medium uppercase text-muted-foreground">Optional Fields</h4>
+                                                            <div className="grid gap-4 md:grid-cols-3">
+                                                                <div className="grid gap-2">
+                                                                    <Label htmlFor="connector-id">Connector ID</Label>
+                                                                    <Input
+                                                                        id="connector-id"
+                                                                        value={connectorId}
+                                                                        onChange={(e) => setConnectorId(e.target.value)}
+                                                                    />
+                                                                </div>
+                                                                <div className="grid gap-2">
+                                                                    <Label htmlFor="connector-name">Connector Name</Label>
+                                                                    <Input
+                                                                        id="connector-name"
+                                                                        value={connectorName}
+                                                                        onChange={(e) => setConnectorName(e.target.value)}
+                                                                    />
+                                                                </div>
+                                                                <div className="grid gap-2">
+                                                                    <Label htmlFor="connector-description">Connector Description</Label>
+                                                                    <Input
+                                                                        id="connector-description"
+                                                                        value={connectorDescription}
+                                                                        onChange={(e) => setConnectorDescription(e.target.value)}
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex justify-end">
+                                                            <Button onClick={handleSaveGraph}>Save M365 Settings</Button>
+                                                        </div>
+                                                    </div>
                                                 </div>
 
                                                 <Separator />
 
                                                 {/* Proxy Setup */}
                                                 <div className="space-y-4">
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="space-y-1">
-                                                            <h4 className="text-sm font-medium">Proxy Setup (optional)</h4>
-                                                            <p className="text-sm text-muted-foreground">
-                                                                Configure proxy settings for outbound connections.
-                                                            </p>
-                                                        </div>
-                                                        <Switch
-                                                            checked={proxyEnabled}
-                                                            onCheckedChange={setProxyEnabled}
-                                                        />
+                                                    <div className="space-y-1">
+                                                        <h4 className="text-sm font-medium">Proxy Setup (optional)</h4>
+                                                        <p className="text-sm text-muted-foreground">
+                                                            Configure proxy settings for outbound connections.
+                                                        </p>
                                                     </div>
-                                                    {proxyEnabled && (
-                                                        <div className="space-y-4 pt-4">
-                                                            {proxySaveResult && (
-                                                                <Alert variant={proxySaveResult.success ? "default" : "destructive"} className={proxySaveResult.success ? "border-green-500 text-green-600 dark:border-green-500 dark:text-green-500" : ""}>
-                                                                    {proxySaveResult.success ? <IconCheck className="h-4 w-4" /> : <IconAlertTriangle className="h-4 w-4" />}
-                                                                    <AlertTitle>{proxySaveResult.success ? "Success" : "Error"}</AlertTitle>
-                                                                    <AlertDescription>
-                                                                        {proxySaveResult.message}
-                                                                    </AlertDescription>
-                                                                </Alert>
-                                                            )}
-                                                            <div className="grid gap-4 md:grid-cols-2">
-                                                                <div className="grid gap-2">
-                                                                    <Label htmlFor="proxy-url">Proxy URL</Label>
-                                                                    <Input
-                                                                        id="proxy-url"
-                                                                        value={proxyUrl}
-                                                                        onChange={(e) => setProxyUrl(e.target.value)}
-                                                                        placeholder="http://proxy.example.com:8080"
-                                                                    />
-                                                                </div>
-                                                                <div className="grid gap-2">
-                                                                    <Label htmlFor="proxy-username">Username (Optional)</Label>
-                                                                    <Input
-                                                                        id="proxy-username"
-                                                                        value={proxyUsername}
-                                                                        onChange={(e) => setProxyUsername(e.target.value)}
-                                                                    />
-                                                                </div>
-                                                                <div className="grid gap-2">
-                                                                    <Label htmlFor="proxy-password">Password (Optional)</Label>
-                                                                    <Input
-                                                                        id="proxy-password"
-                                                                        type="password"
-                                                                        value={proxyPassword}
-                                                                        onChange={(e) => setProxyPassword(e.target.value)}
-                                                                    />
-                                                                </div>
+
+                                                    <div className="space-y-4 pt-4">
+                                                        {proxySaveResult && (
+                                                            <Alert variant={proxySaveResult.success ? "default" : "destructive"} className={proxySaveResult.success ? "border-green-500 text-green-600 dark:border-green-500 dark:text-green-500" : ""}>
+                                                                {proxySaveResult.success ? <IconCheck className="h-4 w-4" /> : <IconAlertTriangle className="h-4 w-4" />}
+                                                                <AlertTitle>{proxySaveResult.success ? "Success" : "Error"}</AlertTitle>
+                                                                <AlertDescription>
+                                                                    {proxySaveResult.message}
+                                                                </AlertDescription>
+                                                            </Alert>
+                                                        )}
+                                                        <div className="grid gap-4 md:grid-cols-2">
+                                                            <div className="grid gap-2">
+                                                                <Label htmlFor="proxy-url">Proxy URL</Label>
+                                                                <Input
+                                                                    id="proxy-url"
+                                                                    value={proxyUrl}
+                                                                    onChange={(e) => setProxyUrl(e.target.value)}
+                                                                    placeholder="http://proxy.example.com:8080"
+                                                                />
                                                             </div>
-                                                            <div className="flex justify-end">
-                                                                <Button onClick={handleSaveProxy}>Save Proxy Settings</Button>
+                                                            <div className="grid gap-2">
+                                                                <Label htmlFor="proxy-username">Username (Optional)</Label>
+                                                                <Input
+                                                                    id="proxy-username"
+                                                                    value={proxyUsername}
+                                                                    onChange={(e) => setProxyUsername(e.target.value)}
+                                                                />
+                                                            </div>
+                                                            <div className="grid gap-2">
+                                                                <Label htmlFor="proxy-password">Password (Optional)</Label>
+                                                                <Input
+                                                                    id="proxy-password"
+                                                                    type="password"
+                                                                    value={proxyPassword}
+                                                                    onChange={(e) => setProxyPassword(e.target.value)}
+                                                                />
                                                             </div>
                                                         </div>
-                                                    )}
+                                                        <div className="flex justify-end">
+                                                            <Button onClick={handleSaveProxy}>Save Proxy Settings</Button>
+                                                        </div>
+                                                    </div>
                                                 </div>
 
                                                 <Separator />
 
                                                 {/* SSL Setup */}
                                                 <div className="space-y-4">
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="space-y-1">
-                                                            <h4 className="text-sm font-medium">SSL Setup (optional)</h4>
-                                                            <p className="text-sm text-muted-foreground">
-                                                                Configure SSL/TLS settings for secure connections.
-                                                            </p>
-                                                        </div>
-                                                        <Switch
-                                                            checked={sslEnabled}
-                                                            onCheckedChange={setSslEnabled}
-                                                        />
+                                                    <div className="space-y-1">
+                                                        <h4 className="text-sm font-medium">SSL Setup (optional)</h4>
+                                                        <p className="text-sm text-muted-foreground">
+                                                            Configure SSL/TLS settings for secure connections.
+                                                        </p>
                                                     </div>
-                                                    {sslEnabled && (
-                                                        <div className="space-y-4 pt-4">
-                                                            {sslSaveResult && (
-                                                                <Alert variant={sslSaveResult.success ? "default" : "destructive"} className={sslSaveResult.success ? "border-green-500 text-green-600 dark:border-green-500 dark:text-green-500" : ""}>
-                                                                    {sslSaveResult.success ? <IconCheck className="h-4 w-4" /> : <IconAlertTriangle className="h-4 w-4" />}
-                                                                    <AlertTitle>{sslSaveResult.success ? "Success" : "Error"}</AlertTitle>
-                                                                    <AlertDescription>
-                                                                        {sslSaveResult.message}
-                                                                    </AlertDescription>
-                                                                </Alert>
-                                                            )}
-                                                            <div className="flex items-center space-x-2">
-                                                                <Switch
-                                                                    id="verify-ssl"
-                                                                    checked={verifySsl}
-                                                                    onCheckedChange={setVerifySsl}
-                                                                />
-                                                                <Label htmlFor="verify-ssl">Verify SSL Certificates</Label>
-                                                            </div>
 
-                                                            <div className="grid gap-2">
-                                                                <Label htmlFor="ssl-timeout">Timeout (seconds)</Label>
-                                                                <Input
-                                                                    id="ssl-timeout"
-                                                                    type="number"
-                                                                    min="1"
-                                                                    value={sslTimeout}
-                                                                    onChange={(e) => setSslTimeout(Number(e.target.value))}
-                                                                />
-                                                            </div>
-
-                                                            <div className="grid gap-2">
-                                                                <Label htmlFor="ca-certificate">CA Certificate</Label>
-                                                                <Textarea
-                                                                    id="ca-certificate"
-                                                                    value={caCertificate}
-                                                                    onChange={(e) => setCaCertificate(e.target.value)}
-                                                                    placeholder="-----BEGIN CERTIFICATE-----..."
-                                                                    className="min-h-[100px] font-mono text-xs"
-                                                                />
-                                                            </div>
-                                                            <div className="flex justify-end">
-                                                                <Button onClick={handleSaveSSL}>Save SSL Settings</Button>
-                                                            </div>
+                                                    <div className="space-y-4 pt-4">
+                                                        {sslSaveResult && (
+                                                            <Alert variant={sslSaveResult.success ? "default" : "destructive"} className={sslSaveResult.success ? "border-green-500 text-green-600 dark:border-green-500 dark:text-green-500" : ""}>
+                                                                {sslSaveResult.success ? <IconCheck className="h-4 w-4" /> : <IconAlertTriangle className="h-4 w-4" />}
+                                                                <AlertTitle>{sslSaveResult.success ? "Success" : "Error"}</AlertTitle>
+                                                                <AlertDescription>
+                                                                    {sslSaveResult.message}
+                                                                </AlertDescription>
+                                                            </Alert>
+                                                        )}
+                                                        <div className="flex items-center space-x-2">
+                                                            <Switch
+                                                                id="verify-ssl"
+                                                                checked={verifySsl}
+                                                                onCheckedChange={setVerifySsl}
+                                                            />
+                                                            <Label htmlFor="verify-ssl">Verify SSL Certificates</Label>
                                                         </div>
-                                                    )}
+
+                                                        <div className="grid gap-2">
+                                                            <Label htmlFor="ssl-timeout">Timeout (seconds)</Label>
+                                                            <Input
+                                                                id="ssl-timeout"
+                                                                type="number"
+                                                                min="1"
+                                                                value={sslTimeout}
+                                                                onChange={(e) => setSslTimeout(Number(e.target.value))}
+                                                            />
+                                                        </div>
+
+                                                        <div className="grid gap-2">
+                                                            <Label htmlFor="ca-certificate">CA Certificate</Label>
+                                                            <Textarea
+                                                                id="ca-certificate"
+                                                                value={caCertificate}
+                                                                onChange={(e) => setCaCertificate(e.target.value)}
+                                                                placeholder="-----BEGIN CERTIFICATE-----..."
+                                                                className="min-h-[100px] font-mono text-xs"
+                                                            />
+                                                        </div>
+                                                        <div className="flex justify-end">
+                                                            <Button onClick={handleSaveSSL}>Save SSL Settings</Button>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </CardContent>
                                         </Card>
@@ -558,9 +533,9 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
                                 </TabsContent>
                             </Tabs>
                         </div>
-                    </div>
-                </div>
-            </div>
+                    </div >
+                </div >
+            </div >
         </div >
     )
 }
