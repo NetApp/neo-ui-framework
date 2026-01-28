@@ -1,7 +1,7 @@
 // Copyright 2025 NetApp, Inc. All Rights Reserved.
-"use client"
-
 import { useEffect, useState, useCallback } from "react"
+import { useNeoApi } from "@/hooks/useNeoApi"
+import { SetupWizardDialog } from "@/components/dialogs/setup-wizard-dialog"
 import {
     MonitoringChart
 } from "@/components/data-tables/monitoringT"
@@ -70,8 +70,18 @@ export default function Monitoring({
     version,
     helmChartVersion,
 }: MonitoringProps) {
+    const { state } = useNeoApi()
     const [alertMessage, setAlertMessage] = useState<string | null>(null)
     const [alertVariant, setAlertVariant] = useState<"success" | "error">("success")
+    const [isWizardOpen, setIsWizardOpen] = useState(false)
+
+    // Check for "Neo Core not Configured" state
+    useEffect(() => {
+        // If setup is not complete, open the wizard
+        if (state.setupStatus && !state.setupStatus.setup_complete) {
+            setIsWizardOpen(true)
+        }
+    }, [state.setupStatus])
 
     const handleFetchMonitoring = useCallback(async (force?: boolean) => {
         try {
@@ -102,6 +112,11 @@ export default function Monitoring({
 
     return (
         <div className="flex flex-1 flex-col">
+            <SetupWizardDialog
+                open={isWizardOpen}
+                onOpenChange={setIsWizardOpen}
+                onComplete={() => setIsWizardOpen(false)}
+            />
             <div className="@container/main flex flex-1 flex-col gap-2">
                 <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
                     <div className="px-4 lg:px-6">
