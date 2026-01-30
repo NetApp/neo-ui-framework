@@ -20,8 +20,6 @@ const MyDatasets = React.lazy(() => import("@/components/pages/my-datasets"))
 const ContentSearch = React.lazy(() => import("@/components/pages/content-search"))
 const DatasetPage = React.lazy(() => import("@/components/pages/dataset-page"))
 
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { IconAlertCircle } from "@tabler/icons-react"
 
 import LoginPage from "@/components/pages/login-page"
 import { useNeoApi } from "@/hooks/useNeoApi"
@@ -68,17 +66,6 @@ function App() {
               isConnected={!!state.token}
               cacheStats={state.cacheStats}
             />
-            {state.setupStatus?.setup_complete === false && (
-              <div className="px-4 pt-4 lg:px-6 lg:pt-6">
-                <Alert variant="destructive">
-                  <IconAlertCircle className="h-4 w-4" />
-                  <AlertTitle>Neo Core not Configured</AlertTitle>
-                  <AlertDescription>
-                    Go to the tab Neo Core in the page Settings to set up the connector.
-                  </AlertDescription>
-                </Alert>
-              </div>
-            )}
             <Routes>
               <Route
                 path="/"
