@@ -25,6 +25,7 @@ import { IconAlertCircle } from "@tabler/icons-react"
 
 import LoginPage from "@/components/pages/login-page"
 import { useNeoApi } from "@/hooks/useNeoApi"
+import { SetupWizardDialog } from "@/components/dialogs/setup-wizard-dialog"
 
 function App() {
   const { state, handlers } = useNeoApi()
@@ -33,6 +34,11 @@ function App() {
     return (
       <ThemeProvider>
         <LoginPage onConnect={handlers.handleConnect} />
+        <SetupWizardDialog
+          open={state.setupStatus?.setup_complete === false}
+          onOpenChange={() => { }} // Controlled by state
+          onComplete={() => window.location.reload()}
+        />
       </ThemeProvider>
     )
   }
