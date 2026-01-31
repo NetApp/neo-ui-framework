@@ -1,5 +1,6 @@
 // Copyright 2025 NetApp, Inc. All Rights Reserved.
-import { useState, useCallback } from "react"
+import { useState, useCallback, useEffect } from "react"
+import { useSettings } from "@/context/settings-context"
 import type {
     SharesResponse,
     ContentSearchRequest,
@@ -18,7 +19,8 @@ import {
     IconClock,
     IconDatabase,
     IconPlus,
-    IconAlertCircle
+    IconAlertCircle,
+    IconFileAnalytics
 } from "@tabler/icons-react"
 
 import {
@@ -48,6 +50,7 @@ import {
 } from "@/components/ui/alert"
 import { toast } from "sonner"
 import { CreateDatasetDialog } from "@/components/dialogs/create-dataset-dialog"
+import { SummarizeDialog } from "@/components/dialogs/summarize-dialog"
 
 interface ContentSearchProps {
     shares: SharesResponse[] | null
@@ -91,6 +94,42 @@ export default function ContentSearch({ shares, onContentSearch, onCreateDataset
     const [filtersOpen, setFiltersOpen] = useState(false)
     const [createDatasetDialogOpen, setCreateDatasetDialogOpen] = useState(false)
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+
+    const [summarizeDialogOpen, setSummarizeDialogOpen] = useState(false)
+    const [selectedFileForSummary, setSelectedFileForSummary] = useState<{ id: string, shareId: string, filename: string } | null>(null)
+    const [llmAvailable, setLlmAvailable] = useState(false)
+
+    const { llmHost, llmPort } = useSettings()
+
+    // Check LLM Availability
+    useEffect(() => {
+        const checkLlm = async () => {
+            try {
+                // Short timeout for the check
+                const controller = new AbortController()
+                const timeoutId = setTimeout(() => controller.abort(), 2000)
+
+                const baseUrl = `http://${llmHost}:${llmPort}`
+                // Using /v1/models is standard for checking availability on OpenAI-compatible servers
+                const response = await fetch(`${baseUrl}/v1/models`, {
+                    method: 'GET',
+                    signal: controller.signal
+                })
+
+                clearTimeout(timeoutId)
+
+                if (response.ok) {
+                    setLlmAvailable(true)
+                } else {
+                    setLlmAvailable(false)
+                }
+            } catch (error) {
+                setLlmAvailable(false)
+            }
+        }
+
+        checkLlm()
+    }, [llmHost, llmPort])
 
     // Filters
     const [selectedShare, setSelectedShare] = useState<string>("all")
@@ -177,6 +216,11 @@ export default function ContentSearch({ shares, onContentSearch, onCreateDataset
             newSelected.add(id)
         }
         setSelectedIds(newSelected)
+    }
+
+    const handleSummarize = (file: { id: string, shareId: string, filename: string }) => {
+        setSelectedFileForSummary(file)
+        setSummarizeDialogOpen(true)
     }
 
     return (
@@ -373,9 +417,32 @@ export default function ContentSearch({ shares, onContentSearch, onCreateDataset
                                                             />
                                                             <div className="flex items-center gap-2">
                                                                 {FILE_TYPE_ICONS[result.file_type] || <IconFileText className="h-4 w-4 text-gray-500" />}
-                                                                <CardTitle className="text-base font-medium truncate" title={result.filename}>
-                                                                    {result.filename}
-                                                                </CardTitle>
+                                                                <div className="flex flex-col">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <CardTitle className="text-base font-medium truncate" title={result.filename}>
+                                                                            {result.filename}
+                                                                        </CardTitle>
+                                                                        {llmAvailable && (
+                                                                            <Button
+                                                                                variant="outline"
+                                                                                size="sm"
+                                                                                className="h-7 text-xs gap-1 ml-2"
+                                                                                title="Summarize document with AI"
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation()
+                                                                                    handleSummarize({
+                                                                                        id: result.id,
+                                                                                        shareId: result.share_id,
+                                                                                        filename: result.filename
+                                                                                    })
+                                                                                }}
+                                                                            >
+                                                                                <IconFileAnalytics className="h-3 w-3" />
+                                                                                Summarize with AI
+                                                                            </Button>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                         <Badge variant={result.relevance_score > 0.5 ? "default" : "secondary"}>
@@ -419,6 +486,16 @@ export default function ContentSearch({ shares, onContentSearch, onCreateDataset
                         onOpenChange={setCreateDatasetDialogOpen}
                         onSave={handleCreateDataset}
                     />
+
+                    {selectedFileForSummary && (
+                        <SummarizeDialog
+                            open={summarizeDialogOpen}
+                            onOpenChange={setSummarizeDialogOpen}
+                            fileId={selectedFileForSummary.id}
+                            shareId={selectedFileForSummary.shareId}
+                            filename={selectedFileForSummary.filename}
+                        />
+                    )}
                 </div>
             </div>
         </div>

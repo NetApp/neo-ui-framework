@@ -10,6 +10,8 @@ interface SettingsContextType {
     filesTtl: number
     cacheMaxSize: number
     logLevel: LogLevel
+    llmHost: string
+    llmPort: number
     updateSettings: (settings: Partial<SettingsState>) => void
 }
 
@@ -18,6 +20,8 @@ interface SettingsState {
     filesTtl: number
     cacheMaxSize: number
     logLevel: LogLevel
+    llmHost: string
+    llmPort: number
 }
 
 const DEFAULT_SETTINGS: SettingsState = {
@@ -25,6 +29,8 @@ const DEFAULT_SETTINGS: SettingsState = {
     filesTtl: 10, // minutes
     cacheMaxSize: 100, // MB
     logLevel: "INFO",
+    llmHost: "localhost",
+    llmPort: 8000,
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined)
@@ -75,6 +81,8 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
                 filesTtl: settings.filesTtl,
                 cacheMaxSize: settings.cacheMaxSize,
                 logLevel: settings.logLevel,
+                llmHost: settings.llmHost,
+                llmPort: settings.llmPort,
                 updateSettings,
             }}
         >

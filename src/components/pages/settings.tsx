@@ -10,7 +10,8 @@ import {
     Activity,
     ListChecks,
     CheckCircle2,
-    AlertTriangle
+    AlertTriangle,
+    Brain
 } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useSettings } from "@/context/settings-context"
@@ -64,7 +65,7 @@ interface SettingsProps {
 }
 
 export default function Settings({ monitoringOverview }: SettingsProps) {
-    const { monitoringTtl, filesTtl, cacheMaxSize, logLevel, updateSettings } = useSettings()
+    const { monitoringTtl, filesTtl, cacheMaxSize, logLevel, llmHost, llmPort, updateSettings } = useSettings()
     const { state, handlers } = useNeoApi()
     const [searchParams, setSearchParams] = useSearchParams()
 
@@ -72,6 +73,8 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
     const [localFilesTtl, setLocalFilesTtl] = useState(filesTtl)
     const [localCacheMaxSize, setLocalCacheMaxSize] = useState(cacheMaxSize)
     const [localLogLevel, setLocalLogLevel] = useState<LogLevel>(logLevel)
+    const [localLlmHost, setLocalLlmHost] = useState(llmHost)
+    const [localLlmPort, setLocalLlmPort] = useState(llmPort)
 
     // Setup Status State
     const [isResetting, setIsResetting] = useState(false)
@@ -119,7 +122,9 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
         setLocalFilesTtl(filesTtl)
         setLocalCacheMaxSize(cacheMaxSize)
         setLocalLogLevel(logLevel)
-    }, [monitoringTtl, filesTtl, cacheMaxSize, logLevel])
+        setLocalLlmHost(llmHost)
+        setLocalLlmPort(llmPort)
+    }, [monitoringTtl, filesTtl, cacheMaxSize, logLevel, llmHost, llmPort])
 
     const handleSave = () => {
         updateSettings({
@@ -127,6 +132,8 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
             filesTtl: Number(localFilesTtl),
             cacheMaxSize: Number(localCacheMaxSize),
             logLevel: localLogLevel,
+            llmHost: localLlmHost,
+            llmPort: Number(localLlmPort),
         })
         toast.success("Settings saved successfully")
     }
@@ -334,6 +341,7 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
                                     <TabsTrigger value="neo-core">Neo Core Setup</TabsTrigger>
                                     <TabsTrigger value="cache">Cache Configuration</TabsTrigger>
                                     <TabsTrigger value="logging">Logging Configuration</TabsTrigger>
+                                    <TabsTrigger value="llm">LLM</TabsTrigger>
                                 </TabsList>
                                 <TabsContent value="neo-core">
                                     <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
@@ -928,6 +936,51 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
                                                     Save Changes
                                                 </Button>
                                             </div>
+                                        </Card>
+                                    </div>
+                                </TabsContent>
+
+                                <TabsContent value="llm">
+                                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
+                                        <Card className="col-span-1 lg:col-span-3">
+                                            <CardHeader>
+                                                <CardTitle className="flex items-center gap-2">
+                                                    <Brain className="h-5 w-5" />
+                                                    LLM Configuration
+                                                </CardTitle>
+                                                <CardDescription>
+                                                    Configure the host and port for the local LLM service (e.g. llama.cpp).
+                                                </CardDescription>
+                                            </CardHeader>
+                                            <CardContent className="space-y-4">
+                                                <div className="grid gap-4 md:grid-cols-2">
+                                                    <div className="space-y-2">
+                                                        <Label htmlFor="llm-host">Host</Label>
+                                                        <Input
+                                                            id="llm-host"
+                                                            value={localLlmHost}
+                                                            onChange={(e) => setLocalLlmHost(e.target.value)}
+                                                            placeholder="localhost"
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <Label htmlFor="llm-port">Port</Label>
+                                                        <Input
+                                                            id="llm-port"
+                                                            type="number"
+                                                            value={localLlmPort}
+                                                            onChange={(e) => setLocalLlmPort(Number(e.target.value))}
+                                                            placeholder="8000"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div className="flex justify-end pt-4">
+                                                    <Button onClick={handleSave} className="flex items-center gap-2">
+                                                        <Save className="h-4 w-4" />
+                                                        Save Settings
+                                                    </Button>
+                                                </div>
+                                            </CardContent>
                                         </Card>
                                     </div>
                                 </TabsContent>
