@@ -135,7 +135,7 @@ export function SummarizeDialog({ open, onOpenChange, fileId, shareId, filename 
             const apiMessages = [
                 {
                     role: "system",
-                    content: `You are a helpful assistant. You must answer questions based ONLY on the following document content. If the answer is not in the document, say so.\n\nDOCUMENT CONTENT:\n${content}\n\nEND OF DOCUMENT CONTENT`
+                    content: `You are a search engine. Identify the unique 5-10 word starting phrase of the most relevant section in the text. Output ONLY that phrase. If the answer is not in the document, say so.\n\nDOCUMENT CONTENT:\n${content}\n\nEND OF DOCUMENT CONTENT`
                 },
                 ...newHistory.map(m => ({ role: m.role, content: m.content }))
             ]
