@@ -1,6 +1,8 @@
 // Copyright 2025 NetApp, Inc. All Rights Reserved.
 "use client"
 
+import { useEffect, useState } from "react"
+
 import {
     GitBranch,
     Box
@@ -30,6 +32,32 @@ export function VersioningCard({ version, helmChartVersion, className }: Version
         : "Unknown"
     const latestAppVersion = helmChartVersion?.app_version ?? "Checking..."
     const latestChartVersion = helmChartVersion?.chart_version ?? "Checking..."
+    const [latestUiVersion, setLatestUiVersion] = useState<string>("Checking...")
+
+    useEffect(() => {
+        const fetchLatestVersion = async () => {
+            try {
+                const controller = new AbortController()
+                const timeoutId = setTimeout(() => controller.abort(), 10000) // 10s timeout
+
+                const response = await fetch("https://api.github.com/repos/NetApp/neo-ui-framework/releases/latest", {
+                    signal: controller.signal
+                })
+                clearTimeout(timeoutId)
+
+                if (response.ok) {
+                    const data = await response.json()
+                    setLatestUiVersion(data.tag_name || "n/a")
+                } else {
+                    setLatestUiVersion("n/a")
+                }
+            } catch (error) {
+                setLatestUiVersion("n/a")
+            }
+        }
+
+        fetchLatestVersion()
+    }, [])
 
     return (
         <Card className={className}>
@@ -120,7 +148,7 @@ export function VersioningCard({ version, helmChartVersion, className }: Version
                                 <span>UI Framework</span>
                             </div>
                             <span className="font-mono bg-muted px-2 py-0.5 rounded text-xs text-muted-foreground">
-                                Checking...
+                                {latestUiVersion}
                             </span>
                         </div>
                     </div>

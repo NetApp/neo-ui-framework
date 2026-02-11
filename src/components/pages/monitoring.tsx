@@ -1,6 +1,4 @@
 // Copyright 2025 NetApp, Inc. All Rights Reserved.
-"use client"
-
 import { useEffect, useState, useCallback } from "react"
 import {
     MonitoringChart
@@ -70,6 +68,7 @@ export default function Monitoring({
     version,
     helmChartVersion,
 }: MonitoringProps) {
+    // const { state } = useNeoApi()
     const [alertMessage, setAlertMessage] = useState<string | null>(null)
     const [alertVariant, setAlertVariant] = useState<"success" | "error">("success")
 

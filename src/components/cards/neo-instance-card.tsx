@@ -51,7 +51,7 @@ export function NeoInstanceCard({ health, license, className }: NeoInstanceCardP
                     <div className="space-y-2">
                         <div className="flex items-center gap-2">
                             <Activity className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm font-medium">System Status</span>
+                            <span className="text-sm font-medium">Status</span>
                         </div>
                         <div className="flex items-center gap-2">
                             <Badge
@@ -59,7 +59,7 @@ export function NeoInstanceCard({ health, license, className }: NeoInstanceCardP
                                 className={`${health?.status === "healthy"
                                     ? "text-green-600 border-green-200 dark:text-green-400 dark:border-green-800"
                                     : "text-destructive border-destructive/50"
-                                    } text-xl px-3 py-1`}
+                                    }`}
                             >
                                 {healthStatus}
                             </Badge>
@@ -78,9 +78,8 @@ export function NeoInstanceCard({ health, license, className }: NeoInstanceCardP
                                     const days = license?.details.days_remaining
                                     if (typeof days !== 'number') return ""
                                     if (days < 10) return "text-destructive border-destructive/50"
-                                    if (days < 90) return "text-orange-600 border-orange-200 dark:text-orange-400 dark:border-orange-800"
                                     return "text-green-600 border-green-200 dark:text-green-400 dark:border-green-800"
-                                })()} text-xl px-3 py-1`}
+                                })()}`}
                             >
                                 {license?.details.days_remaining ?? "Unknown"} days
                             </Badge>
@@ -100,17 +99,17 @@ export function NeoInstanceCard({ health, license, className }: NeoInstanceCardP
                     <div className="grid grid-cols-3 gap-4">
                         <div className="rounded-lg border p-3 text-center">
                             <IconCpu className="mx-auto mb-1 h-5 w-5 text-muted-foreground" />
-                            <p className="text-xl font-bold">{health?.metrics?.cpu_percent?.toFixed(1) ?? "0.0"}%</p>
+                            <p className="text-sm font-bold">{health?.metrics?.cpu_percent?.toFixed(1) ?? "0.0"}%</p>
                             <p className="text-xs text-muted-foreground">CPU</p>
                         </div>
                         <div className="rounded-lg border p-3 text-center">
                             <IconRuler3 className="mx-auto mb-1 h-5 w-5 text-muted-foreground" />
-                            <p className="text-xl font-bold">{health?.metrics?.memory_percent?.toFixed(1) ?? "0.0"}%</p>
+                            <p className="text-sm font-bold">{health?.metrics?.memory_percent?.toFixed(1) ?? "0.0"}%</p>
                             <p className="text-xs text-muted-foreground">Memory</p>
                         </div>
                         <div className="rounded-lg border p-3 text-center">
                             <HardDrive className="mx-auto mb-1 h-5 w-5 text-muted-foreground" />
-                            <p className="text-xl font-bold">{health?.metrics?.disk_percent?.toFixed(1) ?? "0.0"}%</p>
+                            <p className="text-sm font-bold">{health?.metrics?.disk_percent?.toFixed(1) ?? "0.0"}%</p>
                             <p className="text-xs text-muted-foreground">Disk</p>
                         </div>
                     </div>

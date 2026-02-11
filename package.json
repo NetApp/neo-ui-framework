@@ -1,7 +1,7 @@
 {
   "name": "neo-ui-framework",
   "private": true,
-  "version": "3.1.0",
+  "version": "3.2.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -64,6 +64,7 @@
     "@types/react": "^19.1.16",
     "@types/react-dom": "^19.1.9",
     "@vitejs/plugin-react": "^5.0.4",
+    "baseline-browser-mapping": "^2.9.18",
     "eslint": "^9.36.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.22",
