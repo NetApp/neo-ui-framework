@@ -63,6 +63,7 @@ export default function LoginPage({ onConnect }: LoginPageProps) {
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 required
+                                autoComplete="username"
                                 className="border-neutral-800 bg-neutral-950 text-neutral-50 placeholder:text-neutral-500 focus-visible:ring-neutral-700"
                             />
                         </div>
@@ -76,6 +77,7 @@ export default function LoginPage({ onConnect }: LoginPageProps) {
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 required
+                                autoComplete="current-password"
                                 className="border-neutral-800 bg-neutral-950 text-neutral-50 focus-visible:ring-neutral-700"
                             />
                         </div>

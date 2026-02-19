@@ -18,7 +18,7 @@ services:
     restart: unless-stopped
 
   netapp-neo:
-    image: ghcr.io/netapp/netapp-copilot-connector:2.2.6
+    image: ghcr.io/netapp/netapp-copilot-connector:3.2.4
     user: "1000:1000"
     cap_add:
       - SYS_ADMIN
@@ -33,23 +33,13 @@ services:
     env_file:
       - .env
     environment:
-      - UID=8000
-      - GID=8000
       - PORT=8080
-      - PYTHONUNBUFFERED=1
-      - DB_PATH=data/database.db
-      - MS_GRAPH_CLIENT_ID=${MS_GRAPH_CLIENT_ID}
-      - MS_GRAPH_CLIENT_SECRET=${MS_GRAPH_CLIENT_SECRET}
-      - MS_GRAPH_TENANT_ID=${MS_GRAPH_TENANT_ID}
-      - MS_GRAPH_CONNECTOR_ID=${MS_GRAPH_CONNECTOR_ID:-netappcopilot}
-      - MS_GRAPH_CONNECTOR_NAME=${MS_GRAPH_CONNECTOR_NAME:-"NetApp Connector"}
-      - NETAPP_CONNECTOR_LICENSE=${NETAPP_CONNECTOR_LICENSE}
     volumes:
       - neo-226:/app/data
     restart: unless-stopped
 
   netapp-neo-ui:
-    image: ghcr.io/netapp/neo-ui-framework:2.2.6
+    image: ghcr.io/netapp/neo-ui-framework:3.2.2
     ports:
       - "8080:80"
     environment:

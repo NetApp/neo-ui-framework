@@ -1,9 +1,4 @@
 :80 {
-    # Serve static UI files
-    root * /srv
-    try_files {path} /index.html
-    file_server
-
     # Reverse proxy API requests to backend
     # The NEO_API env var is resolved dynamically by Caddy
     handle /api/* {
@@ -11,10 +6,15 @@
         reverse_proxy {$NEO_API} {
             header_up Host {host}
             header_up X-Real-IP {remote_host}
-            header_up X-Forwarded-For {remote_host}
-            header_up X-Forwarded-Proto {scheme}
             flush_interval -1
         }
+    }
+
+    # Serve static UI files (catch-all, mutually exclusive with /api/*)
+    handle {
+        root * /srv
+        try_files {path} /index.html
+        file_server
     }
 
     # Cache static assets (JS, CSS, images, fonts)
@@ -32,7 +32,7 @@
     header X-Frame-Options "SAMEORIGIN"
     header X-Content-Type-Options "nosniff"
     header X-XSS-Protection "1; mode=block"
-    header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:;"
+    header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://api.github.com https://netapp.github.io;"
 
     # Gzip compression
     encode gzip
