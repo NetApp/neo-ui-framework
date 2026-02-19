@@ -17,14 +17,22 @@
         }
     }
 
-    # Cache static assets
+    # Cache static assets (JS, CSS, images, fonts)
     @static path *.js *.css *.png *.jpg *.jpeg *.gif *.ico *.svg *.woff *.woff2 *.ttf *.eot
     header @static Cache-Control "public, immutable, max-age=31536000"
+
+    # Prevent caching of HTML pages so auth state is always checked on refresh
+    @html {
+        not path *.js *.css *.png *.jpg *.jpeg *.gif *.ico *.svg *.woff *.woff2 *.ttf *.eot
+        not path /api/*
+    }
+    header @html Cache-Control "no-store, no-cache, must-revalidate"
 
     # Security headers
     header X-Frame-Options "SAMEORIGIN"
     header X-Content-Type-Options "nosniff"
     header X-XSS-Protection "1; mode=block"
+    header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:;"
 
     # Gzip compression
     encode gzip

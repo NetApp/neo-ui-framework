@@ -1024,6 +1024,13 @@ export function useNeoApi() {
     // Always clear local state regardless of server response
     clearSystemData()
     apiRef.current.clearCache()
+    // Remove token from localStorage synchronously to prevent stale session
+    // on browser refresh (the useEffect cleanup is async and may not run in time)
+    try {
+      localStorage.removeItem("neo_token")
+    } catch (e) {
+      appLogger.error("Failed to remove token from localStorage", e instanceof Error ? e.message : "Unknown error")
+    }
     setToken(null)
     toast.success("Logged out successfully")
     appLogger.info("User logged out successfully")
