@@ -103,7 +103,7 @@ This catches many security issues at compile time.
 
 1. **Minimal Base Image**
    ```dockerfile
-   FROM nginx:1.27-alpine  # Alpine for smaller attack surface
+   FROM docker.io/library/caddy:2-alpine  # Alpine for smaller attack surface
    ```
 
 2. **Non-Root User**
@@ -116,7 +116,7 @@ This catches many security issues at compile time.
 3. **Read-Only Filesystem** (where possible)
    ```dockerfile
    VOLUME /tmp
-   VOLUME /var/cache/nginx
+   VOLUME /data/caddy
    ```
 
 4. **No Unnecessary Packages**
@@ -132,43 +132,40 @@ This catches many security issues at compile time.
    trivy image neo-ui-framework
    ```
 
-#### nginx Configuration
+#### Caddy Configuration
 
-**Security Headers** (add to `nginx.conf`):
+**Security Headers** (add to `Caddyfile`):
 
-```nginx
+```caddyfile
 # Security headers
-add_header X-Frame-Options "SAMEORIGIN" always;
-add_header X-Content-Type-Options "nosniff" always;
-add_header X-XSS-Protection "1; mode=block" always;
-add_header Referrer-Policy "strict-origin-when-cross-origin" always;
-add_header Permissions-Policy "geolocation=(), microphone=(), camera=()" always;
+header X-Frame-Options "SAMEORIGIN"
+header X-Content-Type-Options "nosniff"
+header X-XSS-Protection "1; mode=block"
+header Referrer-Policy "strict-origin-when-cross-origin"
+header Permissions-Policy "geolocation=(), microphone=(), camera=()"
 
 # Content Security Policy
-add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:;" always;
+header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:;"
 
-# HSTS (if using HTTPS)
-add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+# HSTS (automatically managed by Caddy when using HTTPS)
 ```
 
 **API Proxy Security**:
 
-```nginx
-location /api {
-    # Restrict to known backend
-    proxy_pass $NEO_API;
-    
-    # Don't expose backend details
-    proxy_hide_header X-Powered-By;
-    proxy_hide_header Server;
-    
-    # Timeout limits
-    proxy_connect_timeout 5s;
-    proxy_send_timeout 60s;
-    proxy_read_timeout 60s;
-    
-    # Size limits
-    client_max_body_size 10M;
+```caddyfile
+handle /api/* {
+    uri strip_prefix /api
+    reverse_proxy {$NEO_API} {
+        # Don't expose backend details
+        header_down -X-Powered-By
+        header_down -Server
+
+        # Timeout limits
+        transport http {
+            dial_timeout 5s
+            response_header_timeout 60s
+        }
+    }
 }
 ```
 
@@ -177,14 +174,15 @@ location /api {
 **Production Requirements**:
 
 1. **Always use HTTPS** in production
-2. **TLS 1.2+** minimum
-3. **Strong cipher suites**:
-   ```nginx
-   ssl_protocols TLSv1.2 TLSv1.3;
-   ssl_ciphers 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384';
-   ssl_prefer_server_ciphers on;
+2. **TLS 1.2+** minimum (Caddy default)
+3. **Automatic HTTPS**: Caddy automatically provisions and renews TLS certificates via Let's Encrypt when a domain name is used:
+   ```caddyfile
+   your-domain.com {
+       # Caddy automatically handles TLS
+       # No manual cipher configuration needed
+   }
    ```
-4. **Certificate Management**: Use Let's Encrypt or enterprise CA
+4. **Certificate Management**: Caddy auto-manages Let's Encrypt certificates; enterprise CAs can be configured via the `tls` directive
 
 ### Runtime Hardening
 
@@ -245,7 +243,7 @@ location /api {
 
 #### Access Logs
 
-Review nginx access logs for:
+Review Caddy access logs for:
 - Unusual request patterns
 - Failed authentication attempts
 - Suspicious API calls
@@ -360,7 +358,7 @@ Before deploying to production:
 - [ ] All dependencies audited (`npm audit`)
 - [ ] Secrets removed from code and configs
 - [ ] HTTPS enabled with valid certificate
-- [ ] Security headers configured in nginx
+- [ ] Security headers configured in Caddy
 - [ ] CSP policy defined and tested
 - [ ] Error messages don't leak sensitive info
 - [ ] Rate limiting implemented

@@ -54,7 +54,7 @@ neo-ui-framework/
 ├── public/                  # Static assets
 ├── Dockerfile               # Production container image
 ├── docker-compose.yml       # Development orchestration
-├── nginx.conf              # nginx configuration template
+├── Caddyfile               # Caddy reverse proxy configuration
 ├── entrypoint.sh           # Container startup script
 └── vite.config.ts          # Vite configuration
 ```

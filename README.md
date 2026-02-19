@@ -15,7 +15,7 @@ Neo UI Framework delivers a full-featured interface for managing NetApp Neo - th
 
 - **Complete API Coverage** - Full integration with Neo API including authentication, health monitoring, license management, user administration, share management, file operations, and activity logging
 - **Modern Tech Stack** - Built with React 19, TypeScript 5.9, Vite 7, and Tailwind CSS 4
-- **Production Ready** - Containerized deployment with nginx, Docker Compose support, and environment-based configuration
+- **Production Ready** - Containerized deployment with Caddy, Docker Compose support, and environment-based configuration
 - **White-Label Friendly** - Easily customize branding, themes, and navigation to match your organization
 - **Type-Safe** - Comprehensive TypeScript coverage with strict compiler options
 - **Responsive Design** - Mobile-first approach with adaptive layouts and sidebar navigation
