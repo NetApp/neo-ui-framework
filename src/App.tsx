@@ -31,7 +31,9 @@ function App() {
   if (!state.token) {
     return (
       <ThemeProvider>
-        <LoginPage onConnect={handlers.handleConnect} />
+        <LoginPage
+          onConnect={handlers.handleConnect}
+        />
         <SetupWizardDialog
           open={state.setupStatus?.setup_complete === false}
           onOpenChange={() => { }} // Controlled by state
@@ -199,13 +201,16 @@ function App() {
                   onAddUser={handlers.handleAddUser}
                   onChangePassword={handlers.handleChangePassword}
                   onRefresh={handlers.handleRefresh}
+                  onLinkEntra={handlers.handleLinkEntraIdentity}
+                  onUnlinkEntra={handlers.handleUnlinkEntraIdentity}
                   monitoringOverview={state.monitoring.overview}
                 />
               } />
               <Route path="/settings" element={
                 <Settings
                   monitoringOverview={state.monitoring.overview}
-                  cacheStats={state.cacheStats}
+                  state={state}
+                  handlers={handlers}
                 />
               } />
               <Route path="/help" element={<Help />} />

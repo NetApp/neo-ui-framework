@@ -37,6 +37,7 @@ import {
   type SetupGraphRequest,
   type SetupGraphResponse,
   type SetupFactoryResetRequest,
+  type Body_configure_oauth_api_v1_setup_oauth_post,
 } from "@/services/neo-api"
 
 
@@ -1091,6 +1092,12 @@ export function useNeoApi() {
         },
         []
       ),
+      setupOauth: useCallback(
+        async (request: Body_configure_oauth_api_v1_setup_oauth_post) => {
+          return apiRef.current.setupOauth(request)
+        },
+        []
+      ),
       resetSetup: useCallback(async () => {
         return apiRef.current.resetSetup()
       }, []),
@@ -1103,6 +1110,21 @@ export function useNeoApi() {
       completeSetup: useCallback(async () => {
         return apiRef.current.completeSetup()
       }, []),
+      getMcpInfo: useCallback(async () => {
+        if (!token) throw new AuthenticationError()
+        return apiRef.current.getMcpInfo(token)
+      }, [token]),
+      handleOAuthLogin: useCallback(async () => {
+        await apiRef.current.handleOAuthLogin()
+      }, []),
+      handleLinkEntraIdentity: useCallback(async () => {
+        if (!token) throw new AuthenticationError()
+        return apiRef.current.linkEntraIdentity(token, { user_id: me?.id })
+      }, [token, me?.id]),
+      handleUnlinkEntraIdentity: useCallback(async () => {
+        if (!token) throw new AuthenticationError()
+        return apiRef.current.unlinkEntraIdentity(token, { user_id: me?.id })
+      }, [token, me?.id]),
     },
   }
 }

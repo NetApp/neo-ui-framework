@@ -1,17 +1,19 @@
 // Copyright 2025 NetApp, Inc. All Rights Reserved.
 "use client"
 
-import { 
-  IconPasswordUser 
+import {
+  IconPasswordUser,
+  IconLink,
+  IconUnlink
 } from "@tabler/icons-react"
 
-import type { 
-  MeResponse, 
-  UserResponse 
+import type {
+  MeResponse,
+  UserResponse
 } from "@/services/neo-api"
 
-import { 
-  Button 
+import {
+  Button
 } from "@/components/ui/button"
 
 import {
@@ -27,9 +29,11 @@ interface UsersTableProps {
   users?: UserResponse[] | null
   me?: MeResponse | null
   onRequestPasswordChange?: () => void
+  onLinkEntra?: () => void
+  onUnlinkEntra?: () => void
 }
 
-export function UsersTable({ users, me, onRequestPasswordChange }: UsersTableProps) {
+export function UsersTable({ users, me, onRequestPasswordChange, onLinkEntra, onUnlinkEntra }: UsersTableProps) {
   const rows = users ?? []
 
   return (
@@ -64,16 +68,42 @@ export function UsersTable({ users, me, onRequestPasswordChange }: UsersTablePro
                     {user.last_login ? new Date(user.last_login).toLocaleString() : "—"}
                   </TableCell>
                   <TableCell className="text-right">
-                    {isCurrent && onRequestPasswordChange ? (
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={onRequestPasswordChange}
-                        aria-label="Change password"
-                      >
-                        <IconPasswordUser className="size-4" />
-                      </Button>
-                    ) : null}
+                    <div className="flex justify-end gap-2">
+                      {isCurrent && onRequestPasswordChange ? (
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={onRequestPasswordChange}
+                          aria-label="Change password"
+                          title="Change password"
+                        >
+                          <IconPasswordUser className="size-4" />
+                        </Button>
+                      ) : null}
+                      {isCurrent && onLinkEntra && onUnlinkEntra ? (
+                        user.entra_object_id ? (
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={onUnlinkEntra}
+                            aria-label="Unlink Entra ID"
+                            title="Unlink Entra ID"
+                          >
+                            <IconUnlink className="size-4 text-orange-500" />
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={onLinkEntra}
+                            aria-label="Link Entra ID (SSO)"
+                            title="Link Entra ID (SSO)"
+                          >
+                            <IconLink className="size-4 text-blue-500" />
+                          </Button>
+                        )
+                      ) : null}
+                    </div>
                   </TableCell>
                 </TableRow>
               )

@@ -17,7 +17,7 @@ import { useSettings } from "@/context/settings-context"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
@@ -49,6 +49,7 @@ import { Save } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import type { LogLevel } from "@/services/app-logger"
 import type { MonitoringOverviewResponse } from "@/services/neo-api"
+import type { McpInfoResponse } from "@/services/models"
 import { OverviewCard } from "@/components/cards/overview-card"
 import { useSearchParams } from "react-router-dom"
 import { useNeoApi } from "@/hooks/useNeoApi"
@@ -57,15 +58,12 @@ import { Separator } from "@/components/ui/separator"
 
 interface SettingsProps {
     monitoringOverview: MonitoringOverviewResponse | null
-    cacheStats?: {
-        sizeBytes: number
-        items: number
-    }
+    state: ReturnType<typeof useNeoApi>["state"]
+    handlers: ReturnType<typeof useNeoApi>["handlers"]
 }
 
-export default function Settings({ monitoringOverview }: SettingsProps) {
+export default function Settings({ monitoringOverview, state, handlers }: SettingsProps) {
     const { monitoringTtl, filesTtl, cacheMaxSize, logLevel, updateSettings } = useSettings()
-    const { state, handlers } = useNeoApi()
     const [searchParams, setSearchParams] = useSearchParams()
 
     const [localMonitoringTtl, setLocalMonitoringTtl] = useState(monitoringTtl)
@@ -120,6 +118,23 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
         setLocalCacheMaxSize(cacheMaxSize)
         setLocalLogLevel(logLevel)
     }, [monitoringTtl, filesTtl, cacheMaxSize, logLevel])
+
+    const [mcpInfo, setMcpInfo] = useState<McpInfoResponse | null>(null)
+
+    useEffect(() => {
+        const fetchMcpInfo = async () => {
+            try {
+                const info = await handlers.getMcpInfo()
+                console.log("Successfully fetched MCP Info:", info)
+                setMcpInfo(info)
+            } catch (error) {
+                console.error("Failed to fetch MCP Info. Error:", error)
+            }
+        }
+        if (state.token) {
+            fetchMcpInfo()
+        }
+    }, [state.token])
 
     const handleSave = () => {
         updateSettings({
@@ -332,6 +347,7 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
                             >
                                 <TabsList>
                                     <TabsTrigger value="neo-core">Neo Core Setup</TabsTrigger>
+                                    <TabsTrigger value="neo-mcp">Neo MCP</TabsTrigger>
                                     <TabsTrigger value="cache">Cache Configuration</TabsTrigger>
                                     <TabsTrigger value="logging">Logging Configuration</TabsTrigger>
                                 </TabsList>
@@ -826,6 +842,91 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
                                                 ))}
 
                                             </CardContent>
+                                        </Card>
+                                    </div>
+                                </TabsContent>
+                                <TabsContent value="neo-mcp">
+                                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
+                                        <Card className="col-span-1 lg:col-span-3">
+                                            <CardHeader>
+                                                <CardTitle className="flex items-center gap-2">
+                                                    <Activity className="h-5 w-5" />
+                                                    Neo MCP Information
+                                                </CardTitle>
+                                                <CardDescription>
+                                                    View the Model Context Protocol settings and capabilities for this instance.
+                                                </CardDescription>
+                                            </CardHeader>
+                                            <CardContent className="space-y-6">
+                                                {mcpInfo ? (
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                        <div className="space-y-4">
+                                                            <div>
+                                                                <h4 className="text-sm font-medium text-muted-foreground">Name</h4>
+                                                                <p className="text-sm">{mcpInfo.name}</p>
+                                                            </div>
+                                                            <div>
+                                                                <h4 className="text-sm font-medium text-muted-foreground">Version</h4>
+                                                                <p className="text-sm">{mcpInfo.version}</p>
+                                                            </div>
+                                                            <div>
+                                                                <h4 className="text-sm font-medium text-muted-foreground">Protocol Version</h4>
+                                                                <p className="text-sm">{mcpInfo.protocol_version}</p>
+                                                            </div>
+                                                            <div>
+                                                                <h4 className="text-sm font-medium text-muted-foreground">Transport</h4>
+                                                                <p className="text-sm capitalize">{mcpInfo.transport.replace('-', ' ')}</p>
+                                                            </div>
+                                                            <div className="flex items-center gap-2 pt-2">
+                                                                <h4 className="text-sm font-medium text-muted-foreground">OAuth Enabled</h4>
+                                                                <Badge variant={mcpInfo.oauth_enabled ? "default" : "secondary"}>
+                                                                    {mcpInfo.oauth_enabled ? "Yes" : "No"}
+                                                                </Badge>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="space-y-4">
+                                                            <div>
+                                                                <h4 className="text-sm font-medium text-muted-foreground mb-2">Available Tools</h4>
+                                                                <div className="flex flex-wrap gap-2">
+                                                                    {mcpInfo.tools.map((tool) => (
+                                                                        <Badge key={tool} variant="outline" className="bg-muted/50">
+                                                                            {tool}
+                                                                        </Badge>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                            <div>
+                                                                <h4 className="text-sm font-medium text-muted-foreground mb-2">Endpoints</h4>
+                                                                <div className="space-y-2">
+                                                                    {Object.entries(mcpInfo.endpoints).map(([key, url]) => (
+                                                                        <div key={key} className="flex flex-col gap-1">
+                                                                            <span className="text-xs uppercase text-muted-foreground">{key.replace('_', ' ')}</span>
+                                                                            <div className="flex items-center justify-between rounded-md border bg-muted p-2">
+                                                                                <code className="text-xs truncate max-w-[80%]">{url as string}</code>
+                                                                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => copyToClipboard(url as string)}>
+                                                                                    <IconCopy className="h-3 w-3" />
+                                                                                </Button>
+                                                                            </div>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex items-center justify-center p-8 text-muted-foreground">
+                                                        Fetching MCP Information...
+                                                    </div>
+                                                )}
+                                            </CardContent>
+                                            {mcpInfo?.oauth_enabled && (
+                                                <CardFooter className="flex justify-end border-t p-6">
+                                                    <Button onClick={handlers.handleOAuthLogin}>
+                                                        Retrieve MCP Token
+                                                    </Button>
+                                                </CardFooter>
+                                            )}
                                         </Card>
                                     </div>
                                 </TabsContent>

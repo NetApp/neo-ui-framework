@@ -15,6 +15,7 @@ import type {
   SetupFactoryResetRequest,
   SetupCompleteResponse,
   InitialCredentialsResponse,
+  McpInfoResponse,
 } from "@/services/models"
 
 export class SystemApiClient extends BaseApiClient {
@@ -104,5 +105,21 @@ export class SystemApiClient extends BaseApiClient {
   getDatabaseSize(token: string) {
     appLogger.debug("Fetching database size information")
     return this.requestWithToken<DatabaseSizeResponse>("/database/size", token)
+  }
+
+  setupOauth(payload: any) {
+    appLogger.debug("Setting up OAuth")
+    return this.request<any>("/api/v1/setup/oauth", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload)
+    })
+  }
+
+  getMcpInfo(token: string) {
+    appLogger.debug("Fetching MCP info")
+    return this.requestWithToken<McpInfoResponse>("/mcp/info", token)
   }
 }

@@ -83,4 +83,61 @@ export class AuthApiClient extends BaseApiClient {
       )
     }
   }
+
+  async initiateOAuthLogin() {
+    appLogger.debug("Initiating OAuth login")
+    try {
+      const response = await this.request<{ authorization_url: string; state?: string }>("/auth/login")
+      if (response && response.authorization_url) {
+        window.location.href = response.authorization_url
+      } else {
+        throw new Error("Authorization URL not found in response")
+      }
+    } catch (error) {
+      appLogger.error("Failed to initiate OAuth login", error instanceof Error ? error.message : "Unknown error")
+      throw error
+    }
+  }
+
+  getOAuthConfig() {
+    return this.request<any>("/auth/config")
+  }
+
+  getUserInfo(token: string) {
+    return this.requestWithToken<any>("/auth/userinfo", token)
+  }
+
+  getGroups(token: string) {
+    return this.requestWithToken<any>("/auth/groups", token)
+  }
+
+  validateToken(token: string) {
+    return this.requestWithToken<any>("/auth/validate", token)
+  }
+
+  getWhoAmI(token: string) {
+    return this.requestWithToken<any>("/auth/whoami", token)
+  }
+
+  linkEntraIdentity(token: string, payload: any) {
+    return this.requestWithToken<any>("/auth/link-entra", token, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    })
+  }
+
+  unlinkEntraIdentity(token: string, payload: any) {
+    return this.requestWithToken<any>("/auth/unlink-entra", token, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    })
+  }
+
+  refreshAccessToken(token: string) {
+    return this.requestWithToken<any>("/auth/refresh", token, {
+      method: "POST"
+    })
+  }
 }

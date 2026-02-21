@@ -489,6 +489,8 @@ export interface UserResponse {
   is_admin: boolean
   created_at: string
   last_login: string | null
+  entra_object_id?: string | null
+  entra_display_name?: string | null
 }
 
 // Content Search Models
@@ -547,4 +549,73 @@ export interface MeResponse {
   is_admin: boolean
   created_at: string
   last_login: string | null
+  entra_object_id?: string | null
+  entra_display_name?: string | null
+}export interface Body_configure_oauth_api_v1_setup_oauth_post {
+  tenant_id?: string
+  client_id?: string
+  client_secret?: string
+  audience?: string
+  enabled?: boolean
+}
+
+export interface EntraLinkRequest {
+  user_id: number
+}
+
+export interface EntraLinkResponse {
+  success: boolean
+  message: string
+  user_id: number
+  username: string
+  entra_object_id: string
+  entra_display_name?: string
+}
+
+export interface EntraUnlinkRequest {
+  user_id: number
+}
+
+export interface EntraUnlinkResponse {
+  success: boolean
+  message: string
+  user_id: number
+}
+
+export interface GroupsResponse {
+  object_id: string
+  groups: string[]
+  groups_count: number
+}
+
+export interface OAuthConfigResponse {
+  enabled: boolean
+  provider?: string
+  tenant_id?: string
+  client_id?: string
+  audience?: string
+  authorization_endpoint?: string
+  token_endpoint?: string
+}
+
+export interface UserInfoResponse {
+  object_id: string
+  tenant_id: string
+  display_name?: string
+  email?: string
+  upn?: string
+  groups_count?: number
+}
+
+export interface McpInfoResponse {
+  name: string
+  version: string
+  protocol_version: string
+  transport: string
+  oauth_enabled: boolean
+  tools: string[]
+  endpoints: {
+    mcp: string
+    oauth_metadata: string
+  }
 }

@@ -95,6 +95,7 @@ export default function LoginPage({ onConnect }: LoginPageProps) {
                         </Button>
                     </form>
                 </CardContent>
+
             </Card>
         </div>
     )

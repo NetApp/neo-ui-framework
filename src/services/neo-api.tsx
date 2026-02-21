@@ -38,6 +38,7 @@ import type {
   SetupFactoryResetRequest,
   SetupCompleteResponse,
   InitialCredentialsResponse,
+  Body_configure_oauth_api_v1_setup_oauth_post,
 } from "./models"
 import { BaseApiClient, AuthenticationError, AuthorizationError } from "./api/base"
 import { AuthApiClient } from "./api/auth"
@@ -93,6 +94,7 @@ export type {
   SetupFactoryResetRequest,
   SetupCompleteResponse,
   InitialCredentialsResponse,
+  Body_configure_oauth_api_v1_setup_oauth_post,
 }
 export { AuthenticationError, AuthorizationError }
 
@@ -144,6 +146,10 @@ export class NeoApiService extends BaseApiClient {
     return this.system.setupLicense(request)
   }
 
+  async setupOauth(payload: Body_configure_oauth_api_v1_setup_oauth_post) {
+    return this.system.setupOauth(payload)
+  }
+
   async setupGraph(request: SetupGraphRequest): Promise<SetupGraphResponse> {
     return this.system.setupGraph(request)
   }
@@ -168,6 +174,42 @@ export class NeoApiService extends BaseApiClient {
     return this.auth.authenticate(username, password)
   }
 
+  async handleOAuthLogin() {
+    return this.auth.initiateOAuthLogin()
+  }
+
+  getOAuthConfig() {
+    return this.auth.getOAuthConfig()
+  }
+
+  getUserInfo(token: string) {
+    return this.auth.getUserInfo(token)
+  }
+
+  getGroups(token: string) {
+    return this.auth.getGroups(token)
+  }
+
+  validateToken(token: string) {
+    return this.auth.validateToken(token)
+  }
+
+  getWhoAmI(token: string) {
+    return this.auth.getWhoAmI(token)
+  }
+
+  linkEntraIdentity(token: string, payload: any) {
+    return this.auth.linkEntraIdentity(token, payload)
+  }
+
+  unlinkEntraIdentity(token: string, payload: any) {
+    return this.auth.unlinkEntraIdentity(token, payload)
+  }
+
+  refreshAccessToken(token: string) {
+    return this.auth.refreshAccessToken(token)
+  }
+
   logout(token: string) {
     return this.auth.logout(token)
   }
@@ -190,6 +232,10 @@ export class NeoApiService extends BaseApiClient {
 
   getSetupStatus() {
     return this.dataLoader.load("setupStatus", () => this.system.getSetupStatus(), this.monitoringTtl)
+  }
+
+  getMcpInfo(token: string) {
+    return this.dataLoader.load(`mcpInfo:${token}`, () => this.system.getMcpInfo(token), this.monitoringTtl)
   }
 
   getUsers(token: string) {
