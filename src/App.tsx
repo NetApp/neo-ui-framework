@@ -33,6 +33,7 @@ function App() {
       <ThemeProvider>
         <LoginPage
           onConnect={handlers.handleConnect}
+          onOAuthLogin={handlers.handleOAuthLogin}
         />
         <SetupWizardDialog
           open={state.setupStatus?.setup_complete === false}

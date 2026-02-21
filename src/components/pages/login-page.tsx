@@ -14,9 +14,10 @@ import type { ConnectionCredentials } from "@/services/models"
 
 interface LoginPageProps {
     onConnect: (credentials: ConnectionCredentials) => Promise<void>
+    onOAuthLogin?: () => Promise<void> | void
 }
 
-export default function LoginPage({ onConnect }: LoginPageProps) {
+export default function LoginPage({ onConnect, onOAuthLogin }: LoginPageProps) {
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
     const [isLoading, setIsLoading] = useState(false)
@@ -93,6 +94,26 @@ export default function LoginPage({ onConnect }: LoginPageProps) {
                         >
                             {isLoading ? "Logging in..." : "Login"}
                         </Button>
+                        {onOAuthLogin && (
+                            <>
+                                <div className="relative my-4">
+                                    <div className="absolute inset-0 flex items-center">
+                                        <div className="w-full border-t border-neutral-800" />
+                                    </div>
+                                    <div className="relative flex justify-center text-xs uppercase">
+                                        <span className="bg-neutral-900 px-2 text-neutral-500">Or</span>
+                                    </div>
+                                </div>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="w-full border-neutral-800 text-neutral-300 hover:bg-neutral-800 hover:text-neutral-50"
+                                    onClick={onOAuthLogin}
+                                >
+                                    Get SSO MCP Token
+                                </Button>
+                            </>
+                        )}
                     </form>
                 </CardContent>
 
