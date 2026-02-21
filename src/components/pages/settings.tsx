@@ -680,10 +680,10 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
                                                     </AccordionItem>
                                                 </Accordion>
 
-                                                <Separator />
+                                                {/* <Separator /> */}
 
                                                 {/* Reset and Complete Section */}
-                                                {(setupStatus && (
+                                                {setupStatus && (
                                                     <div className="pt-4 space-y-4">
                                                         {resetResult && (
                                                             <Alert variant={resetResult.success ? "default" : "destructive"} className={resetResult.success ? "border-green-500 text-green-600 dark:border-green-500 dark:text-green-500" : ""}>
@@ -703,145 +703,145 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
                                                                 </AlertDescription>
                                                             </Alert>
                                                         )}
-                                                        <div className="flex gap-2">
-                                                            {setupStatus.setup_complete ? (
-                                                                <>
-                                                                    <Button
-                                                                        className="flex-1"
-                                                                        onClick={handleGetCredentials}
-                                                                        disabled={isFetchingCredentials}
-                                                                    >
-                                                                        {isFetchingCredentials ? "Fetching Credentials..." : "Admin Credentials"}
-                                                                    </Button>
-
-                                                                    <Dialog open={isCredentialsDialogOpen} onOpenChange={setIsCredentialsDialogOpen}>
-                                                                        <DialogContent>
-                                                                            <DialogHeader>
-                                                                                <DialogTitle>Initial Admin Credentials</DialogTitle>
-                                                                                <DialogDescription className="text-red-500 font-medium">
-                                                                                    Please change this password immediately after logging in. This endpoint will be disabled after first login.
-                                                                                </DialogDescription>
-                                                                            </DialogHeader>
-                                                                            <div className="bg-slate-950 p-4 rounded-md font-mono text-sm space-y-2">
-                                                                                <div className="flex justify-between items-center">
-                                                                                    <span className="text-slate-400">Username:</span>
-                                                                                    <span className="text-white">{credentialsInit?.username}</span>
-                                                                                </div>
-                                                                                <div className="flex justify-between items-center">
-                                                                                    <span className="text-slate-400">Password:</span>
-                                                                                    <div className="flex items-center gap-2">
-                                                                                        <span className="text-white">{credentialsInit?.password}</span>
-                                                                                        <button onClick={() => credentialsInit?.password && copyToClipboard(credentialsInit.password)} className="text-slate-400 hover:text-white transition-colors">
-                                                                                            <IconCopy size={16} />
-                                                                                        </button>
-                                                                                    </div>
-                                                                                </div>
-                                                                            </div>
-
-                                                                            <Separator className="my-4" />
-
-                                                                            <div className="space-y-4">
-                                                                                <div className="space-y-2">
-                                                                                    <Label htmlFor="new-password">New Password</Label>
-                                                                                    <Input
-                                                                                        id="new-password"
-                                                                                        type="password"
-                                                                                        value={newPassword}
-                                                                                        onChange={(e) => setNewPassword(e.target.value)}
-                                                                                        placeholder="Enter new password"
-                                                                                    />
-                                                                                </div>
-                                                                                <div className="space-y-2">
-                                                                                    <Label htmlFor="confirm-password">Confirm Password</Label>
-                                                                                    <Input
-                                                                                        id="confirm-password"
-                                                                                        type="password"
-                                                                                        value={confirmPassword}
-                                                                                        onChange={(e) => setConfirmPassword(e.target.value)}
-                                                                                        placeholder="Confirm new password"
-                                                                                    />
-                                                                                </div>
-                                                                                {passwordError && (
-                                                                                    <p className="text-sm text-destructive font-medium">{passwordError}</p>
-                                                                                )}
-                                                                                <Button
-                                                                                    className="w-full bg-green-600 hover:bg-green-700"
-                                                                                    onClick={handleUpdatePassword}
-                                                                                    disabled={isUpdatingPassword}
-                                                                                >
-                                                                                    {isUpdatingPassword ? "Updating Password..." : "Update Password"}
-                                                                                </Button>
-                                                                            </div>
-                                                                            <DialogFooter>
-                                                                                <Button onClick={() => setIsCredentialsDialogOpen(false)} variant="outline">Close</Button>
-                                                                            </DialogFooter>
-                                                                        </DialogContent>
-                                                                    </Dialog>
-
-                                                                    <Dialog open={isExpiredDialogOpen} onOpenChange={setIsExpiredDialogOpen}>
-                                                                        <DialogContent>
-                                                                            <DialogHeader>
-                                                                                <DialogTitle className="flex items-center gap-2 text-destructive">
-                                                                                    <AlertTriangle className="h-5 w-5" />
-                                                                                    Credentials Expired
-                                                                                </DialogTitle>
-                                                                                <DialogDescription>
-                                                                                    The initial admin credentials have already been used and cannot be recovered.
-                                                                                    <br /><br />
-                                                                                    If you have lost your password, you will need to perform a factory reset to restore access.
-                                                                                </DialogDescription>
-                                                                            </DialogHeader>
-                                                                            <DialogFooter>
-                                                                                <Button variant="outline" onClick={() => setIsExpiredDialogOpen(false)}>Close</Button>
-                                                                            </DialogFooter>
-                                                                        </DialogContent>
-                                                                    </Dialog>
-                                                                </>
-                                                            ) : (
-                                                                <>
-                                                                    <Button
-                                                                        variant="destructive"
-                                                                        size="sm"
-                                                                        onClick={handleReset}
-                                                                        className="flex-1"
-                                                                        disabled={isResetting || isCompleting}
-                                                                    >
-                                                                        {isResetting ? "Resetting..." : "Reset Setup"}
-                                                                    </Button>
-
-                                                                    {setupStatus.steps_completed.includes("license") && (
-                                                                        <Dialog open={isCompleteDialogOpen} onOpenChange={setIsCompleteDialogOpen}>
-                                                                            <DialogTrigger asChild>
-                                                                                <Button
-                                                                                    variant="default"
-                                                                                    size="sm"
-                                                                                    className="flex-1 bg-green-600 hover:bg-green-700"
-                                                                                    disabled={isResetting || isCompleting}
-                                                                                >
-                                                                                    {isCompleting ? "Completing..." : "Setup Completed"}
-                                                                                </Button>
-                                                                            </DialogTrigger>
-                                                                            <DialogContent>
-                                                                                <DialogHeader>
-                                                                                    <DialogTitle>Complete Setup & Restart?</DialogTitle>
-                                                                                    <DialogDescription>
-                                                                                        This will conclude the setup of Neo Core and trigger a restart of the container with the current configuration.
-                                                                                    </DialogDescription>
-                                                                                </DialogHeader>
-                                                                                <DialogFooter>
-                                                                                    <Button variant="outline" onClick={() => setIsCompleteDialogOpen(false)}>Cancel</Button>
-                                                                                    <Button onClick={handleCompleteSetup} className="bg-green-600 hover:bg-green-700">Confirm & Restart</Button>
-                                                                                </DialogFooter>
-                                                                            </DialogContent>
-                                                                        </Dialog>
-                                                                    )}
-                                                                </>
-                                                            )}
-                                                        </div>
                                                     </div>
-                                                ))}
-
+                                                )}
                                             </CardContent>
+
+                                            {setupStatus && (
+                                                <CardFooter className="flex justify-end gap-2 border-t p-6">
+                                                    {setupStatus.setup_complete ? (
+                                                        <>
+                                                            <Button
+                                                                onClick={handleGetCredentials}
+                                                                disabled={isFetchingCredentials}
+                                                            >
+                                                                {isFetchingCredentials ? "Fetching Credentials..." : "Admin Credentials"}
+                                                            </Button>
+
+                                                            <Dialog open={isCredentialsDialogOpen} onOpenChange={setIsCredentialsDialogOpen}>
+                                                                <DialogContent>
+                                                                    <DialogHeader>
+                                                                        <DialogTitle>Initial Admin Credentials</DialogTitle>
+                                                                        <DialogDescription className="text-red-500 font-medium">
+                                                                            Please change this password immediately after logging in. This endpoint will be disabled after first login.
+                                                                        </DialogDescription>
+                                                                    </DialogHeader>
+                                                                    <div className="bg-slate-950 p-4 rounded-md font-mono text-sm space-y-2">
+                                                                        <div className="flex justify-between items-center">
+                                                                            <span className="text-slate-400">Username:</span>
+                                                                            <span className="text-white">{credentialsInit?.username}</span>
+                                                                        </div>
+                                                                        <div className="flex justify-between items-center">
+                                                                            <span className="text-slate-400">Password:</span>
+                                                                            <div className="flex items-center gap-2">
+                                                                                <span className="text-white">{credentialsInit?.password}</span>
+                                                                                <button onClick={() => credentialsInit?.password && copyToClipboard(credentialsInit.password)} className="text-slate-400 hover:text-white transition-colors">
+                                                                                    <IconCopy size={16} />
+                                                                                </button>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <Separator className="my-4" />
+
+                                                                    <div className="space-y-4">
+                                                                        <div className="space-y-2">
+                                                                            <Label htmlFor="new-password">New Password</Label>
+                                                                            <Input
+                                                                                id="new-password"
+                                                                                type="password"
+                                                                                value={newPassword}
+                                                                                onChange={(e) => setNewPassword(e.target.value)}
+                                                                                placeholder="Enter new password"
+                                                                            />
+                                                                        </div>
+                                                                        <div className="space-y-2">
+                                                                            <Label htmlFor="confirm-password">Confirm Password</Label>
+                                                                            <Input
+                                                                                id="confirm-password"
+                                                                                type="password"
+                                                                                value={confirmPassword}
+                                                                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                                                                placeholder="Confirm new password"
+                                                                            />
+                                                                        </div>
+                                                                        {passwordError && (
+                                                                            <p className="text-sm text-destructive font-medium">{passwordError}</p>
+                                                                        )}
+                                                                        <Button
+                                                                            className="w-full bg-green-600 hover:bg-green-700"
+                                                                            onClick={handleUpdatePassword}
+                                                                            disabled={isUpdatingPassword}
+                                                                        >
+                                                                            {isUpdatingPassword ? "Updating Password..." : "Update Password"}
+                                                                        </Button>
+                                                                    </div>
+                                                                    <DialogFooter>
+                                                                        <Button onClick={() => setIsCredentialsDialogOpen(false)} variant="outline">Close</Button>
+                                                                    </DialogFooter>
+                                                                </DialogContent>
+                                                            </Dialog>
+
+                                                            <Dialog open={isExpiredDialogOpen} onOpenChange={setIsExpiredDialogOpen}>
+                                                                <DialogContent>
+                                                                    <DialogHeader>
+                                                                        <DialogTitle className="flex items-center gap-2 text-destructive">
+                                                                            <AlertTriangle className="h-5 w-5" />
+                                                                            Credentials Expired
+                                                                        </DialogTitle>
+                                                                        <DialogDescription>
+                                                                            The initial admin credentials have already been used and cannot be recovered.
+                                                                            <br /><br />
+                                                                            If you have lost your password, you will need to perform a factory reset to restore access.
+                                                                        </DialogDescription>
+                                                                    </DialogHeader>
+                                                                    <DialogFooter>
+                                                                        <Button variant="outline" onClick={() => setIsExpiredDialogOpen(false)}>Close</Button>
+                                                                    </DialogFooter>
+                                                                </DialogContent>
+                                                            </Dialog>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Button
+                                                                variant="destructive"
+                                                                size="sm"
+                                                                onClick={handleReset}
+                                                                disabled={isResetting || isCompleting}
+                                                            >
+                                                                {isResetting ? "Resetting..." : "Reset Setup"}
+                                                            </Button>
+
+                                                            {setupStatus.steps_completed.includes("license") && (
+                                                                <Dialog open={isCompleteDialogOpen} onOpenChange={setIsCompleteDialogOpen}>
+                                                                    <DialogTrigger asChild>
+                                                                        <Button
+                                                                            variant="default"
+                                                                            size="sm"
+                                                                            className="bg-green-600 hover:bg-green-700"
+                                                                            disabled={isResetting || isCompleting}
+                                                                        >
+                                                                            {isCompleting ? "Completing..." : "Setup Completed"}
+                                                                        </Button>
+                                                                    </DialogTrigger>
+                                                                    <DialogContent>
+                                                                        <DialogHeader>
+                                                                            <DialogTitle>Complete Setup & Restart?</DialogTitle>
+                                                                            <DialogDescription>
+                                                                                This will conclude the setup of Neo Core and trigger a restart of the container with the current configuration.
+                                                                            </DialogDescription>
+                                                                        </DialogHeader>
+                                                                        <DialogFooter>
+                                                                            <Button variant="outline" onClick={() => setIsCompleteDialogOpen(false)}>Cancel</Button>
+                                                                            <Button onClick={handleCompleteSetup} className="bg-green-600 hover:bg-green-700">Confirm & Restart</Button>
+                                                                        </DialogFooter>
+                                                                    </DialogContent>
+                                                                </Dialog>
+                                                            )}
+                                                        </>
+                                                    )}
+                                                </CardFooter>
+                                            )}
                                         </Card>
                                     </div>
                                 </TabsContent>
