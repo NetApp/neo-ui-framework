@@ -12,6 +12,9 @@ import type {
   SetupGraphRequest,
   SetupGraphConfigResponse,
   SetupGraphResponse,
+  SetupProxyRequest,
+  SetupProxyResponse,
+  SetupProxyConfigResponse,
   SetupResetResponse,
   SetupFactoryResetRequest,
   SetupCompleteResponse,
@@ -50,6 +53,24 @@ export class SystemApiClient extends BaseApiClient {
   getSetupGraph() {
     appLogger.debug("Fetching graph setup configuration")
     return this.request<SetupGraphConfigResponse>("/api/v1/setup/graph", {
+      method: "GET",
+    })
+  }  
+
+  setupProxy(request: SetupProxyRequest) {
+    appLogger.debug("Configuring proxy settings")
+    return this.request<SetupProxyResponse>("/api/v1/setup/proxy", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(request),
+    })
+  }
+
+  getSetupProxy() {
+    appLogger.debug("Fetching proxy setup configuration")
+    return this.request<SetupProxyConfigResponse>("/api/v1/setup/proxy", {
       method: "GET",
     })
   }  

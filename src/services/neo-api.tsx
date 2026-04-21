@@ -35,6 +35,9 @@ import type {
   SetupGraphRequest,
   SetupGraphConfigResponse,
   SetupGraphResponse,
+  SetupProxyRequest,
+  SetupProxyResponse,  
+  SetupProxyConfigResponse,
   SetupResetResponse,
   SetupFactoryResetRequest,
   SetupCompleteResponse,
@@ -92,6 +95,9 @@ export type {
   SetupGraphRequest,
   SetupGraphConfigResponse,
   SetupGraphResponse,
+  SetupProxyRequest,
+  SetupProxyResponse,  
+  SetupProxyConfigResponse,
   SetupResetResponse,
   SetupFactoryResetRequest,
   SetupCompleteResponse,
@@ -158,6 +164,14 @@ export class NeoApiService extends BaseApiClient {
 
   async getSetupGraph(): Promise<SetupGraphConfigResponse> {
     return this.system.getSetupGraph()
+  }  
+
+  async setupProxy(request: SetupProxyRequest): Promise<SetupProxyResponse> {
+    return this.system.setupProxy(request)
+  }
+  
+  async getSetupProxy(): Promise<SetupProxyConfigResponse> {
+    return this.system.getSetupProxy()
   }  
 
   resetSetup() {

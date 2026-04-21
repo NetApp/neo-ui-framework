@@ -57,6 +57,25 @@ export interface SetupGraphConfigResponse {
   message: string
 }
 
+export interface SetupProxyRequest {
+  proxy_url: string
+  proxy_username?: string
+  proxy_password?: string
+}
+
+export interface SetupProxyResponse {
+  success: boolean
+  message: string
+}
+
+export interface SetupProxyConfigResponse {
+  proxy_configured: boolean
+  proxy_url: string | null
+  proxy_username: string | null
+  proxy_password_set: boolean
+  message: string
+}
+
 export interface SetupGraphResponse {
   success: boolean
   message: string

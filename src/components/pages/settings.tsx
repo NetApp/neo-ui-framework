@@ -66,6 +66,8 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
     const { monitoringTtl, filesTtl, cacheMaxSize, logLevel, updateSettings } = useSettings()
 
     const getSetupGraph = handlers.getSetupGraph
+    const getSetupProxy = handlers.getSetupProxy
+
     const [searchParams, setSearchParams] = useSearchParams()
 
     const [localMonitoringTtl, setLocalMonitoringTtl] = useState(monitoringTtl)
@@ -106,6 +108,7 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
     const [proxyUrl, setProxyUrl] = useState("")
     const [proxyUsername, setProxyUsername] = useState("")
     const [proxyPassword, setProxyPassword] = useState("")
+    const [proxyPasswordSet, setProxyPasswordSet] = useState(false)
     const [proxySaveResult, setProxySaveResult] = useState<{ success: boolean; message: string } | null>(null)
 
     // SSL Setup State
@@ -151,6 +154,31 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
             isCancelled = true
         }
     }, [getSetupGraph])
+
+    useEffect(() => {
+        let isCancelled = false
+
+        const loadSetupProxyConfig = async () => {
+            try {
+                const response = await getSetupProxy()
+                if (isCancelled) return
+
+                setProxyUrl(response.proxy_url ?? "")
+                setProxyUsername(response.proxy_username ?? "")
+                setProxyPassword("")
+                setProxyPasswordSet(Boolean(response.proxy_password_set))
+            } catch {
+                if (isCancelled) return
+                setProxyPasswordSet(false)
+            }
+        }
+
+        loadSetupProxyConfig()
+
+        return () => {
+            isCancelled = true
+        }
+    }, [getSetupProxy])
 
     useEffect(() => {
         const fetchMcpInfo = async () => {
@@ -340,11 +368,25 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
 
     const handleSaveProxy = async () => {
         setProxySaveResult(null)
-        // Placeholder implementation
-        setProxySaveResult({ success: true, message: "Proxy settings saved (placeholder)." })
-        setTimeout(() => {
-            window.location.reload()
-        }, 1500)
+        const payload: { proxy_url: string; proxy_username?: string; proxy_password?: string } = {
+            proxy_url: proxyUrl,
+        }
+        if (proxyUsername) payload.proxy_username = proxyUsername
+        if (proxyPassword) payload.proxy_password = proxyPassword
+
+        try {
+            const response = await handlers.setupProxy(payload)
+            if (response.success) {
+                setProxySaveResult({ success: true, message: response.message || "Proxy settings saved successfully." })
+                setTimeout(() => {
+                    window.location.reload()
+                }, 1500)
+            } else {
+                setProxySaveResult({ success: false, message: response.message || "Proxy setup failed." })
+            }
+        } catch {
+            setProxySaveResult({ success: false, message: "Failed to configure proxy settings." })
+        }
     }
 
     const handleSaveSSL = async () => {
@@ -643,6 +685,11 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
                                                                             value={proxyPassword}
                                                                             onChange={(e) => setProxyPassword(e.target.value)}
                                                                         />
+                                                                        {proxyPasswordSet && (
+                                                                            <p className="text-xs text-muted-foreground">
+                                                                                Existing password is already configured. Leave blank to keep current password.
+                                                                            </p>
+                                                                        )}                                                                        
                                                                     </div>
                                                                 </div>
                                                                 <div className="flex justify-end">
