@@ -1,6 +1,8 @@
 // Copyright 2025 NetApp, Inc. All Rights Reserved.
 "use client"
 
+import { useMemo, useState } from "react"
+
 import { Badge } from "@/components/ui/badge"
 import {
   Table,
@@ -23,6 +25,87 @@ const levelVariant: Record<AppLogEntry["level"], "default" | "secondary" | "dest
   INFO: "default",
   DEBUG: "outline",
   OPERATION: "default",
+}
+
+const MAX_LOG_DETAIL_CHARS = 20_000
+
+function truncateLogContent(value: string) {
+  const hiddenChars = value.length - MAX_LOG_DETAIL_CHARS
+
+  if (value.length <= MAX_LOG_DETAIL_CHARS) {
+    return {
+      content: value,
+      truncated: false,
+      hiddenChars: 0,
+    }
+  }
+
+  return {
+    content: `${value.slice(0, MAX_LOG_DETAIL_CHARS)}\n\n[truncated: ${hiddenChars.toLocaleString()} additional characters omitted]`,
+    truncated: true,
+    hiddenChars,
+  }
+}
+
+function LogDetailsContent({ label, value }: { label: string; value: string }) {
+  const [isOpen, setIsOpen] = useState(false)
+  const displayValue = useMemo(() => {
+    if (!isOpen) return null
+    return truncateLogContent(value)
+  }, [isOpen, value])
+
+  return (
+    <details className="text-xs" onToggle={(event) => setIsOpen(event.currentTarget.open)}>
+      <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
+        {label}
+      </summary>
+      {isOpen && displayValue ? (
+        <>
+          {displayValue.truncated ? (
+            <p className="mt-2 text-xs text-muted-foreground">
+              Display capped at {MAX_LOG_DETAIL_CHARS.toLocaleString()} characters. {displayValue.hiddenChars.toLocaleString()} additional characters omitted.
+            </p>
+          ) : null}
+          <pre className="mt-2 max-h-40 overflow-auto rounded bg-muted p-2 text-xs">
+            {displayValue.content}
+          </pre>
+        </>
+      ) : null}
+    </details>
+  )
+}
+
+function LogContextDetails({ context }: { context: Record<string, unknown> }) {
+  const [isOpen, setIsOpen] = useState(false)
+  const serializedContext = useMemo(() => {
+    if (!isOpen) return null
+
+    try {
+      return truncateLogContent(JSON.stringify(context, null, 2))
+    } catch {
+      return truncateLogContent("[unserializable log context]")
+    }
+  }, [context, isOpen])
+
+  return (
+    <details className="text-xs" onToggle={(event) => setIsOpen(event.currentTarget.open)}>
+      <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
+        View context
+      </summary>
+      {isOpen && serializedContext ? (
+        <>
+          {serializedContext.truncated ? (
+            <p className="mt-2 text-xs text-muted-foreground">
+              Display capped at {MAX_LOG_DETAIL_CHARS.toLocaleString()} characters. {serializedContext.hiddenChars.toLocaleString()} additional characters omitted.
+            </p>
+          ) : null}
+          <pre className="mt-2 max-h-40 overflow-auto rounded bg-muted p-2 text-xs">
+            {serializedContext.content}
+          </pre>
+        </>
+      ) : null}
+    </details>
+  )
 }
 
 export function LogsTable({ logs, loading = false }: LogsTableProps) {
@@ -60,23 +143,9 @@ export function LogsTable({ logs, loading = false }: LogsTableProps) {
                 <TableCell className="text-sm">{log.message}</TableCell>
                 <TableCell className="text-sm">
                   {log.details ? (
-                    <details className="text-xs">
-                      <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
-                        View
-                      </summary>
-                      <pre className="mt-2 max-h-40 overflow-auto rounded bg-muted p-2 text-xs">
-                        {log.details}
-                      </pre>
-                    </details>
+                    <LogDetailsContent label="View" value={log.details} />
                   ) : log.context ? (
-                    <details className="text-xs">
-                      <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
-                        View context
-                      </summary>
-                      <pre className="mt-2 max-h-40 overflow-auto rounded bg-muted p-2 text-xs">
-                        {JSON.stringify(log.context, null, 2)}
-                      </pre>
-                    </details>
+                    <LogContextDetails context={log.context} />
                   ) : (
                     "—"
                   )}

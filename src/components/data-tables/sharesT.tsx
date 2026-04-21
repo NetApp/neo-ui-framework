@@ -26,6 +26,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { Button } from "@/components/ui/button"
 
 interface SharesTableProps {
   shares: SharesResponse[] | null
@@ -82,6 +83,8 @@ function getStatusBadge(status: string) {
 
 export function SharesTable({ shares, onShareClick }: SharesTableProps) {
   const rows = shares ?? []
+  const rowsPerPage = 100
+  const [currentPage, setCurrentPage] = useState(1)
 
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>({
     share_path: 300,
@@ -155,6 +158,15 @@ export function SharesTable({ shares, onShareClick }: SharesTableProps) {
     }
   }, [handleResizeMove, handleResizeEnd])
 
+  useEffect(() => {
+    const totalPages = Math.max(1, Math.ceil(rows.length / rowsPerPage))
+    setCurrentPage((page) => Math.min(page, totalPages))
+  }, [rows.length])
+
+  const totalPages = Math.max(1, Math.ceil(rows.length / rowsPerPage))
+  const startIndex = (currentPage - 1) * rowsPerPage
+  const paginatedRows = rows.slice(startIndex, startIndex + rowsPerPage)
+
   return (
     <>
       <div className="overflow-hidden rounded-lg border">
@@ -199,8 +211,8 @@ export function SharesTable({ shares, onShareClick }: SharesTableProps) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {rows.length ? (
-              rows.map((share) => (
+            {paginatedRows.length ? (
+              paginatedRows.map((share) => (
                 <TableRow
                   key={share.id}
                   onClick={() => onShareClick(share.id)}
@@ -227,6 +239,31 @@ export function SharesTable({ shares, onShareClick }: SharesTableProps) {
           </TableBody >
         </Table >
       </div >
+      {rows.length > 0 ? (
+        <div className="flex items-center justify-between space-x-2 py-4">
+          <div className="text-muted-foreground flex-1 text-sm">
+            Showing {startIndex + 1}-{Math.min(startIndex + paginatedRows.length, rows.length)} of {rows.length.toLocaleString()} shares · Page {currentPage} of {totalPages}
+          </div>
+          <div className="space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+              disabled={currentPage === 1}
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+              disabled={currentPage === totalPages}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      ) : null}      
     </>
   )
 }

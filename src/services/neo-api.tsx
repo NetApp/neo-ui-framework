@@ -110,6 +110,27 @@ export type {
 }
 export { AuthenticationError, AuthorizationError }
 
+function normalizeCacheKeyValue(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(normalizeCacheKeyValue)
+  }
+
+  if (value && typeof value === "object") {
+    return Object.keys(value)
+      .sort()
+      .reduce<Record<string, unknown>>((result, key) => {
+        result[key] = normalizeCacheKeyValue((value as Record<string, unknown>)[key])
+        return result
+      }, {})
+  }
+
+  return value
+}
+
+function buildNormalizedCacheKey(prefix: string, token: string, value: unknown) {
+  return `${prefix}:${token}:${JSON.stringify(normalizeCacheKeyValue(value))}`
+}
+
 export class NeoApiService extends BaseApiClient {
   private auth: AuthApiClient
   private system: SystemApiClient
@@ -326,12 +347,12 @@ export class NeoApiService extends BaseApiClient {
   }
 
   searchFiles(token: string, params: FileSearchParams) {
-    const key = `searchFiles:${token}:${JSON.stringify(params)}`
+    const key = buildNormalizedCacheKey("searchFiles", token, params)
     return this.dataLoader.load(key, () => this.files.searchFiles(token, params), this.filesTtl)
   }
 
   searchContent(token: string, payload: ContentSearchRequest) {
-    const key = `searchContent:${token}:${JSON.stringify(payload)}`
+    const key = buildNormalizedCacheKey("searchContent", token, payload)
     return this.dataLoader.load(key, () => this.files.searchContent(token, payload), this.filesTtl)
   }
 

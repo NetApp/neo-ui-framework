@@ -106,6 +106,7 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
             return () => clearTimeout(timer)
         }
         if (completionCountdown === 0) {
+            setCompletionCountdown(null)
             void fetchCredentials()
         }
     }, [completionCountdown, fetchCredentials])
