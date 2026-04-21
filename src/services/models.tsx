@@ -10,9 +10,6 @@ export interface ConnectionCredentials {
   password: string
 }
 
-
-
-
 export interface SetupStatusResponse { // only for v3
   setup_complete: boolean
   database_configured: boolean
@@ -47,6 +44,17 @@ export interface SetupGraphRequest {
   connector_id: string
   connector_name: string
   connector_description: string
+}
+
+export interface SetupGraphConfigResponse {
+  graph_configured: boolean
+  tenant_id: string
+  client_id: string
+  client_secret_set: boolean
+  connector_id: string
+  connector_name: string
+  connector_description: string
+  message: string
 }
 
 export interface SetupGraphResponse {

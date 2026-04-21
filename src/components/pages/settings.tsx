@@ -64,6 +64,8 @@ interface SettingsProps {
 
 export default function Settings({ monitoringOverview, state, handlers }: SettingsProps) {
     const { monitoringTtl, filesTtl, cacheMaxSize, logLevel, updateSettings } = useSettings()
+
+    const getSetupGraph = handlers.getSetupGraph
     const [searchParams, setSearchParams] = useSearchParams()
 
     const [localMonitoringTtl, setLocalMonitoringTtl] = useState(monitoringTtl)
@@ -91,12 +93,13 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
     const [licenseSaveResult, setLicenseSaveResult] = useState<{ success: boolean; message: string } | null>(null)
 
     // M365 Copilot Graph Setup State
-    const [tenantId, setTenantId] = useState("your-tenant-id")
-    const [clientId, setClientId] = useState("your-client-id")
-    const [clientSecret, setClientSecret] = useState("your-client-secret")
-    const [connectorId, setConnectorId] = useState("netappneo")
-    const [connectorName, setConnectorName] = useState("NetApp NEO Connector")
-    const [connectorDescription, setConnectorDescription] = useState("The connector contains information contained in the on premises or on-prem file share server. This drive is called J drive and this contains documents and files. These are of type DOC, DOCM, DOCX, DOT, DOTX, EML, GIF, HTML, JPEG, JPG, MHT, MHTML, MSG, NWS, OBD, OBT, ODP, ODS, ODT, ONE, PDF, PNG, POT, PPS, PPT, PPTM, PPTX, TXT, XLB, XLC, XLSB, XLS, XLSX, XLT, XLXM, XML, XPS, and ZIP.")
+    const [tenantId, setTenantId] = useState("")
+    const [clientId, setClientId] = useState("")
+    const [clientSecret, setClientSecret] = useState("")
+    const [connectorId, setConnectorId] = useState("")
+    const [connectorName, setConnectorName] = useState("")
+    const [connectorDescription, setConnectorDescription] = useState("")
+    const [clientSecretSet, setClientSecretSet] = useState(false)
     const [graphSaveResult, setGraphSaveResult] = useState<{ success: boolean; message: string } | null>(null)
 
     // Proxy Setup State
@@ -120,6 +123,34 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
     }, [monitoringTtl, filesTtl, cacheMaxSize, logLevel])
 
     const [mcpInfo, setMcpInfo] = useState<McpInfoResponse | null>(null)
+
+    useEffect(() => {
+        let isCancelled = false
+
+        const loadSetupGraphConfig = async () => {
+            try {
+                const response = await getSetupGraph()
+                if (isCancelled) return
+
+                setTenantId(response.tenant_id ?? "")
+                setClientId(response.client_id ?? "")
+                setConnectorId(response.connector_id ?? "")
+                setConnectorName(response.connector_name ?? "")
+                setConnectorDescription(response.connector_description ?? "")
+                setClientSecret("")
+                setClientSecretSet(Boolean(response.client_secret_set))
+            } catch {
+                if (isCancelled) return
+                setClientSecretSet(false)
+            }
+        }
+
+        loadSetupGraphConfig()
+
+        return () => {
+            isCancelled = true
+        }
+    }, [getSetupGraph])
 
     useEffect(() => {
         const fetchMcpInfo = async () => {
@@ -279,6 +310,10 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
 
     const handleSaveGraph = async () => {
         setGraphSaveResult(null)
+        if (!clientSecret.trim()) {
+            setGraphSaveResult({ success: false, message: "Client Secret is required to save M365 settings." })
+            return
+        }        
         const payload = {
             tenant_id: tenantId,
             client_id: clientId,
@@ -506,20 +541,21 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
                                                                             />
                                                                         </div>
                                                                         <div className="grid gap-2">
-                                                                            <Label htmlFor="client-secret">Client Secret</Label>
+                                                                            <Label htmlFor="client-secret">Client Secret (Enter again to Save)</Label>
                                                                             <Input
                                                                                 id="client-secret"
                                                                                 type="password"
                                                                                 value={clientSecret}
                                                                                 onChange={(e) => setClientSecret(e.target.value)}
                                                                             />
+                                                                            {clientSecretSet}          
                                                                         </div>
                                                                     </div>
                                                                 </div>
 
                                                                 <div className="space-y-4">
                                                                     <h4 className="text-xs font-medium uppercase text-muted-foreground">Optional Fields</h4>
-                                                                    <div className="grid gap-4 md:grid-cols-3">
+                                                                    <div className="grid gap-4 md:grid-cols-2">
                                                                         <div className="grid gap-2">
                                                                             <Label htmlFor="connector-id">Connector ID</Label>
                                                                             <Input
@@ -538,10 +574,11 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
                                                                         </div>
                                                                         <div className="grid gap-2">
                                                                             <Label htmlFor="connector-description">Connector Description</Label>
-                                                                            <Input
+                                                                            <Textarea
                                                                                 id="connector-description"
                                                                                 value={connectorDescription}
                                                                                 onChange={(e) => setConnectorDescription(e.target.value)}
+                                                                                className="min-h-[140px] resize-y"
                                                                             />
                                                                         </div>
                                                                     </div>

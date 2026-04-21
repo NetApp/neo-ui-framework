@@ -33,6 +33,7 @@ import type {
   SetupLicenseResponse,
   SetupStatusResponse,
   SetupGraphRequest,
+  SetupGraphConfigResponse,
   SetupGraphResponse,
   SetupResetResponse,
   SetupFactoryResetRequest,
@@ -89,6 +90,7 @@ export type {
   SetupLicenseRequest,
   SetupLicenseResponse,
   SetupGraphRequest,
+  SetupGraphConfigResponse,
   SetupGraphResponse,
   SetupResetResponse,
   SetupFactoryResetRequest,
@@ -153,6 +155,10 @@ export class NeoApiService extends BaseApiClient {
   async setupGraph(request: SetupGraphRequest): Promise<SetupGraphResponse> {
     return this.system.setupGraph(request)
   }
+
+  async getSetupGraph(): Promise<SetupGraphConfigResponse> {
+    return this.system.getSetupGraph()
+  }  
 
   resetSetup() {
     return this.system.resetSetup()

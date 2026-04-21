@@ -35,6 +35,7 @@ import {
   type SetupStatusResponse,
   AuthenticationError,
   type SetupGraphRequest,
+  type SetupGraphConfigResponse,
   type SetupGraphResponse,
   type SetupFactoryResetRequest,
   type Body_configure_oauth_api_v1_setup_oauth_post,
@@ -1092,6 +1093,9 @@ export function useNeoApi() {
         },
         []
       ),
+      getSetupGraph: useCallback(async (): Promise<SetupGraphConfigResponse> => {
+        return apiRef.current.getSetupGraph()
+      }, []),      
       setupOauth: useCallback(
         async (request: Body_configure_oauth_api_v1_setup_oauth_post) => {
           return apiRef.current.setupOauth(request)

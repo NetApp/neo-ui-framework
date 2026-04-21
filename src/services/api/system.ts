@@ -10,6 +10,7 @@ import type {
   SetupLicenseRequest,
   SetupLicenseResponse,
   SetupGraphRequest,
+  SetupGraphConfigResponse,
   SetupGraphResponse,
   SetupResetResponse,
   SetupFactoryResetRequest,
@@ -45,6 +46,13 @@ export class SystemApiClient extends BaseApiClient {
       body: JSON.stringify(request),
     })
   }
+
+  getSetupGraph() {
+    appLogger.debug("Fetching graph setup configuration")
+    return this.request<SetupGraphConfigResponse>("/api/v1/setup/graph", {
+      method: "GET",
+    })
+  }  
 
   resetSetup() {
     appLogger.debug("Resetting setup state")
