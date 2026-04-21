@@ -145,7 +145,7 @@ export function VersioningCard({ version, helmChartVersion, className }: Version
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2 text-muted-foreground">
                                 <IconDeviceDesktop className="h-3 w-3" />
-                                <span>UI Framework</span>
+                                <span>Neo Console</span>
                             </div>
                             <span className="font-mono bg-muted px-2 py-0.5 rounded text-xs text-muted-foreground">
                                 {latestUiVersion}
