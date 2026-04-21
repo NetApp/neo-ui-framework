@@ -1,7 +1,16 @@
 // Copyright 2025 NetApp, Inc. All Rights Reserved.
 import { appLogger } from "@/services/app-logger"
 import { AuthenticationError, BaseApiClient } from "./base"
-import type { TokenResponse } from "@/services/models"
+import type {
+  TokenResponse,
+  OAuthConfigResponse,
+  UserInfoResponse,
+  GroupsResponse,
+  EntraLinkRequest,
+  EntraLinkResponse,
+  EntraUnlinkRequest,
+  EntraUnlinkResponse,
+} from "@/services/models"
 
 export class AuthApiClient extends BaseApiClient {
   async authenticate(username: string, password: string): Promise<string> {
@@ -100,35 +109,35 @@ export class AuthApiClient extends BaseApiClient {
   }
 
   getOAuthConfig() {
-    return this.request<any>("/auth/config")
+    return this.request<OAuthConfigResponse>("/auth/config")
   }
 
   getUserInfo(token: string) {
-    return this.requestWithToken<any>("/auth/userinfo", token)
+    return this.requestWithToken<UserInfoResponse>("/auth/userinfo", token)
   }
 
   getGroups(token: string) {
-    return this.requestWithToken<any>("/auth/groups", token)
+    return this.requestWithToken<GroupsResponse>("/auth/groups", token)
   }
 
   validateToken(token: string) {
-    return this.requestWithToken<any>("/auth/validate", token)
+    return this.requestWithToken<UserInfoResponse>("/auth/validate", token)
   }
 
   getWhoAmI(token: string) {
-    return this.requestWithToken<any>("/auth/whoami", token)
+    return this.requestWithToken<UserInfoResponse>("/auth/whoami", token)
   }
 
-  linkEntraIdentity(token: string, payload: any) {
-    return this.requestWithToken<any>("/auth/link-entra", token, {
+  linkEntraIdentity(token: string, payload: EntraLinkRequest) {
+    return this.requestWithToken<EntraLinkResponse>("/auth/link-entra", token, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     })
   }
 
-  unlinkEntraIdentity(token: string, payload: any) {
-    return this.requestWithToken<any>("/auth/unlink-entra", token, {
+  unlinkEntraIdentity(token: string, payload: EntraUnlinkRequest) {
+    return this.requestWithToken<EntraUnlinkResponse>("/auth/unlink-entra", token, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
@@ -136,7 +145,7 @@ export class AuthApiClient extends BaseApiClient {
   }
 
   refreshAccessToken(token: string) {
-    return this.requestWithToken<any>("/auth/refresh", token, {
+    return this.requestWithToken<TokenResponse>("/auth/refresh", token, {
       method: "POST"
     })
   }

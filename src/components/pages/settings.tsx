@@ -68,6 +68,7 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
     const getSetupGraph = handlers.getSetupGraph
     const getSetupProxy = handlers.getSetupProxy
     const getSetupSsl = handlers.getSetupSsl
+    const getMcpInfo = handlers.getMcpInfo  // Add this line
 
     const [searchParams, setSearchParams] = useSearchParams()
 
@@ -122,6 +123,13 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
     const [allowLegacyCertificates, setAllowLegacyCertificates] = useState(false)
     const [customCaCertConfigured, setCustomCaCertConfigured] = useState(false)    
     const [sslSaveResult, setSslSaveResult] = useState<{ success: boolean; message: string } | null>(null)
+
+    const getErrorMessage = (error: unknown, fallback: string) => {
+        if (error instanceof Error && error.message) {
+            return error.message
+        }
+        return fallback
+    }
 
     // Sync local state with context when context changes (e.g. initial load)
     useEffect(() => {
@@ -219,7 +227,7 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
     useEffect(() => {
         const fetchMcpInfo = async () => {
             try {
-                const info = await handlers.getMcpInfo()
+                const info = await getMcpInfo()
                 console.log("Successfully fetched MCP Info:", info)
                 setMcpInfo(info)
             } catch (error) {
@@ -229,7 +237,7 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
         if (state.token) {
             fetchMcpInfo()
         }
-    }, [state.token])
+    }, [state.token, getMcpInfo])
 
     const handleSave = () => {
         updateSettings({
@@ -262,7 +270,7 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
                     window.location.reload()
                 }, 1500)
             }
-        } catch (error) {
+        } catch {
             setResetResult({ success: false, message: "Failed to reset setup." })
         } finally {
             setIsResetting(false)
@@ -283,7 +291,7 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
             } else {
                 setCompleteResult({ success: false, message: response.message || "Failed to complete setup." })
             }
-        } catch (error) {
+        } catch  {
             setCompleteResult({ success: false, message: "Failed to complete setup." })
         } finally {
             setIsCompleting(false)
@@ -296,10 +304,11 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
             const response = await handlers.getInitialCredentials()
             setCredentialsInit(response)
             setIsCredentialsDialogOpen(true)
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Failed to fetch initial credentials", error)
             // Check for 403 Forbidden which indicates credentials have been used
-            if (error?.status === 403 || error?.response?.status === 403 || error?.message?.includes("403")) {
+            const errorLike = error as { status?: number; response?: { status?: number }; message?: string }            
+            if (errorLike.status === 403 || errorLike.response?.status === 403 || errorLike.message?.includes("403")) {
                 setIsExpiredDialogOpen(true)
             }
         } finally {
@@ -338,8 +347,8 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
             setNewPassword("")
             setConfirmPassword("")
             toast.success("Password updated successfully. You can now log in.")
-        } catch (error: any) {
-            setPasswordError(error.message || "Failed to update password.")
+        } catch (error: unknown) {
+            setPasswordError(getErrorMessage(error, "Failed to update password."))
         } finally {
             setIsUpdatingPassword(false)
         }
@@ -367,7 +376,7 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
             } else {
                 setLicenseSaveResult({ success: false, message: response.message || "License setup failed." })
             }
-        } catch (error) {
+        } catch {
             setLicenseSaveResult({ success: false, message: "Failed to configure license." })
         }
     }
@@ -397,7 +406,7 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
             } else {
                 setGraphSaveResult({ success: false, message: response.message || "Graph setup failed." })
             }
-        } catch (error) {
+        } catch {
             setGraphSaveResult({ success: false, message: "Failed to configure Graph." })
         }
     }

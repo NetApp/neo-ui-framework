@@ -9,8 +9,8 @@ export interface CacheEntry<T> {
 }
 
 export class DataLoader {
-  private cache: Map<string, CacheEntry<any>> = new Map()
-  private pendingRequests: Map<string, Promise<any>> = new Map()
+  private cache: Map<string, CacheEntry<unknown>> = new Map()
+  private pendingRequests: Map<string, Promise<unknown>> = new Map()
   private defaultTtl: number
   private maxSizeBytes: number
   private currentSizeBytes: number = 0
@@ -23,11 +23,11 @@ export class DataLoader {
   /**
    * Calculates approximate size of data in bytes.
    */
-  private calculateSize(data: any): number {
+  private calculateSize(data: unknown): number {
     try {
       const json = JSON.stringify(data)
       return new TextEncoder().encode(json).length
-    } catch (e) {
+    } catch {
       // Fallback for non-serializable data or errors
       return 1024 // Assume 1KB minimum
     }
@@ -164,7 +164,7 @@ export class DataLoader {
    * Returns a specific cache entry metadata if it exists
    */
   getEntry<T>(key: string): CacheEntry<T> | undefined {
-    return this.cache.get(key)
+    return this.cache.get(key) as CacheEntry<T> | undefined
   }
 
   /**

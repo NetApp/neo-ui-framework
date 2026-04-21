@@ -44,6 +44,16 @@ const chartConfig = {
   },
 } satisfies ChartConfig
 
+type ContentSavingsTooltipDatum = {
+  type: "content" | "savings"
+  size: number
+}
+
+type ContentSavingsTooltipProps = {
+  active?: boolean
+  payload?: Array<{ payload: ContentSavingsTooltipDatum }>
+}
+
 export function ContentSavingsChart({ databaseSize, className }: ContentSavingsChartProps) {
   const chartData = React.useMemo(() => {
     if (!databaseSize) {
@@ -99,8 +109,8 @@ export function ContentSavingsChart({ databaseSize, className }: ContentSavingsC
   }, [databaseSize])
 
   // Custom tooltip to show size details
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length && savingsInfo) {
+  const CustomTooltip = ({ active, payload }: ContentSavingsTooltipProps) => {
+    if (active && payload && payload.length > 0 && savingsInfo) {
       const data = payload[0].payload
       const percentage = ((data.size / totalOriginalSize) * 100).toFixed(1)
 

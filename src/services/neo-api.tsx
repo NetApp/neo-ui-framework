@@ -44,6 +44,8 @@ import type {
   SetupCompleteResponse,
   InitialCredentialsResponse,
   Body_configure_oauth_api_v1_setup_oauth_post,
+  EntraLinkRequest,
+  EntraUnlinkRequest,
 } from "./models"
 import { BaseApiClient, AuthenticationError, AuthorizationError } from "./api/base"
 import { AuthApiClient } from "./api/auth"
@@ -224,11 +226,11 @@ export class NeoApiService extends BaseApiClient {
     return this.auth.getWhoAmI(token)
   }
 
-  linkEntraIdentity(token: string, payload: any) {
+  linkEntraIdentity(token: string, payload: EntraLinkRequest) {
     return this.auth.linkEntraIdentity(token, payload)
   }
 
-  unlinkEntraIdentity(token: string, payload: any) {
+  unlinkEntraIdentity(token: string, payload: EntraUnlinkRequest) {
     return this.auth.unlinkEntraIdentity(token, payload)
   }
 

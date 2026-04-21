@@ -111,7 +111,7 @@ export default function MyDatasets({
             } else {
                 toast.success(`Cache warmup complete. ${successCount} files cached.`)
             }
-        } catch (error) {
+        } catch {
             toast.error("Cache warmup interrupted due to an error")
         } finally {
             setIsWarmingUp(false)

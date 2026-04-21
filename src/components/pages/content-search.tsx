@@ -303,7 +303,7 @@ export default function ContentSearch({ shares, onContentSearch, onCreateDataset
                                             </div>
                                             <div className="space-y-2">
                                                 <Label htmlFor="sort-filter">Sort By</Label>
-                                                <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
+                                                <Select value={sortBy} onValueChange={(v: "relevance" | "modified_time") => setSortBy(v)}>
                                                     <SelectTrigger id="sort-filter">
                                                         <SelectValue />
                                                     </SelectTrigger>

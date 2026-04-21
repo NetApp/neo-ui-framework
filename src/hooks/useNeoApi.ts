@@ -128,7 +128,7 @@ export function useNeoApi() {
   const [token, setToken] = useState<string | null>(() => {
     try {
       return localStorage.getItem("neo_token")
-    } catch (e) {
+    } catch {
       // Handle potential localStorage access errors (e.g. private mode)
       return null
     }
@@ -831,7 +831,7 @@ export function useNeoApi() {
         throw error
       }
     },
-    [token, clearSystemData]
+    [token]
   )
 
 
@@ -1007,7 +1007,7 @@ export function useNeoApi() {
         throw error
       }
     },
-    [token, clearSystemData]
+    [token, clearSystemData, handleFetchMonitoring, handleFetchSystemData]
   )
 
   const handleLogout = useCallback(async () => {
@@ -1136,11 +1136,13 @@ export function useNeoApi() {
       }, []),
       handleLinkEntraIdentity: useCallback(async () => {
         if (!token) throw new AuthenticationError()
-        return apiRef.current.linkEntraIdentity(token, { user_id: me?.id })
+        if (!me?.id) throw new Error("User ID not available")
+        await apiRef.current.linkEntraIdentity(token, { user_id: me.id })
       }, [token, me?.id]),
       handleUnlinkEntraIdentity: useCallback(async () => {
         if (!token) throw new AuthenticationError()
-        return apiRef.current.unlinkEntraIdentity(token, { user_id: me?.id })
+        if (!me?.id) throw new Error("User ID not available")
+        await apiRef.current.unlinkEntraIdentity(token, { user_id: me.id })
       }, [token, me?.id]),
     },
   }

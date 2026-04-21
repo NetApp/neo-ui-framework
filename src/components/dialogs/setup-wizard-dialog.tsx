@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useNeoApi } from "@/hooks/useNeoApi"
 import { NeoApiService } from "@/services/neo-api"
 import { Button } from "@/components/ui/button"
@@ -71,6 +71,13 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
     const [confirmPassword, setConfirmPassword] = useState("")
     const [passwordError, setPasswordError] = useState<string | null>(null)
 
+    const getErrorMessage = (error: unknown, fallback: string) => {
+        if (error instanceof Error && error.message) {
+            return error.message
+        }
+        return fallback
+    }
+
     useEffect(() => {
         if (!open) {
             // Reset state when dialog closes/reopens if needed
@@ -79,27 +86,39 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
         }
     }, [open])
 
-    useEffect(() => {
-        if (completionCountdown !== null && completionCountdown > 0) {
-            const timer = setTimeout(() => setCompletionCountdown(completionCountdown - 1), 1000)
-            return () => clearTimeout(timer)
-        } else if (completionCountdown === 0) {
-            fetchCredentials()
-        }
-    }, [completionCountdown])
 
-    const fetchCredentials = async () => {
+    const fetchCredentials = useCallback(async () => {
         setIsLoading(true)
         try {
             const result = await handlers.getInitialCredentials()
             setCredentials({ username: result.username, password: result.password })
             setStep("CREDENTIALS")
-        } catch (err) {
+        } catch {
             setError("Failed to fetch credentials. Please try again.")
         } finally {
             setIsLoading(false)
         }
-    }
+    }, [handlers])
+
+    useEffect(() => {
+        if (completionCountdown !== null && completionCountdown > 0) {
+            const timer = setTimeout(() => setCompletionCountdown(completionCountdown - 1), 1000)
+            return () => clearTimeout(timer)
+        }
+        if (completionCountdown === 0) {
+            void fetchCredentials()
+        }
+    }, [completionCountdown, fetchCredentials])
+
+    useEffect(() => {
+        if (completionCountdown !== null && completionCountdown > 0) {
+            const timer = setTimeout(() => setCompletionCountdown(completionCountdown - 1), 1000)
+            return () => clearTimeout(timer)
+        }
+        if (completionCountdown === 0) {
+            void fetchCredentials()
+        }
+    }, [completionCountdown, fetchCredentials])
 
     const handleNext = () => {
         setError(null)
@@ -163,8 +182,8 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
             } else {
                 setError(res.message || "Failed to configure license.")
             }
-        } catch (e: any) {
-            setError(e.message || "An error occurred.")
+        } catch (error: unknown) {
+            setError(getErrorMessage(error, "An error occurred."))
         } finally {
             setIsLoading(false)
         }
@@ -189,8 +208,8 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
             } else {
                 setError(res.message || "Failed to configure OAuth.")
             }
-        } catch (e: any) {
-            setError(e.message || "An error occurred.")
+        } catch (error: unknown) {
+            setError(getErrorMessage(error, "An error occurred."))
         } finally {
             setIsLoading(false)
         }
@@ -217,8 +236,8 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
             } else {
                 setError(res.message || "Failed to configure M365.")
             }
-        } catch (e: any) {
-            setError(e.message || "An error occurred.")
+        } catch (error: unknown) {
+            setError(getErrorMessage(error, "An error occurred."))
         } finally {
             setIsLoading(false)
         }
@@ -253,8 +272,8 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
                 setError(res.message || "Failed to complete setup.")
                 setIsLoading(false)
             }
-        } catch (e: any) {
-            setError(e.message || "An error occurred.")
+        } catch (error: unknown) {
+            setError(getErrorMessage(error, "An error occurred."))
             setIsLoading(false)
         }
     }
@@ -284,8 +303,8 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
             onOpenChange(false)
             // Reload to force re-login or dashboard refresh
             window.location.reload()
-        } catch (e: any) {
-            setPasswordError(e.message || "Failed to update password.")
+        } catch (error: unknown) {
+            setPasswordError(getErrorMessage(error, "Failed to update password."))
         } finally {
             setIsLoading(false)
         }

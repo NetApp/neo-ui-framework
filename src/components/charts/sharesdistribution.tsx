@@ -52,6 +52,19 @@ const generateChartConfig = (sharesAnalytics: { share_id: string; share_name: st
   return config
 }
 
+
+type SharesDistributionTooltipDatum = {
+  shareName: string
+  shareFullPath: string
+  count: number
+  totalSize: number
+}
+
+type SharesDistributionTooltipProps = {
+  active?: boolean
+  payload?: Array<{ payload: SharesDistributionTooltipDatum }>
+}
+
 export function SharesDistributionChart({ sharesAnalytics }: SharesDistributionChartProps) {
   const chartData = React.useMemo(() => {
     if (!sharesAnalytics || sharesAnalytics.length === 0) {
@@ -86,8 +99,8 @@ export function SharesDistributionChart({ sharesAnalytics }: SharesDistributionC
   }, [chartData])
 
   // Custom tooltip to show share details
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
+  const CustomTooltip = ({ active, payload }: SharesDistributionTooltipProps) => {
+    if (active && payload && payload.length > 0) {
       const data = payload[0].payload
       const percentage = ((data.count / totalFiles) * 100).toFixed(1)
       const sizeInMB = (data.totalSize / (1024 * 1024)).toFixed(1)

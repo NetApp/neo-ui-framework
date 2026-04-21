@@ -116,7 +116,7 @@ export interface InitialCredentialsResponse {
 
 export interface MonitoringData {
   // Add properties here if needed, or leave it effectively empty for now
-  [key: string]: any
+  [key: string]: unknown
 }
 
 export interface ReadyResponse { // only for v3
@@ -352,11 +352,9 @@ export interface MonitoringOverviewResponse { // only for v3
     abandoned_items: number
   }
   ennumeration: {
-    active_enumerations: [
-      {
-        additionalProp1: {}
-      }
-    ]
+    active_enumerations: Array<{
+      additionalProp1: Record<string, unknown>
+    }>
     enumeration_queue_depth: {
       additionalProp1: number
       additionalProp2: number
@@ -371,7 +369,7 @@ export interface MonitoringOverviewResponse { // only for v3
     stopping_workers: number
     stopped_workers: number
     workers: {
-      additionalProp1: {}
+      additionalProp1: Record<string, unknown>
     }
   }
   graph_rate_limit: {
@@ -395,11 +393,9 @@ export interface MonitoringWorkerResponse { // only for v3
 }
 
 export interface MonitoringEnumerationResponse {  // only for v3
-  active_enumerations: [
-    {
-      additionalProp1: {}
-    }
-  ]
+  active_enumerations: Array<{
+    additionalProp1: Record<string, unknown>
+  }>
   enumeration_queue_depth: {
     additionalProp1: number
     additionalProp2: number
@@ -415,7 +411,7 @@ export interface MonitoringWorkersResponse { // only for v3
   stopping_workers: number
   stopped_workers: number
   workers: {
-    additionalProp1: {}
+    additionalProp1: Record<string, unknown>
   }
 }
 
@@ -586,7 +582,9 @@ export interface MeResponse {
   last_login: string | null
   entra_object_id?: string | null
   entra_display_name?: string | null
-}export interface Body_configure_oauth_api_v1_setup_oauth_post {
+}
+
+export interface Body_configure_oauth_api_v1_setup_oauth_post {
   tenant_id?: string
   client_id?: string
   client_secret?: string
@@ -631,6 +629,11 @@ export interface OAuthConfigResponse {
   audience?: string
   authorization_endpoint?: string
   token_endpoint?: string
+}
+
+export interface SetupOAuthResponse {
+  success: boolean
+  message: string
 }
 
 export interface UserInfoResponse {

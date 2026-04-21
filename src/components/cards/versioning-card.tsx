@@ -51,7 +51,7 @@ export function VersioningCard({ version, helmChartVersion, className }: Version
                 } else {
                     setLatestUiVersion("n/a")
                 }
-            } catch (error) {
+            } catch {
                 setLatestUiVersion("n/a")
             }
         }

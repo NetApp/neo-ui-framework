@@ -21,6 +21,8 @@ import type {
   SetupCompleteResponse,
   InitialCredentialsResponse,
   McpInfoResponse,
+  Body_configure_oauth_api_v1_setup_oauth_post,
+  SetupOAuthResponse,
 } from "@/services/models"
 
 export class SystemApiClient extends BaseApiClient {
@@ -144,16 +146,16 @@ export class SystemApiClient extends BaseApiClient {
     return this.requestWithToken<DatabaseSizeResponse>("/database/size", token)
   }
 
-  setupOauth(payload: any) {
-    appLogger.debug("Setting up OAuth")
-    return this.request<any>("/api/v1/setup/oauth", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload)
-    })
-  }
+setupOauth(payload: Body_configure_oauth_api_v1_setup_oauth_post) {
+  appLogger.debug("Setting up OAuth")
+  return this.request<SetupOAuthResponse>("/api/v1/setup/oauth", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload)
+  })
+}
 
   getMcpInfo(token: string) {
     appLogger.debug("Fetching MCP info")

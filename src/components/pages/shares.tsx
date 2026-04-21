@@ -325,7 +325,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
     const rules = details.rules ?? {}
     try {
       setRulesJson(JSON.stringify(rules, null, 2))
-    } catch (error) {
+    } catch {
       setRulesJson(DEFAULT_RULES_JSON)
     }
 

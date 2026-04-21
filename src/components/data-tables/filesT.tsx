@@ -55,7 +55,7 @@ export function FilesTable({
   onPageChange,
   onFileClick
 }: FilesTableProps) {
-  const rows = files?.files ?? []
+  const rows = useMemo(() => files?.files ?? [], [files?.files])
   const message = emptyMessage ?? (loading ? "Loading files…" : "No files available.")
   const showShareColumn = rows.some((file) => file.share_name || file.share_path)
   const columnCount = 4 + (showShareColumn ? 1 : 0)

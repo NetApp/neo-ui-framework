@@ -81,7 +81,7 @@ export default function Help() {
                   <li>API Interface – RESTful API simplifies integration and management, replacing the M365 Search and Intelligence UI</li>
                   <li>Enhanced Filtering – filters by file type, size, and date</li>
                   <li>Parallelization – uses multiple threads for faster extraction, conversion, and transfer</li>
-                  <li>Large Document Chunking – splits large files for ingestion beyond the 3.8 MB Microsoft Graph limit</li>
+                  <li>Large Document Chunking – splits large files for ingestion beyond the 3.8 MB Microsoft Graph limit</li>
                   <li>Offline Licensing – licenses without internet connectivity</li>
                 </ul></p>
                 <p><h3 className="text-lg font-semibold">Getting Started</h3>
