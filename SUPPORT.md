@@ -8,8 +8,9 @@ The Neo UI framework supports the Neo backend API versions:
 
 | Version | Supported          |
 | ------- | ------------------ |
-| main    | ✅ Yes             |
-| 2.x.x   | ✅ Yes             |
+| 4.x.x   | ✅ Yes             |
+| 3.x.x   | ✅ Yes             |
+| 2.x.x   | ❌ No              |
 | < 2.0   | ❌ No              |
 
 ## Reporting Bugs

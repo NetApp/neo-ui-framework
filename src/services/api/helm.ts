@@ -4,7 +4,7 @@ import yaml from "js-yaml"
 import type { HelmChartVersionResponse } from "@/services/models"
 
 const FALLBACK_VERSION: HelmChartVersionResponse = {
-  chart_name: "netapp-connector",
+  chart_name: "netapp-neo",
   app_version: "Unknown",
   chart_version: "Unknown",
 }
@@ -43,7 +43,7 @@ export class HelmApiClient {
         }
       }
 
-      const netappConnectorEntries = indexData.entries?.["netapp-connector"]
+      const netappConnectorEntries = indexData.entries?.["netapp-neo"]
 
       if (!netappConnectorEntries || netappConnectorEntries.length === 0) {
         appLogger.warn("No netapp-connector entries found in index.yaml")
@@ -59,20 +59,20 @@ export class HelmApiClient {
           appVersion,
           chartVersion,
           source: "index.yaml",
-          chart_name: latestEntry.name ?? "netapp-connector",
+          chart_name: latestEntry.name ?? "netapp-neo",
         })
         return {
-          chart_name: latestEntry.name || "netapp-connector",
+          chart_name: latestEntry.name || "netapp-neo",
           app_version: appVersion,
           chart_version: chartVersion,
         }
       }
 
-      appLogger.warn("Could not extract versions from netapp-connector entry", undefined, {
+      appLogger.warn("Could not extract versions from netapp-neo entry", undefined, {
         entry: latestEntry,
       })
       return {
-        chart_name: latestEntry.name || "netapp-connector",
+        chart_name: latestEntry.name || "netapp-neo",
         app_version: appVersion,
         chart_version: chartVersion,
       }

@@ -48,9 +48,9 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
     const [tenantId, setTenantId] = useState("")
     const [clientId, setClientId] = useState("")
     const [clientSecret, setClientSecret] = useState("")
-    const [connectorId] = useState("netappneo")
-    const [connectorName, setConnectorName] = useState("NetApp NEO Connector")
-    const [connectorDescription] = useState("The connector contains information contained in the on premises or on-prem file share server...")
+    const [connectorId, setConnectorId] = useState("netappneo-01")
+    const [connectorName, setConnectorName] = useState("NetApp Neo Connector 01")
+    const [connectorDescription, setConnectorDescription] = useState("The connector give access to data from on premises or on-prem file share servers.")
 
     // Proxy State
     const [proxyUrl, setProxyUrl] = useState("")
@@ -58,7 +58,7 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
     const [proxyPassword, setProxyPassword] = useState("")
 
     // SSL State
-    const [verifySsl, setVerifySsl] = useState(true)
+    const [verifySsl, setVerifySsl] = useState(false)
 
     const [caCertificate, setCaCertificate] = useState("")
 
@@ -364,6 +364,19 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
                             <div className="grid gap-2">
                                 <Label>Connector Name</Label>
                                 <Input value={connectorName} onChange={(e) => setConnectorName(e.target.value)} />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label>Connector ID</Label>
+                                <Input value={connectorId} onChange={(e) => setConnectorId(e.target.value)} />
+                            </div>
+                            <div className="grid gap-2 md:col-span-2">
+                                <Label>Connector Description</Label>
+                                <Textarea
+                                    value={connectorDescription}
+                                    onChange={(e) => setConnectorDescription(e.target.value)}
+                                    placeholder="Enter connector description..."
+                                    className="min-h-[60px]"
+                                />
                             </div>
                         </div>
                     </div>

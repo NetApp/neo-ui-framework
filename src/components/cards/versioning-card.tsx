@@ -121,7 +121,7 @@ export function VersioningCard({ version, helmChartVersion, className }: Version
                                 <span>Helm Chart</span>
                             </div>
                             <a
-                                href="https://github.com/NetApp/Innovation-Labs/tree/main/charts/netapp-copilot-connector"
+                                href="https://github.com/NetApp/Innovation-Labs/tree/main/charts/netapp-neo"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="font-mono bg-muted px-2 py-0.5 rounded text-xs hover:underline hover:text-primary transition-colors"
