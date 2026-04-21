@@ -38,6 +38,7 @@ import type {
   SetupProxyRequest,
   SetupProxyResponse,  
   SetupProxyConfigResponse,
+  SetupSslConfigResponse,
   SetupResetResponse,
   SetupFactoryResetRequest,
   SetupCompleteResponse,
@@ -98,6 +99,7 @@ export type {
   SetupProxyRequest,
   SetupProxyResponse,  
   SetupProxyConfigResponse,
+  SetupSslConfigResponse,
   SetupResetResponse,
   SetupFactoryResetRequest,
   SetupCompleteResponse,
@@ -169,9 +171,13 @@ export class NeoApiService extends BaseApiClient {
   async setupProxy(request: SetupProxyRequest): Promise<SetupProxyResponse> {
     return this.system.setupProxy(request)
   }
-  
+
   async getSetupProxy(): Promise<SetupProxyConfigResponse> {
     return this.system.getSetupProxy()
+  }  
+
+  async getSetupSsl(): Promise<SetupSslConfigResponse> {
+    return this.system.getSetupSsl()
   }  
 
   resetSetup() {

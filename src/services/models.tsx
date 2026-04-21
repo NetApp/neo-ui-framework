@@ -76,6 +76,14 @@ export interface SetupProxyConfigResponse {
   message: string
 }
 
+export interface SetupSslConfigResponse {
+  verify_ssl: boolean
+  timeout: number
+  custom_ca_certificate_configured: boolean
+  allow_legacy_certificates: boolean
+  message: string
+}
+
 export interface SetupGraphResponse {
   success: boolean
   message: string

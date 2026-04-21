@@ -15,6 +15,7 @@ import type {
   SetupProxyRequest,
   SetupProxyResponse,
   SetupProxyConfigResponse,
+  SetupSslConfigResponse,
   SetupResetResponse,
   SetupFactoryResetRequest,
   SetupCompleteResponse,
@@ -71,6 +72,13 @@ export class SystemApiClient extends BaseApiClient {
   getSetupProxy() {
     appLogger.debug("Fetching proxy setup configuration")
     return this.request<SetupProxyConfigResponse>("/api/v1/setup/proxy", {
+      method: "GET",
+    })
+  }  
+
+  getSetupSsl() {
+    appLogger.debug("Fetching SSL setup configuration")
+    return this.request<SetupSslConfigResponse>("/api/v1/setup/ssl", {
       method: "GET",
     })
   }  

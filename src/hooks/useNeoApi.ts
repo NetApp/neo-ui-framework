@@ -40,6 +40,7 @@ import {
   type SetupProxyRequest,
   type SetupProxyResponse,  
   type SetupProxyConfigResponse,
+  type SetupSslConfigResponse,
   type SetupFactoryResetRequest,
   type Body_configure_oauth_api_v1_setup_oauth_post,
 } from "@/services/neo-api"
@@ -1104,7 +1105,10 @@ export function useNeoApi() {
       }, []),      
       getSetupProxy: useCallback(async (): Promise<SetupProxyConfigResponse> => {
         return apiRef.current.getSetupProxy()
-      }, []),            
+      }, []),   
+      getSetupSsl: useCallback(async (): Promise<SetupSslConfigResponse> => {
+        return apiRef.current.getSetupSsl()
+      }, []),               
       setupOauth: useCallback(
         async (request: Body_configure_oauth_api_v1_setup_oauth_post) => {
           return apiRef.current.setupOauth(request)

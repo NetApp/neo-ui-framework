@@ -67,6 +67,7 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
 
     const getSetupGraph = handlers.getSetupGraph
     const getSetupProxy = handlers.getSetupProxy
+    const getSetupSsl = handlers.getSetupSsl
 
     const [searchParams, setSearchParams] = useSearchParams()
 
@@ -95,6 +96,7 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
     const [licenseSaveResult, setLicenseSaveResult] = useState<{ success: boolean; message: string } | null>(null)
 
     // M365 Copilot Graph Setup State
+    const [graphConfigured, setGraphConfigured] = useState(false)
     const [tenantId, setTenantId] = useState("")
     const [clientId, setClientId] = useState("")
     const [clientSecret, setClientSecret] = useState("")
@@ -105,6 +107,7 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
     const [graphSaveResult, setGraphSaveResult] = useState<{ success: boolean; message: string } | null>(null)
 
     // Proxy Setup State
+    const [proxyConfigured, setProxyConfigured] = useState(false)
     const [proxyUrl, setProxyUrl] = useState("")
     const [proxyUsername, setProxyUsername] = useState("")
     const [proxyPassword, setProxyPassword] = useState("")
@@ -112,9 +115,12 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
     const [proxySaveResult, setProxySaveResult] = useState<{ success: boolean; message: string } | null>(null)
 
     // SSL Setup State
-    const [verifySsl, setVerifySsl] = useState(true)
+    const [sslConfigured, setSslConfigured] = useState(false)
+    const [verifySsl, setVerifySsl] = useState(false)
     const [sslTimeout, setSslTimeout] = useState(30)
     const [caCertificate, setCaCertificate] = useState("")
+    const [allowLegacyCertificates, setAllowLegacyCertificates] = useState(false)
+    const [customCaCertConfigured, setCustomCaCertConfigured] = useState(false)    
     const [sslSaveResult, setSslSaveResult] = useState<{ success: boolean; message: string } | null>(null)
 
     // Sync local state with context when context changes (e.g. initial load)
@@ -135,6 +141,7 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
                 const response = await getSetupGraph()
                 if (isCancelled) return
 
+                setGraphConfigured(Boolean(response.graph_configured))
                 setTenantId(response.tenant_id ?? "")
                 setClientId(response.client_id ?? "")
                 setConnectorId(response.connector_id ?? "")
@@ -144,6 +151,7 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
                 setClientSecretSet(Boolean(response.client_secret_set))
             } catch {
                 if (isCancelled) return
+                setGraphConfigured(false)
                 setClientSecretSet(false)
             }
         }
@@ -163,12 +171,14 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
                 const response = await getSetupProxy()
                 if (isCancelled) return
 
+                setProxyConfigured(Boolean(response.proxy_configured))
                 setProxyUrl(response.proxy_url ?? "")
                 setProxyUsername(response.proxy_username ?? "")
                 setProxyPassword("")
                 setProxyPasswordSet(Boolean(response.proxy_password_set))
             } catch {
                 if (isCancelled) return
+                setProxyConfigured(false)
                 setProxyPasswordSet(false)
             }
         }
@@ -179,6 +189,32 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
             isCancelled = true
         }
     }, [getSetupProxy])
+
+    useEffect(() => {
+        let isCancelled = false
+
+        const loadSetupSslConfig = async () => {
+            try {
+                const response = await getSetupSsl()
+                if (isCancelled) return
+
+                setSslConfigured(Boolean(response.custom_ca_certificate_configured))
+                setVerifySsl(response.verify_ssl)
+                setSslTimeout(response.timeout)
+                setAllowLegacyCertificates(response.allow_legacy_certificates)
+                setCustomCaCertConfigured(response.custom_ca_certificate_configured)
+                setCaCertificate("")
+            } catch {
+                // keep defaults if endpoint unavailable
+            }
+        }
+
+        loadSetupSslConfig()
+
+        return () => {
+            isCancelled = true
+        }
+    }, [getSetupSsl])
 
     useEffect(() => {
         const fetchMcpInfo = async () => {
@@ -391,7 +427,7 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
 
     const handleSaveSSL = async () => {
         setSslSaveResult(null)
-        // Placeholder implementation
+        // POST /api/v1/setup/ssl endpoint to be implemented when backend supports it.
         setSslSaveResult({ success: true, message: "SSL settings saved (placeholder)." })
         setTimeout(() => {
             window.location.reload()
@@ -540,10 +576,7 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
                                                     <AccordionItem value="m365">
                                                         <AccordionTrigger>
                                                             <div className="flex items-center gap-2">
-                                                                <div className={`h-2.5 w-2.5 rounded-full ${setupStatus?.steps_completed.includes("graph") || setupStatus?.steps_completed.includes("m365")
-                                                                    ? "bg-green-500"
-                                                                    : "bg-red-500"
-                                                                    }`} />
+                                                                <div className={`h-2.5 w-2.5 rounded-full ${graphConfigured ? "bg-green-500" : "bg-red-500"}`} />
                                                                 <div className="flex flex-col items-start text-left">
                                                                     <h4 className="text-sm font-medium">M365 Copilot Graph Setup (optional)</h4>
                                                                     <p className="text-xs text-muted-foreground font-normal">
@@ -636,10 +669,7 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
                                                     <AccordionItem value="proxy">
                                                         <AccordionTrigger>
                                                             <div className="flex items-center gap-2">
-                                                                <div className={`h-2.5 w-2.5 rounded-full ${setupStatus?.steps_completed.includes("proxy")
-                                                                    ? "bg-green-500"
-                                                                    : "bg-red-500"
-                                                                    }`} />
+                                                                <div className={`h-2.5 w-2.5 rounded-full ${proxyConfigured ? "bg-green-500" : "bg-red-500"}`} />
                                                                 <div className="flex flex-col items-start text-left">
                                                                     <h4 className="text-sm font-medium">Proxy Setup (optional)</h4>
                                                                     <p className="text-xs text-muted-foreground font-normal">
@@ -703,10 +733,7 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
                                                     <AccordionItem value="ssl">
                                                         <AccordionTrigger>
                                                             <div className="flex items-center gap-2">
-                                                                <div className={`h-2.5 w-2.5 rounded-full ${setupStatus?.steps_completed.includes("ssl") || setupStatus?.steps_completed.includes("certificate")
-                                                                    ? "bg-green-500"
-                                                                    : "bg-red-500"
-                                                                    }`} />
+                                                                   <div className={`h-2.5 w-2.5 rounded-full ${sslConfigured ? "bg-green-500" : "bg-red-500"}`} />
                                                                 <div className="flex flex-col items-start text-left">
                                                                     <h4 className="text-sm font-medium">SSL Setup (optional)</h4>
                                                                     <p className="text-xs text-muted-foreground font-normal">
@@ -734,7 +761,14 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
                                                                     />
                                                                     <Label htmlFor="verify-ssl">Verify SSL Certificates</Label>
                                                                 </div>
-
+                                                                <div className="flex items-center space-x-2">
+                                                                    <Switch
+                                                                        id="allow-legacy-certificates"
+                                                                        checked={allowLegacyCertificates}
+                                                                        onCheckedChange={setAllowLegacyCertificates}
+                                                                    />
+                                                                    <Label htmlFor="allow-legacy-certificates">Allow Legacy Certificates</Label>
+                                                                </div>
                                                                 <div className="grid gap-2">
                                                                     <Label htmlFor="ssl-timeout">Timeout (seconds)</Label>
                                                                     <Input
@@ -755,6 +789,11 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
                                                                         placeholder="-----BEGIN CERTIFICATE-----..."
                                                                         className="min-h-[100px] font-mono text-xs"
                                                                     />
+                                                                    {customCaCertConfigured && (
+                                                                        <p className="text-xs text-muted-foreground">
+                                                                            A custom CA certificate is already configured. Paste a new certificate above to replace it.
+                                                                        </p>
+                                                                    )}               
                                                                 </div>
                                                                 <div className="flex justify-end">
                                                                     <Button onClick={handleSaveSSL}>Save SSL Settings</Button>
