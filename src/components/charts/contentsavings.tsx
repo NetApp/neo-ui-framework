@@ -2,6 +2,7 @@
 "use client"
 
 import * as React from "react"
+import { useTranslation } from "react-i18next"
 import { TrendingDown } from "lucide-react"
 import { Label, Pie, PieChart } from "recharts"
 
@@ -55,6 +56,7 @@ type ContentSavingsTooltipProps = {
 }
 
 export function ContentSavingsChart({ databaseSize, className }: ContentSavingsChartProps) {
+  const { t } = useTranslation()
   const chartData = React.useMemo(() => {
     if (!databaseSize) {
       return []
@@ -117,23 +119,23 @@ export function ContentSavingsChart({ databaseSize, className }: ContentSavingsC
       return (
         <div className="bg-background border border-border rounded-lg p-3 shadow-lg">
           <p className="font-medium">
-            {data.type === 'content' ? 'Content Size' : 'Space Saved'}
+            {data.type === 'content' ? t("contentSize", { ns: "monitoring" }) : t("spaceSaved", { ns: "monitoring" })}
           </p>
           <p className="text-sm text-muted-foreground">
             {data.type === 'content' ? (
               <>
-                Size: {data.size.toFixed(2)} MB ({percentage}%) <br />
-                Original Size: {savingsInfo.originalSize.toFixed(2)} MB
+                {t("sizeLabel", { ns: "monitoring" })}: {data.size.toFixed(2)} {t("mbSuffix", { ns: "monitoring" })} ({percentage}%) <br />
+                {t("originalFiles", { ns: "monitoring" })}: {savingsInfo.originalSize.toFixed(2)} {t("mbSuffix", { ns: "monitoring" })}
               </>
             ) : (
               <>
-                Size: {data.size.toFixed(2)} MB ({percentage}%)
+                {t("sizeLabel", { ns: "monitoring" })}: {data.size.toFixed(2)} {t("mbSuffix", { ns: "monitoring" })} ({percentage}%)
               </>
             )}
           </p>
           {data.type === 'savings' && (
             <p className="text-sm text-muted-foreground">
-              Compression ratio: {savingsInfo.compressionRatio}:1
+              {t("compressionRatio", { ns: "monitoring" })}: {savingsInfo.compressionRatio}:1
             </p>
           )}
         </div>
@@ -146,10 +148,10 @@ export function ContentSavingsChart({ databaseSize, className }: ContentSavingsC
     return (
       <Card className={`md:col-span-2 lg:col-span-2 flex flex-col ${className || ""}`}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle>Content Savings</CardTitle>
+          <CardTitle>{t("contentSavings", { ns: "monitoring" })}</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-sm text-muted-foreground">No database data available</div>
+          <div className="text-sm text-muted-foreground">{t("noDatabaseDataAvailable", { ns: "monitoring" })}</div>
         </CardContent>
       </Card>
     )
@@ -158,8 +160,8 @@ export function ContentSavingsChart({ databaseSize, className }: ContentSavingsC
   return (
     <Card className={`md:col-span-2 lg:col-span-2 flex flex-col ${className || ""}`}>
       <CardHeader className="items-center pb-0">
-        <CardTitle>Content Extraction Efficiency</CardTitle>
-        <CardDescription>Original files vs extracted content size</CardDescription>
+        <CardTitle>{t("contentExtractionEfficiency", { ns: "monitoring" })}</CardTitle>
+        <CardDescription>{t("originalVsExtracted", { ns: "monitoring" })}</CardDescription>
       </CardHeader>
       <CardContent className="flex-1 pb-0">
         <ChartContainer
@@ -200,7 +202,7 @@ export function ContentSavingsChart({ databaseSize, className }: ContentSavingsC
                           y={(viewBox.cy || 0) + 20}
                           className="fill-muted-foreground text-sm"
                         >
-                          Space Saved
+                          {t("spaceSaved", { ns: "monitoring" })}
                         </tspan>
                       </text>
                     )
@@ -215,13 +217,13 @@ export function ContentSavingsChart({ databaseSize, className }: ContentSavingsC
         {savingsInfo && (
           <>
             <div className="flex items-center gap-2 leading-none font-medium">
-              {savingsInfo.savings.toFixed(2)} MB saved ({savingsInfo.compressionRatio}:1 ratio)
+              {savingsInfo.savings.toFixed(2)} {t("mbSuffix", { ns: "monitoring" })} {t("spaceSaved", { ns: "monitoring" }).toLowerCase()} ({savingsInfo.compressionRatio}:1)
               <TrendingDown className="h-4 w-4" />
             </div>
           </>
         )}
         <div className="text-muted-foreground leading-none text-center">
-          Storage efficiency through content extraction
+          {t("storageEfficiency", { ns: "monitoring" })}
         </div>
       </CardFooter>
     </Card>

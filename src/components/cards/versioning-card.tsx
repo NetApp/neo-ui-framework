@@ -2,6 +2,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useTranslation } from "react-i18next"
 
 import {
     GitBranch,
@@ -26,13 +27,14 @@ interface VersioningCardProps {
 }
 
 export function VersioningCard({ version, helmChartVersion, className }: VersioningCardProps) {
-    const versionLabel = version?.version ?? "Unknown"
+    const { t } = useTranslation()
+    const versionLabel = version?.version ?? t("unknown", { ns: "monitoring" })
     const buildDateLabel = version?.build_date
-        ? version.build_date.split("T")[0] ?? "Unknown"
-        : "Unknown"
-    const latestAppVersion = helmChartVersion?.app_version ?? "Checking..."
-    const latestChartVersion = helmChartVersion?.chart_version ?? "Checking..."
-    const [latestUiVersion, setLatestUiVersion] = useState<string>("Checking...")
+        ? version.build_date.split("T")[0] ?? t("unknown", { ns: "monitoring" })
+        : t("unknown", { ns: "monitoring" })
+    const latestAppVersion = helmChartVersion?.app_version ?? t("checking", { ns: "monitoring" })
+    const latestChartVersion = helmChartVersion?.chart_version ?? t("checking", { ns: "monitoring" })
+    const [latestUiVersion, setLatestUiVersion] = useState<string>(t("checking", { ns: "monitoring" }))
 
     useEffect(() => {
         const fetchLatestVersion = async () => {
@@ -64,10 +66,10 @@ export function VersioningCard({ version, helmChartVersion, className }: Version
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     <GitBranch className="h-5 w-5" />
-                    System Versions
+                    {t("systemVersions", { ns: "monitoring" })}
                 </CardTitle>
                 <CardDescription>
-                    Software versioning and release information
+                    {t("softwareVersioning", { ns: "monitoring" })}
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -76,7 +78,7 @@ export function VersioningCard({ version, helmChartVersion, className }: Version
                     <div className="space-y-2">
                         <div className="flex items-center gap-2">
                             <Box className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm font-medium">Neo Core</span>
+                            <span className="text-sm font-medium">{t("neoCore", { ns: "monitoring" })}</span>
                         </div>
                         <div className="flex items-center justify-between">
                             <div className="text-2xl font-bold">{versionLabel}</div>
@@ -89,7 +91,7 @@ export function VersioningCard({ version, helmChartVersion, className }: Version
                     <div className="space-y-2">
                         <div className="flex items-center gap-2">
                             <IconDeviceDesktop className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm font-medium">UI Framework</span>
+                            <span className="text-sm font-medium">{t("uiFramework", { ns: "monitoring" })}</span>
                         </div>
                         <div className="flex items-center justify-between">
                             <a
@@ -110,7 +112,7 @@ export function VersioningCard({ version, helmChartVersion, className }: Version
                 <div>
                     <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
                         <IconLayersDifference className="h-4 w-4" />
-                        Latest Available Versions
+                        {t("latestAvailableVersions", { ns: "monitoring" })}
                     </h4>
 
                     <div className="space-y-3 text-sm">
@@ -118,7 +120,7 @@ export function VersioningCard({ version, helmChartVersion, className }: Version
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2 text-muted-foreground">
                                 <IconPackage className="h-3 w-3" />
-                                <span>Helm Chart</span>
+                                <span>{t("helmChart", { ns: "monitoring" })}</span>
                             </div>
                             <a
                                 href="https://github.com/NetApp/Innovation-Labs/tree/main/charts/netapp-neo"
@@ -134,10 +136,10 @@ export function VersioningCard({ version, helmChartVersion, className }: Version
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2 text-muted-foreground">
                                 <Box className="h-3 w-3" />
-                                <span>Neo Core</span>
+                                <span>{t("neoCore", { ns: "monitoring" })}</span>
                             </div>
                             <span className="font-mono bg-muted px-2 py-0.5 rounded text-xs">
-                                {helmChartVersion?.app_version === "Unknown" ? "Unable to check" : latestAppVersion}
+                                {helmChartVersion?.app_version === "Unknown" ? t("unableToCheck", { ns: "monitoring" }) : latestAppVersion}
                             </span>
                         </div>
 
@@ -145,7 +147,7 @@ export function VersioningCard({ version, helmChartVersion, className }: Version
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2 text-muted-foreground">
                                 <IconDeviceDesktop className="h-3 w-3" />
-                                <span>Neo Console</span>
+                                <span>{t("neoConsole", { ns: "monitoring" })}</span>
                             </div>
                             <span className="font-mono bg-muted px-2 py-0.5 rounded text-xs text-muted-foreground">
                                 {latestUiVersion}

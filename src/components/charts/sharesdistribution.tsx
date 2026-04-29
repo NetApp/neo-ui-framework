@@ -2,6 +2,7 @@
 "use client"
 
 import * as React from "react"
+import { useTranslation } from "react-i18next"
 import { TrendingUp, FolderOpen } from "lucide-react"
 import { Label, Pie, PieChart } from "recharts"
 
@@ -66,6 +67,7 @@ type SharesDistributionTooltipProps = {
 }
 
 export function SharesDistributionChart({ sharesAnalytics }: SharesDistributionChartProps) {
+  const { t } = useTranslation()
   const chartData = React.useMemo(() => {
     if (!sharesAnalytics || sharesAnalytics.length === 0) {
       return []
@@ -110,10 +112,10 @@ export function SharesDistributionChart({ sharesAnalytics }: SharesDistributionC
           <p className="font-medium">{data.shareName}</p>
           <p className="text-xs text-muted-foreground mb-1">{data.shareFullPath}</p>
           <p className="text-sm text-muted-foreground">
-            Files: {data.count.toLocaleString()} ({percentage}%)
+            {t("filesLabel", { ns: "monitoring" })}: {data.count.toLocaleString()} ({percentage}%)
           </p>
           <p className="text-sm text-muted-foreground">
-            Size: {sizeInMB} MB
+            {t("sizeLabel", { ns: "monitoring" })}: {sizeInMB} {t("mbSuffix", { ns: "monitoring" })}
           </p>
         </div>
       )
@@ -125,11 +127,11 @@ export function SharesDistributionChart({ sharesAnalytics }: SharesDistributionC
     return (
       <Card className="md:col-span-2 lg:col-span-2 flex flex-col">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Document Distribution by Shares</CardTitle>
+          <CardTitle className="text-sm font-medium">{t("documentDistributionByShares", { ns: "monitoring" })}</CardTitle>
           <FolderOpen className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-sm text-muted-foreground">No shares analytics data available</div>
+          <div className="text-sm text-muted-foreground">{t("noSharesAnalyticsDataAvailable", { ns: "monitoring" })}</div>
         </CardContent>
       </Card>
     )
@@ -138,8 +140,8 @@ export function SharesDistributionChart({ sharesAnalytics }: SharesDistributionC
   return (
     <Card className="md:col-span-2 lg:col-span-2 flex flex-col">
       <CardHeader className="items-center pb-0">
-        <CardTitle>Document Distribution by Shares</CardTitle>
-        <CardDescription>File count breakdown across {chartData.length} active shares</CardDescription>
+        <CardTitle>{t("documentDistributionByShares", { ns: "monitoring" })}</CardTitle>
+        <CardDescription>{t("fileCountBreakdownAcrossShares", { ns: "monitoring", count: chartData.length })}</CardDescription>
       </CardHeader>
       <CardContent className="flex-1 pb-0">
         <ChartContainer
@@ -180,7 +182,7 @@ export function SharesDistributionChart({ sharesAnalytics }: SharesDistributionC
                           y={(viewBox.cy || 0) + 24}
                           className="fill-muted-foreground"
                         >
-                          Total Files
+                          {t("totalFiles", { ns: "monitoring" })}
                         </tspan>
                       </text>
                     )
@@ -194,12 +196,12 @@ export function SharesDistributionChart({ sharesAnalytics }: SharesDistributionC
       <CardFooter className="flex-col gap-2 text-sm">
         {largestShare && (
           <div className="flex items-center gap-2 leading-none font-medium">
-            Largest share: {largestShare.shareName} ({largestShare.count.toLocaleString()} files)
+            {t("largestShare", { ns: "monitoring" })}: {largestShare.shareName} ({largestShare.count.toLocaleString()} {t("fileCountSuffix", { ns: "monitoring" })})
             <TrendingUp className="h-4 w-4" />
           </div>
         )}
         <div className="text-muted-foreground leading-none">
-          Distribution of {totalFiles.toLocaleString()} files across {chartData.length} indexed shares
+          {t("indexedSharesDistribution", { ns: "monitoring", files: totalFiles.toLocaleString(), shares: chartData.length })}
         </div>
       </CardFooter>
     </Card>

@@ -33,60 +33,60 @@ const data = {
     //   icon: IconArrowsJoin,
     // },
     {
-      name: "Monitoring",
+      nameKey: "monitoring",
       url: "#/monitoring",
       icon: IconActivity,
     },
     {
-      name: "Tasks",
+      nameKey: "tasks",
       url: "#/tasks",
       icon: IconListCheck,
     },
   ],
   navDataEstate: [
     {
-      name: "Sources",
+      nameKey: "sources",
       url: "#/shares",
       icon: IconFolderShare,
     },
     {
-      name: "Data Corpus",
+      nameKey: "dataCorpus",
       url: "#/my-datasets/data-corpus",
       icon: IconFiles,
     },
   ],
   navDiscovery: [
     {
-      name: "Content Search",
+      nameKey: "contentSearch",
       url: "#/my-datasets/content-search",
       icon: IconFileSearch,
     },
   ],
   navDatasets: [
     {
-      name: "My Datasets",
+      nameKey: "myDatasets",
       url: "#/my-datasets/my-datasets",
       icon: IconFolders,
     },
   ],
   navSecondary: [
     {
-      name: "Users",
+      nameKey: "users",
       url: "#/users",
       icon: IconUsers,
     },
     {
-      name: "Settings",
+      nameKey: "settings",
       url: "#/settings",
       icon: IconSettings,
     },
     {
-      name: "Logs",
+      nameKey: "logs",
       url: "#/logs",
       icon: IconFileText,
     },
     {
-      name: "Help",
+      nameKey: "help",
       url: "#/help",
       icon: IconHelp,
     },
@@ -114,9 +114,9 @@ export function AppSidebarContent({ datasets = [], ...props }: AppSidebarContent
   return (
     <SidebarContent {...props}>
       <NavMain items={data.navMain} />
-      <NavMain items={data.navDataEstate} label="Data Estate" />
-      <NavMain items={data.navDiscovery} label="Discovery" />
-      <NavMain items={navDatasets} label="Datasets" />
+      <NavMain items={data.navDataEstate} labelKey="dataEstate" labelNamespace="nav" />
+      <NavMain items={data.navDiscovery} labelKey="discovery" labelNamespace="nav" />
+      <NavMain items={navDatasets} labelKey="datasets" labelNamespace="nav" />
       <NavMain items={data.navSecondary} className="mt-auto" />
     </SidebarContent>
   )

@@ -1,6 +1,7 @@
 // Copyright 2025 NetApp, Inc. All Rights Reserved.
 "use client"
 
+import { useTranslation } from "react-i18next"
 import {
     Activity,
     CheckIcon,
@@ -26,12 +27,13 @@ interface NeoInstanceCardProps {
 }
 
 export function NeoInstanceCard({ health, license, className }: NeoInstanceCardProps) {
-    const healthStatus = health?.status ?? "Not connected"
+    const { t } = useTranslation()
+    const healthStatus = health?.status ?? t("notConnected", { ns: "monitoring" })
     const healthComponents = [
-        { key: "database", label: "Database" },
-        { key: "filesystem", label: "Filesystem" },
-        { key: "graph_connector", label: "Graph Connector" },
-        { key: "shares", label: "Shares" },
+        { key: "database", label: t("databaseLabel", { ns: "monitoring" }) },
+        { key: "filesystem", label: t("filesystemLabel", { ns: "monitoring" }) },
+        { key: "graph_connector", label: t("graphConnectorLabel", { ns: "monitoring" }) },
+        { key: "shares", label: t("sharesLabel", { ns: "monitoring" }) },
     ]
 
     return (
@@ -39,10 +41,10 @@ export function NeoInstanceCard({ health, license, className }: NeoInstanceCardP
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     <IconArrowsJoin className="h-5 w-5" />
-                    Neo Instance
+                    {t("neoInstance", { ns: "monitoring" })}
                 </CardTitle>
                 <CardDescription>
-                    Health and resource information
+                    {t("healthAndResourceInfo", { ns: "monitoring" })}
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -51,7 +53,7 @@ export function NeoInstanceCard({ health, license, className }: NeoInstanceCardP
                     <div className="space-y-2">
                         <div className="flex items-center gap-2">
                             <Activity className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm font-medium">Status</span>
+                            <span className="text-sm font-medium">{t("statusLabel", { ns: "monitoring" })}</span>
                         </div>
                         <div className="flex items-center gap-2">
                             <Badge
@@ -69,7 +71,7 @@ export function NeoInstanceCard({ health, license, className }: NeoInstanceCardP
                     <div className="space-y-2">
                         <div className="flex items-center gap-2">
                             <CheckIcon className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm font-medium">License</span>
+                            <span className="text-sm font-medium">{t("licenseLabel", { ns: "monitoring" })}</span>
                         </div>
                         <div className="flex items-center gap-2">
                             <Badge
@@ -81,7 +83,7 @@ export function NeoInstanceCard({ health, license, className }: NeoInstanceCardP
                                     return "text-green-600 border-green-200 dark:text-green-400 dark:border-green-800"
                                 })()}`}
                             >
-                                {license?.details.days_remaining ?? "Unknown"} days
+                                {license?.details.days_remaining ?? t("unknown", { ns: "monitoring" })} {t("daysSuffix", { ns: "monitoring" })}
                             </Badge>
                         </div>
 
@@ -94,23 +96,23 @@ export function NeoInstanceCard({ health, license, className }: NeoInstanceCardP
                 <div>
                     <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
                         <Activity className="h-4 w-4" />
-                        Resource Usage
+                        {t("resourceUsage", { ns: "monitoring" })}
                     </h4>
                     <div className="grid grid-cols-3 gap-4">
                         <div className="rounded-lg border p-3 text-center">
                             <IconCpu className="mx-auto mb-1 h-5 w-5 text-muted-foreground" />
                             <p className="text-sm font-bold">{health?.metrics?.cpu_percent?.toFixed(1) ?? "0.0"}%</p>
-                            <p className="text-xs text-muted-foreground">CPU</p>
+                            <p className="text-xs text-muted-foreground">{t("cpuLabel", { ns: "monitoring" })}</p>
                         </div>
                         <div className="rounded-lg border p-3 text-center">
                             <IconRuler3 className="mx-auto mb-1 h-5 w-5 text-muted-foreground" />
                             <p className="text-sm font-bold">{health?.metrics?.memory_percent?.toFixed(1) ?? "0.0"}%</p>
-                            <p className="text-xs text-muted-foreground">Memory</p>
+                            <p className="text-xs text-muted-foreground">{t("memoryLabel", { ns: "monitoring" })}</p>
                         </div>
                         <div className="rounded-lg border p-3 text-center">
                             <HardDrive className="mx-auto mb-1 h-5 w-5 text-muted-foreground" />
                             <p className="text-sm font-bold">{health?.metrics?.disk_percent?.toFixed(1) ?? "0.0"}%</p>
-                            <p className="text-xs text-muted-foreground">Disk</p>
+                            <p className="text-xs text-muted-foreground">{t("diskLabel", { ns: "monitoring" })}</p>
                         </div>
                     </div>
                 </div>
@@ -119,22 +121,26 @@ export function NeoInstanceCard({ health, license, className }: NeoInstanceCardP
 
                 {/* Component Status Table */}
                 <div>
-                    <h4 className="text-sm font-medium mb-3">Component Health</h4>
+                    <h4 className="text-sm font-medium mb-3">{t("componentHealth", { ns: "monitoring" })}</h4>
                     <div className="space-y-2 text-sm">
                         {healthComponents.map(({ key, label }) => {
                             if (!health || !health.components) return null
                             const component = health.components[key as keyof typeof health.components]
                             let isHealthy = false
                             let isNotConfigured = false
-                            let statusText = "Unknown"
+                            let statusText = t("unknown", { ns: "monitoring" })
 
                             if (key === "shares" && component && 'active_count' in component) {
                                 isHealthy = component.errors.length === 0
-                                statusText = isHealthy ? "Healthy" : "Errors"
+                                statusText = isHealthy ? t("healthy", { ns: "monitoring" }) : t("errors", { ns: "monitoring" })
                             } else if (component && 'status' in component) {
                                 isHealthy = component.status === "healthy"
                                 isNotConfigured = component.status === "not_configured"
-                                statusText = component.status
+                                statusText = component.status === "healthy"
+                                    ? t("healthy", { ns: "monitoring" })
+                                    : component.status === "not_configured"
+                                        ? t("notConfigured", { ns: "monitoring" })
+                                        : component.status
                             }
 
                             let badgeClass = "text-destructive border-destructive/50"

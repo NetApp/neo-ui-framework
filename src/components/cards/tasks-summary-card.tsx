@@ -1,6 +1,7 @@
 // Copyright 2025 NetApp, Inc. All Rights Reserved.
 "use client"
 
+import { useTranslation } from "react-i18next"
 import {
     ListTodo,
     CheckCircle2,
@@ -25,6 +26,7 @@ interface TasksSummaryCardProps {
 }
 
 export function TasksSummaryCard({ stats, className }: TasksSummaryCardProps) {
+    const { t } = useTranslation()
     if (!stats) return null
 
     return (
@@ -32,10 +34,10 @@ export function TasksSummaryCard({ stats, className }: TasksSummaryCardProps) {
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     <ListTodo className="h-5 w-5" />
-                    Tasks Summary
+                    {t("tasksSummary", { ns: "monitoring" })}
                 </CardTitle>
                 <CardDescription>
-                    Overview of background task execution status
+                    {t("tasksSummaryDescription", { ns: "monitoring" })}
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -43,7 +45,7 @@ export function TasksSummaryCard({ stats, className }: TasksSummaryCardProps) {
                 <div className="space-y-2">
                     <div className="flex items-center gap-2">
                         <ListTodo className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm font-medium">Total Tasks</span>
+                        <span className="text-sm font-medium">{t("totalTasks", { ns: "monitoring" })}</span>
                     </div>
                     <div className="text-2xl font-bold">{stats.total_tasks}</div>
                 </div>
@@ -53,7 +55,7 @@ export function TasksSummaryCard({ stats, className }: TasksSummaryCardProps) {
                 {/* Task Status Breakdown */}
                 <div>
                     <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
-                        Status Breakdown
+                        {t("statusBreakdown", { ns: "monitoring" })}
                     </h4>
 
                     <div className="space-y-3 text-sm">
@@ -61,7 +63,7 @@ export function TasksSummaryCard({ stats, className }: TasksSummaryCardProps) {
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2 text-muted-foreground">
                                 <PlayCircle className="h-3 w-3 text-blue-500" />
-                                <span>Running</span>
+                                <span>{t("running", { ns: "monitoring" })}</span>
                             </div>
                             <span className="font-mono bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded text-xs font-bold">
                                 {stats.by_status.running}
@@ -72,7 +74,7 @@ export function TasksSummaryCard({ stats, className }: TasksSummaryCardProps) {
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2 text-muted-foreground">
                                 <Clock className="h-3 w-3 text-yellow-500" />
-                                <span>Pending</span>
+                                <span>{t("pending", { ns: "monitoring" })}</span>
                             </div>
                             <span className="font-mono bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 px-2 py-0.5 rounded text-xs">
                                 {stats.by_status.pending}
@@ -83,7 +85,7 @@ export function TasksSummaryCard({ stats, className }: TasksSummaryCardProps) {
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2 text-muted-foreground">
                                 <CheckCircle2 className="h-3 w-3 text-green-500" />
-                                <span>Completed</span>
+                                <span>{t("completed", { ns: "monitoring" })}</span>
                             </div>
                             <span className="font-mono bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2 py-0.5 rounded text-xs">
                                 {stats.by_status.completed}
@@ -94,7 +96,7 @@ export function TasksSummaryCard({ stats, className }: TasksSummaryCardProps) {
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2 text-muted-foreground">
                                 <XCircle className="h-3 w-3 text-red-500" />
-                                <span>Failed</span>
+                                <span>{t("failed", { ns: "monitoring" })}</span>
                             </div>
                             <span className="font-mono bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 px-2 py-0.5 rounded text-xs">
                                 {stats.by_status.failed}
@@ -105,7 +107,7 @@ export function TasksSummaryCard({ stats, className }: TasksSummaryCardProps) {
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2 text-muted-foreground">
                                 <Ban className="h-3 w-3 text-gray-500" />
-                                <span>Cancelled</span>
+                                <span>{t("cancelled", { ns: "monitoring" })}</span>
                             </div>
                             <span className="font-mono bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 px-2 py-0.5 rounded text-xs">
                                 {stats.by_status.cancelled}

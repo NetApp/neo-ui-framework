@@ -2,6 +2,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useTranslation } from "react-i18next"
 import {
   IconAlertTriangle,
   IconClock,
@@ -87,6 +88,7 @@ export function MonitoringChart({
   helmChartVersion,
   cacheStats
 }: MonitoringChartProps) {
+  const { t } = useTranslation()
   const {
     overview,
     workers,
@@ -146,10 +148,10 @@ export function MonitoringChart({
   return (
     <Tabs defaultValue="neo" className="w-full">
       <TabsList className="mb-4">
-        <TabsTrigger value="neo">Neo Instance</TabsTrigger>
-        <TabsTrigger value="data-corpus">Data Corpus</TabsTrigger>
-        <TabsTrigger value="crawling">Crawling Jobs</TabsTrigger>
-        <TabsTrigger value="tasks">Tasks</TabsTrigger>
+        <TabsTrigger value="neo">{t("neoTab", { ns: "monitoring" })}</TabsTrigger>
+        <TabsTrigger value="data-corpus">{t("dataCorpusTab", { ns: "monitoring" })}</TabsTrigger>
+        <TabsTrigger value="crawling">{t("crawlingTab", { ns: "monitoring" })}</TabsTrigger>
+        <TabsTrigger value="tasks">{t("tasksTab", { ns: "monitoring" })}</TabsTrigger>
       </TabsList>
 
       {/* Neo Tab */}
@@ -201,31 +203,31 @@ export function MonitoringChart({
           {/* Workers Status */}
           <Card className="md:col-span-1 lg:col-span-1">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Workers</CardTitle>
+              <CardTitle className="text-sm font-medium">{t("workers", { ns: "monitoring" })}</CardTitle>
               <IconUsers className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               {workers ? (
                 <div className="space-y-2">
                   <div className="text-2xl font-bold">{workers?.total_workers ?? 0}</div>
-                  <p className="text-xs text-muted-foreground">Total workers</p>
+                  <p className="text-xs text-muted-foreground">{t("totalWorkers", { ns: "monitoring" })}</p>
                   <div className="space-y-1">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs">Active</span>
+                      <span className="text-xs">{t("active", { ns: "monitoring" })}</span>
                       <Badge variant="default">{workers?.active_workers ?? 0}</Badge>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-xs">Stopping</span>
+                      <span className="text-xs">{t("stopping", { ns: "monitoring" })}</span>
                       <Badge variant="secondary">{workers?.stopping_workers ?? 0}</Badge>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-xs">Stopped</span>
+                      <span className="text-xs">{t("stopped", { ns: "monitoring" })}</span>
                       <Badge variant="outline">{workers?.stopped_workers ?? 0}</Badge>
                     </div>
                   </div>
                 </div>
               ) : (
-                <div className="text-sm text-muted-foreground">No data available</div>
+                <div className="text-sm text-muted-foreground">{t("noDataAvailable", { ns: "monitoring" })}</div>
               )}
             </CardContent>
           </Card>
@@ -233,27 +235,27 @@ export function MonitoringChart({
           {/* Work Queue Overview */}
           <Card className="md:col-span-1 lg:col-span-1">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Work Queue</CardTitle>
+              <CardTitle className="text-sm font-medium">{t("workQueue", { ns: "monitoring" })}</CardTitle>
               <IconActivity className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               {overview?.work_queue ? (
                 <div className="space-y-2">
                   <div className="text-2xl font-bold">{overview?.work_queue?.total_items ?? 0}</div>
-                  <p className="text-xs text-muted-foreground">Total items</p>
+                  <p className="text-xs text-muted-foreground">{t("totalItems", { ns: "monitoring" })}</p>
                   <div className="space-y-1">
                     <div className="flex justify-between text-xs">
-                      <span>Pending: {overview?.work_queue?.pending_items ?? 0}</span>
-                      <span>Processing: {overview?.work_queue?.processing_items ?? 0}</span>
+                      <span>{t("pending", { ns: "monitoring" })}: {overview?.work_queue?.pending_items ?? 0}</span>
+                      <span>{t("processing", { ns: "monitoring" })}: {overview?.work_queue?.processing_items ?? 0}</span>
                     </div>
                     <div className="flex justify-between text-xs">
-                      <span>Claimed: {overview?.work_queue?.claimed_items ?? 0}</span>
-                      <span className="text-destructive">Failed: {overview?.work_queue?.failed_items ?? 0}</span>
+                      <span>{t("claimed", { ns: "monitoring" })}: {overview?.work_queue?.claimed_items ?? 0}</span>
+                      <span className="text-destructive">{t("failed", { ns: "monitoring" })}: {overview?.work_queue?.failed_items ?? 0}</span>
                     </div>
                   </div>
                 </div>
               ) : (
-                <div className="text-sm text-muted-foreground">No data available</div>
+                <div className="text-sm text-muted-foreground">{t("noDataAvailable", { ns: "monitoring" })}</div>
               )}
             </CardContent>
           </Card>
@@ -261,27 +263,27 @@ export function MonitoringChart({
           {/* Enumeration Status */}
           <Card className="md:col-span-1 lg:col-span-1">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Enumeration</CardTitle>
+              <CardTitle className="text-sm font-medium">{t("enumeration", { ns: "monitoring" })}</CardTitle>
               <IconActivity className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               {enumeration ? (
                 <div className="space-y-2">
                   <div className="text-2xl font-bold">{enumeration?.completed_enumerations_last_24h ?? 0}</div>
-                  <p className="text-xs text-muted-foreground">Completed (24h)</p>
+                  <p className="text-xs text-muted-foreground">{t("completed24h", { ns: "monitoring" })}</p>
                   <div className="space-y-1">
                     <div className="flex justify-between text-xs">
-                      <span>Avg Duration:</span>
+                      <span>{t("avgDuration", { ns: "monitoring" })}:</span>
                       <span>{enumeration?.avg_enumeration_duration_seconds?.toFixed(1) ?? "0.0"}s</span>
                     </div>
                     <div className="flex justify-between text-xs">
-                      <span>Active:</span>
+                      <span>{t("active", { ns: "monitoring" })}:</span>
                       <Badge variant="default">{enumeration?.active_enumerations?.length ?? 0}</Badge>
                     </div>
                   </div>
                 </div>
               ) : (
-                <div className="text-sm text-muted-foreground">No data available</div>
+                <div className="text-sm text-muted-foreground">{t("noDataAvailable", { ns: "monitoring" })}</div>
               )}
             </CardContent>
           </Card>
@@ -289,32 +291,32 @@ export function MonitoringChart({
           {/* Graph Rate Limit */}
           <Card className="md:col-span-1 lg:col-span-1">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Graph Rate Limit</CardTitle>
+              <CardTitle className="text-sm font-medium">{t("graphRateLimit", { ns: "monitoring" })}</CardTitle>
               <IconClock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               {graphRateLimit ? (
                 <div className="space-y-2">
                   <div className="text-2xl font-bold">{graphRateLimit?.requests_remaining ?? 0}</div>
-                  <p className="text-xs text-muted-foreground">Requests remaining</p>
+                  <p className="text-xs text-muted-foreground">{t("requestsRemaining", { ns: "monitoring" })}</p>
                   <Progress
                     value={((graphRateLimit?.requests_remaining ?? 0) / ((graphRateLimit?.requests_made ?? 0) + (graphRateLimit?.requests_remaining ?? 1))) * 100}
                     className="h-2"
                   />
                   <div className="flex items-center justify-between text-xs">
-                    <span>Made: {graphRateLimit?.requests_made ?? 0}</span>
+                    <span>{t("made", { ns: "monitoring" })}: {graphRateLimit?.requests_made ?? 0}</span>
                     <Badge variant={graphRateLimit?.rate_limited ? "destructive" : "default"}>
-                      {graphRateLimit?.rate_limited ? "Limited" : "Active"}
+                      {graphRateLimit?.rate_limited ? t("limited", { ns: "monitoring" }) : t("activeStatus", { ns: "monitoring" })}
                     </Badge>
                   </div>
                   {graphRateLimit?.reset_time && (
                     <p className="text-xs text-muted-foreground">
-                      Resets: {new Date(graphRateLimit.reset_time).toLocaleTimeString()}
+                      {t("resets", { ns: "monitoring" })}: {new Date(graphRateLimit.reset_time).toLocaleTimeString()}
                     </p>
                   )}
                 </div>
               ) : (
-                <div className="text-sm text-muted-foreground">No data available</div>
+                <div className="text-sm text-muted-foreground">{t("noDataAvailable", { ns: "monitoring" })}</div>
               )}
             </CardContent>
           </Card>
@@ -322,7 +324,7 @@ export function MonitoringChart({
           <Card className="md:col-span-2 lg:col-span-3">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <div className="flex items-center gap-2">
-                <CardTitle className="text-sm font-medium">Failed Items</CardTitle>
+                <CardTitle className="text-sm font-medium">{t("failedItems", { ns: "monitoring" })}</CardTitle>
                 {failedItems && failedItems.total_failed_items > 0 && (
                   <Button
                     variant="outline"
@@ -332,7 +334,7 @@ export function MonitoringChart({
                     className="h-7 text-xs"
                   >
                     <IconRefresh className={`mr-1 h-3 w-3 ${isRetrying ? "animate-spin" : ""}`} />
-                    Retry failed items
+                    {t("retryFailedItems", { ns: "monitoring" })}
                   </Button>
                 )}
               </div>
@@ -342,11 +344,11 @@ export function MonitoringChart({
               {failedItems ? (
                 <div className="space-y-2">
                   <div className="text-2xl font-bold text-destructive">{failedItems?.total_failed_items ?? 0}</div>
-                  <p className="text-xs text-muted-foreground">Total failed</p>
+                  <p className="text-xs text-muted-foreground">{t("totalFailed", { ns: "monitoring" })}</p>
                   {failedItems?.failed_items && failedItems.failed_items.length > 0 && (
                     <div className="space-y-1">
                       <Separator />
-                      <p className="text-xs font-medium">Recent failures:</p>
+                      <p className="text-xs font-medium">{t("recentFailures", { ns: "monitoring" })}</p>
                       {failedItems.failed_items.slice(0, 3).map((item, index) => (
                         <div key={index} className="text-xs">
                           <div className="truncate font-medium">{item.filename || item.file_path}</div>
@@ -357,7 +359,7 @@ export function MonitoringChart({
                   )}
                 </div>
               ) : (
-                <div className="text-sm text-muted-foreground">No data available</div>
+                <div className="text-sm text-muted-foreground">{t("noDataAvailable", { ns: "monitoring" })}</div>
               )}
             </CardContent>
           </Card>

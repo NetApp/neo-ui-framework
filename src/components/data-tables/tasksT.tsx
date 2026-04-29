@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react"
+import { useTranslation } from "react-i18next"
 import { CheckCircle2, XCircle, Clock, Loader2, Ban } from "lucide-react"
 import type { TasksResponse } from "@/services/neo-api"
 
@@ -73,6 +74,7 @@ export function formatDuration(startedAt: string | null, completedAt: string | n
 }
 
 export function TasksTable({ tasks, onTaskClick }: TasksTableProps) {
+  const { t } = useTranslation()
   const rows = tasks ?? []
   const rowsPerPage = 100
   const [currentPage, setCurrentPage] = useState(1)
@@ -165,35 +167,35 @@ export function TasksTable({ tasks, onTaskClick }: TasksTableProps) {
           <TableHeader className="sticky top-0 z-10 bg-muted">
             <TableRow>
               <TableHead style={{ width: columnWidths.name, position: 'relative' }}>
-                Name
+                {t("columnName", { ns: "tasks" })}
                 <div
                   className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-primary/50"
                   onMouseDown={(e) => handleResizeStart(e, 'name')}
                 />
               </TableHead>
               <TableHead style={{ width: columnWidths.share_id, position: 'relative' }}>
-                Share ID
+                {t("columnShareId", { ns: "tasks" })}
                 <div
                   className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-primary/50"
                   onMouseDown={(e) => handleResizeStart(e, 'share_id')}
                 />
               </TableHead>
               <TableHead style={{ width: columnWidths.created_at, position: 'relative' }}>
-                Created
+                {t("columnCreated", { ns: "tasks" })}
                 <div
                   className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-primary/50"
                   onMouseDown={(e) => handleResizeStart(e, 'created_at')}
                 />
               </TableHead>
               <TableHead style={{ width: columnWidths.duration, position: 'relative' }}>
-                Duration
+                {t("columnDuration", { ns: "tasks" })}
                 <div
                   className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-primary/50"
                   onMouseDown={(e) => handleResizeStart(e, 'duration')}
                 />
               </TableHead>
               <TableHead style={{ width: columnWidths.status, position: 'relative' }}>
-                Status
+                {t("columnStatus", { ns: "tasks" })}
                 <div
                   className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-primary/50"
                   onMouseDown={(e) => handleResizeStart(e, 'status')}
@@ -227,7 +229,7 @@ export function TasksTable({ tasks, onTaskClick }: TasksTableProps) {
             ) : (
               <TableRow>
                 <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">
-                  No tasks available.
+                  {t("noTasksAvailable", { ns: "tasks" })}
                 </TableCell>
               </TableRow>
             )}
@@ -238,7 +240,7 @@ export function TasksTable({ tasks, onTaskClick }: TasksTableProps) {
       {rows.length > 0 ? (
         <div className="flex items-center justify-between space-x-2 py-4">
           <div className="text-muted-foreground flex-1 text-sm">
-            Showing {startIndex + 1}-{Math.min(startIndex + paginatedRows.length, rows.length)} of {rows.length.toLocaleString()} tasks · Page {currentPage} of {totalPages}
+            {t("showingPagination", { ns: "tasks", from: startIndex + 1, to: Math.min(startIndex + paginatedRows.length, rows.length), total: rows.length.toLocaleString(), page: currentPage, pages: totalPages })}
           </div>
           <div className="space-x-2">
             <Button
@@ -247,7 +249,7 @@ export function TasksTable({ tasks, onTaskClick }: TasksTableProps) {
               onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
               disabled={currentPage === 1}
             >
-              Previous
+              {t("previousButton", { ns: "tasks" })}
             </Button>
             <Button
               variant="outline"
@@ -255,7 +257,7 @@ export function TasksTable({ tasks, onTaskClick }: TasksTableProps) {
               onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
               disabled={currentPage === totalPages}
             >
-              Next
+              {t("nextButton", { ns: "tasks" })}
             </Button>
           </div>
         </div>

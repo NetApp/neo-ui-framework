@@ -14,6 +14,7 @@ import {
 } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useSettings } from "@/context/settings-context"
+import { useTranslation } from "react-i18next"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -55,6 +56,7 @@ import { useSearchParams } from "react-router-dom"
 import { useNeoApi } from "@/hooks/useNeoApi"
 import { NeoApiService } from "@/services/neo-api"
 import { Separator } from "@/components/ui/separator"
+import { SUPPORTED_LOCALES, type AppLocale } from "@/i18n"
 
 interface SettingsProps {
     monitoringOverview: MonitoringOverviewResponse | null
@@ -63,7 +65,8 @@ interface SettingsProps {
 }
 
 export default function Settings({ monitoringOverview, state, handlers }: SettingsProps) {
-    const { monitoringTtl, filesTtl, cacheMaxSize, logLevel, updateSettings } = useSettings()
+    const { monitoringTtl, filesTtl, cacheMaxSize, logLevel, locale, updateSettings } = useSettings()
+    const { t } = useTranslation()
 
     const getSetupGraph = handlers.getSetupGraph
     const getSetupProxy = handlers.getSetupProxy
@@ -76,6 +79,7 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
     const [localFilesTtl, setLocalFilesTtl] = useState(filesTtl)
     const [localCacheMaxSize, setLocalCacheMaxSize] = useState(cacheMaxSize)
     const [localLogLevel, setLocalLogLevel] = useState<LogLevel>(logLevel)
+    const [localLocale, setLocalLocale] = useState<AppLocale>(locale)
 
     // Setup Status State
     const [isResetting, setIsResetting] = useState(false)
@@ -137,7 +141,8 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
         setLocalFilesTtl(filesTtl)
         setLocalCacheMaxSize(cacheMaxSize)
         setLocalLogLevel(logLevel)
-    }, [monitoringTtl, filesTtl, cacheMaxSize, logLevel])
+        setLocalLocale(locale)
+    }, [monitoringTtl, filesTtl, cacheMaxSize, logLevel, locale])
 
     const [mcpInfo, setMcpInfo] = useState<McpInfoResponse | null>(null)
 
@@ -245,8 +250,15 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
             filesTtl: Number(localFilesTtl),
             cacheMaxSize: Number(localCacheMaxSize),
             logLevel: localLogLevel,
+            locale: localLocale,
         })
-        toast.success("Settings saved successfully")
+        toast.success(t("settingsSaved", { ns: "settings" }))
+    }
+
+    const handleLocaleChange = (nextLocale: string) => {
+        const resolvedLocale = nextLocale as AppLocale
+        setLocalLocale(resolvedLocale)
+        updateSettings({ locale: resolvedLocale })
     }
 
     // Setup Handlers
@@ -271,7 +283,7 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
                 }, 1500)
             }
         } catch {
-            setResetResult({ success: false, message: "Failed to reset setup." })
+            setResetResult({ success: false, message: t("failedResetSetup", { ns: "settings" }) })
         } finally {
             setIsResetting(false)
         }
@@ -284,15 +296,15 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
         try {
             const response = await handlers.completeSetup()
             if (response.success) {
-                setCompleteResult({ success: true, message: "Setup completed successfully. Application will restart automatically in 30 seconds." })
+                setCompleteResult({ success: true, message: t("setupCompletedSuccessRestart", { ns: "settings" }) })
                 setTimeout(() => {
                     window.location.reload()
                 }, 30000)
             } else {
-                setCompleteResult({ success: false, message: response.message || "Failed to complete setup." })
+                setCompleteResult({ success: false, message: response.message || t("failedCompleteSetup", { ns: "settings" }) })
             }
         } catch  {
-            setCompleteResult({ success: false, message: "Failed to complete setup." })
+            setCompleteResult({ success: false, message: t("failedCompleteSetup", { ns: "settings" }) })
         } finally {
             setIsCompleting(false)
         }
@@ -319,15 +331,15 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
     const handleUpdatePassword = async () => {
         setPasswordError(null)
         if (!newPassword || !confirmPassword) {
-            setPasswordError("Please enter both password fields.")
+            setPasswordError(t("pleaseEnterBothPasswordFields", { ns: "settings" }))
             return
         }
         if (newPassword !== confirmPassword) {
-            setPasswordError("Passwords do not match.")
+            setPasswordError(t("passwordsDoNotMatch", { ns: "settings" }))
             return
         }
         if (!credentialsInit?.username || !credentialsInit?.password) {
-            setPasswordError("Initial credentials not found.")
+            setPasswordError(t("initialCredentialsNotFound", { ns: "settings" }))
             return
         }
 
@@ -346,9 +358,9 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
             setIsCredentialsDialogOpen(false)
             setNewPassword("")
             setConfirmPassword("")
-            toast.success("Password updated successfully. You can now log in.")
+            toast.success(t("passwordUpdatedLogin", { ns: "settings" }))
         } catch (error: unknown) {
-            setPasswordError(getErrorMessage(error, "Failed to update password."))
+            setPasswordError(getErrorMessage(error, t("failedUpdatePassword", { ns: "settings" })))
         } finally {
             setIsUpdatingPassword(false)
         }
@@ -361,7 +373,7 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
     const handleSaveLicense = async () => {
         setLicenseSaveResult(null)
         if (!licenseKey) {
-            setLicenseSaveResult({ success: false, message: "Please enter a license key." })
+            setLicenseSaveResult({ success: false, message: t("pleaseEnterLicenseKey", { ns: "settings" }) })
             return
         }
 
@@ -374,17 +386,17 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
                     window.location.reload()
                 }, 1500)
             } else {
-                setLicenseSaveResult({ success: false, message: response.message || "License setup failed." })
+                setLicenseSaveResult({ success: false, message: response.message || t("licenseSetupFailed", { ns: "settings" }) })
             }
         } catch {
-            setLicenseSaveResult({ success: false, message: "Failed to configure license." })
+            setLicenseSaveResult({ success: false, message: t("failedConfigureLicense", { ns: "settings" }) })
         }
     }
 
     const handleSaveGraph = async () => {
         setGraphSaveResult(null)
         if (!clientSecret.trim()) {
-            setGraphSaveResult({ success: false, message: "Client Secret is required to save M365 settings." })
+            setGraphSaveResult({ success: false, message: t("clientSecretRequired", { ns: "settings" }) })
             return
         }        
         const payload = {
@@ -399,15 +411,15 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
         try {
             const response = await handlers.setupGraph(payload)
             if (response.success) {
-                setGraphSaveResult({ success: true, message: response.message || "Graph configured successfully." })
+                setGraphSaveResult({ success: true, message: response.message || t("graphConfiguredSuccessfully", { ns: "settings" }) })
                 setTimeout(() => {
                     window.location.reload()
                 }, 1500)
             } else {
-                setGraphSaveResult({ success: false, message: response.message || "Graph setup failed." })
+                setGraphSaveResult({ success: false, message: response.message || t("graphSetupFailed", { ns: "settings" }) })
             }
         } catch {
-            setGraphSaveResult({ success: false, message: "Failed to configure Graph." })
+            setGraphSaveResult({ success: false, message: t("failedConfigureGraph", { ns: "settings" }) })
         }
     }
 
@@ -422,22 +434,22 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
         try {
             const response = await handlers.setupProxy(payload)
             if (response.success) {
-                setProxySaveResult({ success: true, message: response.message || "Proxy settings saved successfully." })
+                setProxySaveResult({ success: true, message: response.message || t("proxySettingsSavedSuccessfully", { ns: "settings" }) })
                 setTimeout(() => {
                     window.location.reload()
                 }, 1500)
             } else {
-                setProxySaveResult({ success: false, message: response.message || "Proxy setup failed." })
+                setProxySaveResult({ success: false, message: response.message || t("proxySetupFailed", { ns: "settings" }) })
             }
         } catch {
-            setProxySaveResult({ success: false, message: "Failed to configure proxy settings." })
+            setProxySaveResult({ success: false, message: t("failedConfigureProxySettings", { ns: "settings" }) })
         }
     }
 
     const handleSaveSSL = async () => {
         setSslSaveResult(null)
         // POST /api/v1/setup/ssl endpoint to be implemented when backend supports it.
-        setSslSaveResult({ success: true, message: "SSL settings saved (placeholder)." })
+        setSslSaveResult({ success: true, message: t("sslSettingsSavedPlaceholder", { ns: "settings" }) })
         setTimeout(() => {
             window.location.reload()
         }, 1500)
@@ -458,7 +470,7 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
                         <div className="space-y-6">
                             <OverviewCard
                                 overview={monitoringOverview}
-                                title="Settings"
+                                title={t("pageTitle", { ns: "settings" })}
                                 showCacheStats={false}
                             />
 
@@ -468,10 +480,11 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
                                 className="w-full"
                             >
                                 <TabsList>
-                                    <TabsTrigger value="neo-core">Neo Core Setup</TabsTrigger>
-                                    <TabsTrigger value="neo-mcp">Neo MCP</TabsTrigger>
-                                    <TabsTrigger value="cache">Cache Configuration</TabsTrigger>
-                                    <TabsTrigger value="logging">Logging Configuration</TabsTrigger>
+                                    <TabsTrigger value="neo-core">{t("neoCoreTab", { ns: "settings" })}</TabsTrigger>
+                                    <TabsTrigger value="neo-mcp">{t("neoMcpTab", { ns: "settings" })}</TabsTrigger>
+                                    <TabsTrigger value="cache">{t("cacheTab", { ns: "settings" })}</TabsTrigger>
+                                    <TabsTrigger value="languages">{t("languagesTab", { ns: "settings" })}</TabsTrigger>
+                                    <TabsTrigger value="logging">{t("loggingTab", { ns: "settings" })}</TabsTrigger>
                                 </TabsList>
                                 <TabsContent value="neo-core">
                                     <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
@@ -480,10 +493,10 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
                                             <CardHeader>
                                                 <CardTitle className="flex items-center gap-2">
                                                     <Activity className="h-5 w-5" />
-                                                    Neo Core Setup
+                                                    {t("neoCoreTitle", { ns: "settings" })}
                                                 </CardTitle>
                                                 <CardDescription>
-                                                    Configure and monitor the status of the Neo Core connector.
+                                                    {t("neoCoreDescription", { ns: "settings" })}
                                                 </CardDescription>
                                             </CardHeader>
                                             <CardContent className="space-y-6">
@@ -494,7 +507,7 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
                                                         <div className="space-y-2">
                                                             <div className="flex items-center gap-2">
                                                                 <Activity className="h-4 w-4 text-muted-foreground" />
-                                                                <span className="text-sm font-medium">Status</span>
+                                                                <span className="text-sm font-medium">{t("statusLabel", { ns: "settings" })}</span>
                                                             </div>
                                                             <div>
                                                                 <Badge
@@ -504,7 +517,7 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
                                                                         : "text-orange-600 border-orange-200 dark:text-orange-400 dark:border-orange-800"
                                                                         } px-3 py-1`}
                                                                 >
-                                                                    {setupStatus.setup_complete ? "Complete" : "In Progress"}
+                                                                    {setupStatus.setup_complete ? t("completeStatus", { ns: "settings" }) : t("inProgressStatus", { ns: "settings" })}
                                                                 </Badge>
                                                             </div>
                                                         </div>
@@ -513,20 +526,20 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
                                                         <div className="space-y-2">
                                                             <div className="flex items-center gap-2">
                                                                 <ListChecks className="h-4 w-4 text-muted-foreground" />
-                                                                <span className="text-sm font-medium">Steps</span>
+                                                                <span className="text-sm font-medium">{t("stepsLabel", { ns: "settings" })}</span>
                                                             </div>
                                                             <div className="flex items-center gap-2">
                                                                 <span className="text-xl font-bold">
                                                                     {stepsCompletedCount} / {requiredStepsCount}
                                                                 </span>
-                                                                <span className="text-sm text-muted-foreground">Required</span>
+                                                                <span className="text-sm text-muted-foreground">{t("requiredLabel", { ns: "settings" })}</span>
                                                             </div>
                                                         </div>
 
                                                         {/* Database Status */}
                                                         <div className="space-y-2">
                                                             <div className="flex items-center gap-2">
-                                                                <span className="text-sm font-medium">Infrastructure</span>
+                                                                <span className="text-sm font-medium">{t("infrastructureLabel", { ns: "settings" })}</span>
                                                             </div>
                                                             <div className="flex items-center gap-2 text-sm">
                                                                 <div className={`h-2.5 w-2.5 rounded-full ${setupStatus.database_configured
@@ -534,7 +547,7 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
                                                                     : "bg-red-500"
                                                                     }`} />
                                                                 <span className={setupStatus.database_configured ? "text-foreground font-medium" : "text-muted-foreground"}>
-                                                                    Database Configured
+                                                                    {t("databaseConfigured", { ns: "settings" })}
                                                                 </span>
                                                             </div>
                                                         </div>
@@ -552,13 +565,13 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
                                                             ? "bg-green-500"
                                                             : "bg-red-500"
                                                             }`} />
-                                                        <h4 className="text-sm font-medium">License Key</h4>
+                                                        <h4 className="text-sm font-medium">{t("licenseKeyHeading", { ns: "settings" })}</h4>
                                                     </div>
 
                                                     {licenseSaveResult && (
                                                         <Alert variant={licenseSaveResult.success ? "default" : "destructive"} className={licenseSaveResult.success ? "border-green-500 text-green-600 dark:border-green-500 dark:text-green-500" : ""}>
                                                             {licenseSaveResult.success ? <IconCheck className="h-4 w-4" /> : <IconAlertTriangle className="h-4 w-4" />}
-                                                            <AlertTitle>{licenseSaveResult.success ? "Success" : "Error"}</AlertTitle>
+                                                            <AlertTitle>{licenseSaveResult.success ? t("successTitle", { ns: "settings" }) : t("errorTitle", { ns: "settings" })}</AlertTitle>
                                                             <AlertDescription>
                                                                 {licenseSaveResult.message}
                                                             </AlertDescription>
@@ -570,10 +583,10 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
                                                                 id="license-key"
                                                                 value={licenseKey}
                                                                 onChange={(e) => setLicenseKey(e.target.value)}
-                                                                placeholder="Enter license key..."
+                                                                placeholder={t("licenseKeyPlaceholder", { ns: "settings" })}
                                                                 type="password"
                                                             />
-                                                            <Button onClick={handleSaveLicense}>Save</Button>
+                                                            <Button onClick={handleSaveLicense}>{t("saveButton", { ns: "settings" })}</Button>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -587,9 +600,9 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
                                                             <div className="flex items-center gap-2">
                                                                 <div className={`h-2.5 w-2.5 rounded-full ${graphConfigured ? "bg-green-500" : "bg-red-500"}`} />
                                                                 <div className="flex flex-col items-start text-left">
-                                                                    <h4 className="text-sm font-medium">M365 Copilot Graph Setup (optional)</h4>
+                                                                    <h4 className="text-sm font-medium">{t("m365Heading", { ns: "settings" })}</h4>
                                                                     <p className="text-xs text-muted-foreground font-normal">
-                                                                        Configure settings for Microsoft 365 Copilot Graph integration.
+                                                                        {t("m365Description", { ns: "settings" })}
                                                                     </p>
                                                                 </div>
                                                             </div>
@@ -599,14 +612,14 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
                                                                 {graphSaveResult && (
                                                                     <Alert variant={graphSaveResult.success ? "default" : "destructive"} className={graphSaveResult.success ? "border-green-500 text-green-600 dark:border-green-500 dark:text-green-500" : ""}>
                                                                         {graphSaveResult.success ? <IconCheck className="h-4 w-4" /> : <IconAlertTriangle className="h-4 w-4" />}
-                                                                        <AlertTitle>{graphSaveResult.success ? "Success" : "Error"}</AlertTitle>
+                                                                        <AlertTitle>{graphSaveResult.success ? t("successTitle", { ns: "settings" }) : t("errorTitle", { ns: "settings" })}</AlertTitle>
                                                                         <AlertDescription>
                                                                             {graphSaveResult.message}
                                                                         </AlertDescription>
                                                                     </Alert>
                                                                 )}
                                                                 <div className="space-y-4">
-                                                                    <h4 className="text-xs font-medium uppercase text-muted-foreground">Required Fields</h4>
+                                                                    <h4 className="text-xs font-medium uppercase text-muted-foreground">{t("requiredFields", { ns: "settings" })}</h4>
                                                                     <div className="grid gap-4 md:grid-cols-3">
                                                                         <div className="grid gap-2">
                                                                             <Label htmlFor="tenant-id">Tenant ID</Label>
@@ -638,7 +651,7 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
                                                                 </div>
 
                                                                 <div className="space-y-4">
-                                                                    <h4 className="text-xs font-medium uppercase text-muted-foreground">Optional Fields</h4>
+                                                                    <h4 className="text-xs font-medium uppercase text-muted-foreground">{t("optionalFields", { ns: "settings" })}</h4>
                                                                     <div className="grid gap-4 md:grid-cols-2">
                                                                         <div className="grid gap-2">
                                                                             <Label htmlFor="connector-id">Connector ID</Label>
@@ -668,7 +681,7 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
                                                                     </div>
                                                                 </div>
                                                                 <div className="flex justify-end">
-                                                                    <Button onClick={handleSaveGraph}>Save M365 Settings</Button>
+                                                                    <Button onClick={handleSaveGraph}>{t("saveM365Settings", { ns: "settings" })}</Button>
                                                                 </div>
                                                             </div>
                                                         </AccordionContent>
@@ -680,9 +693,9 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
                                                             <div className="flex items-center gap-2">
                                                                 <div className={`h-2.5 w-2.5 rounded-full ${proxyConfigured ? "bg-green-500" : "bg-red-500"}`} />
                                                                 <div className="flex flex-col items-start text-left">
-                                                                    <h4 className="text-sm font-medium">Proxy Setup (optional)</h4>
+                                                                    <h4 className="text-sm font-medium">{t("proxyHeading", { ns: "settings" })}</h4>
                                                                     <p className="text-xs text-muted-foreground font-normal">
-                                                                        Configure proxy settings for outbound connections.
+                                                                        {t("proxyDescription", { ns: "settings" })}
                                                                     </p>
                                                                 </div>
                                                             </div>
@@ -692,7 +705,7 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
                                                                 {proxySaveResult && (
                                                                     <Alert variant={proxySaveResult.success ? "default" : "destructive"} className={proxySaveResult.success ? "border-green-500 text-green-600 dark:border-green-500 dark:text-green-500" : ""}>
                                                                         {proxySaveResult.success ? <IconCheck className="h-4 w-4" /> : <IconAlertTriangle className="h-4 w-4" />}
-                                                                        <AlertTitle>{proxySaveResult.success ? "Success" : "Error"}</AlertTitle>
+                                                                        <AlertTitle>{proxySaveResult.success ? t("successTitle", { ns: "settings" }) : t("errorTitle", { ns: "settings" })}</AlertTitle>
                                                                         <AlertDescription>
                                                                             {proxySaveResult.message}
                                                                         </AlertDescription>
@@ -732,7 +745,7 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
                                                                     </div>
                                                                 </div>
                                                                 <div className="flex justify-end">
-                                                                    <Button onClick={handleSaveProxy}>Save Proxy Settings</Button>
+                                                                    <Button onClick={handleSaveProxy}>{t("saveProxySettings", { ns: "settings" })}</Button>
                                                                 </div>
                                                             </div>
                                                         </AccordionContent>
@@ -744,9 +757,9 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
                                                             <div className="flex items-center gap-2">
                                                                    <div className={`h-2.5 w-2.5 rounded-full ${sslConfigured ? "bg-green-500" : "bg-red-500"}`} />
                                                                 <div className="flex flex-col items-start text-left">
-                                                                    <h4 className="text-sm font-medium">SSL Setup (optional)</h4>
+                                                                    <h4 className="text-sm font-medium">{t("sslHeading", { ns: "settings" })}</h4>
                                                                     <p className="text-xs text-muted-foreground font-normal">
-                                                                        Configure SSL/TLS settings for secure connections.
+                                                                        {t("sslDescription", { ns: "settings" })}
                                                                     </p>
                                                                 </div>
                                                             </div>
@@ -756,7 +769,7 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
                                                                 {sslSaveResult && (
                                                                     <Alert variant={sslSaveResult.success ? "default" : "destructive"} className={sslSaveResult.success ? "border-green-500 text-green-600 dark:border-green-500 dark:text-green-500" : ""}>
                                                                         {sslSaveResult.success ? <IconCheck className="h-4 w-4" /> : <IconAlertTriangle className="h-4 w-4" />}
-                                                                        <AlertTitle>{sslSaveResult.success ? "Success" : "Error"}</AlertTitle>
+                                                                        <AlertTitle>{sslSaveResult.success ? t("successTitle", { ns: "settings" }) : t("errorTitle", { ns: "settings" })}</AlertTitle>
                                                                         <AlertDescription>
                                                                             {sslSaveResult.message}
                                                                         </AlertDescription>
@@ -805,7 +818,7 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
                                                                     )}               
                                                                 </div>
                                                                 <div className="flex justify-end">
-                                                                    <Button onClick={handleSaveSSL}>Save SSL Settings</Button>
+                                                                    <Button onClick={handleSaveSSL}>{t("saveSslSettings", { ns: "settings" })}</Button>
                                                                 </div>
                                                             </div>
                                                         </AccordionContent>
@@ -820,7 +833,7 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
                                                         {resetResult && (
                                                             <Alert variant={resetResult.success ? "default" : "destructive"} className={resetResult.success ? "border-green-500 text-green-600 dark:border-green-500 dark:text-green-500" : ""}>
                                                                 {resetResult.success ? <CheckCircle2 className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
-                                                                <AlertTitle>{resetResult.success ? "Success" : "Error"}</AlertTitle>
+                                                                <AlertTitle>{resetResult.success ? t("successTitle", { ns: "settings" }) : t("errorTitle", { ns: "settings" })}</AlertTitle>
                                                                 <AlertDescription>
                                                                     {resetResult.message}
                                                                 </AlertDescription>
@@ -829,7 +842,7 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
                                                         {completeResult && (
                                                             <Alert variant={completeResult.success ? "default" : "destructive"} className={completeResult.success ? "border-green-500 text-green-600 dark:border-green-500 dark:text-green-500" : ""}>
                                                                 {completeResult.success ? <CheckCircle2 className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
-                                                                <AlertTitle>{completeResult.success ? "Success" : "Error"}</AlertTitle>
+                                                                <AlertTitle>{completeResult.success ? t("successTitle", { ns: "settings" }) : t("errorTitle", { ns: "settings" })}</AlertTitle>
                                                                 <AlertDescription>
                                                                     {completeResult.message}
                                                                 </AlertDescription>
@@ -847,24 +860,24 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
                                                                 onClick={handleGetCredentials}
                                                                 disabled={isFetchingCredentials}
                                                             >
-                                                                {isFetchingCredentials ? "Fetching Credentials..." : "Admin Credentials"}
+                                                                {isFetchingCredentials ? t("fetchingCredentials", { ns: "settings" }) : t("adminCredentials", { ns: "settings" })}
                                                             </Button>
 
                                                             <Dialog open={isCredentialsDialogOpen} onOpenChange={setIsCredentialsDialogOpen}>
                                                                 <DialogContent>
                                                                     <DialogHeader>
-                                                                        <DialogTitle>Initial Admin Credentials</DialogTitle>
+                                                                        <DialogTitle>{t("initialAdminCredentials", { ns: "settings" })}</DialogTitle>
                                                                         <DialogDescription className="text-red-500 font-medium">
-                                                                            Please change this password immediately after logging in. This endpoint will be disabled after first login.
+                                                                            {t("initialAdminCredentialsWarning", { ns: "settings" })}
                                                                         </DialogDescription>
                                                                     </DialogHeader>
                                                                     <div className="bg-slate-950 p-4 rounded-md font-mono text-sm space-y-2">
                                                                         <div className="flex justify-between items-center">
-                                                                            <span className="text-slate-400">Username:</span>
+                                                                            <span className="text-slate-400">{t("usernameLabel", { ns: "settings" })}</span>
                                                                             <span className="text-white">{credentialsInit?.username}</span>
                                                                         </div>
                                                                         <div className="flex justify-between items-center">
-                                                                            <span className="text-slate-400">Password:</span>
+                                                                            <span className="text-slate-400">{t("passwordLabel", { ns: "settings" })}</span>
                                                                             <div className="flex items-center gap-2">
                                                                                 <span className="text-white">{credentialsInit?.password}</span>
                                                                                 <button onClick={() => credentialsInit?.password && copyToClipboard(credentialsInit.password)} className="text-slate-400 hover:text-white transition-colors">
@@ -878,23 +891,23 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
 
                                                                     <div className="space-y-4">
                                                                         <div className="space-y-2">
-                                                                            <Label htmlFor="new-password">New Password</Label>
+                                                                            <Label htmlFor="new-password">{t("newPasswordLabel", { ns: "settings" })}</Label>
                                                                             <Input
                                                                                 id="new-password"
                                                                                 type="password"
                                                                                 value={newPassword}
                                                                                 onChange={(e) => setNewPassword(e.target.value)}
-                                                                                placeholder="Enter new password"
+                                                                                placeholder={t("newPasswordPlaceholder", { ns: "settings" })}
                                                                             />
                                                                         </div>
                                                                         <div className="space-y-2">
-                                                                            <Label htmlFor="confirm-password">Confirm Password</Label>
+                                                                            <Label htmlFor="confirm-password">{t("confirmPasswordLabel", { ns: "settings" })}</Label>
                                                                             <Input
                                                                                 id="confirm-password"
                                                                                 type="password"
                                                                                 value={confirmPassword}
                                                                                 onChange={(e) => setConfirmPassword(e.target.value)}
-                                                                                placeholder="Confirm new password"
+                                                                                placeholder={t("confirmPasswordPlaceholder", { ns: "settings" })}
                                                                             />
                                                                         </div>
                                                                         {passwordError && (
@@ -905,11 +918,11 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
                                                                             onClick={handleUpdatePassword}
                                                                             disabled={isUpdatingPassword}
                                                                         >
-                                                                            {isUpdatingPassword ? "Updating Password..." : "Update Password"}
+                                                                            {isUpdatingPassword ? t("updatingPassword", { ns: "settings" }) : t("updatePassword", { ns: "settings" })}
                                                                         </Button>
                                                                     </div>
                                                                     <DialogFooter>
-                                                                        <Button onClick={() => setIsCredentialsDialogOpen(false)} variant="outline">Close</Button>
+                                                                        <Button onClick={() => setIsCredentialsDialogOpen(false)} variant="outline">{t("closeButton", { ns: "settings" })}</Button>
                                                                     </DialogFooter>
                                                                 </DialogContent>
                                                             </Dialog>
@@ -919,16 +932,16 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
                                                                     <DialogHeader>
                                                                         <DialogTitle className="flex items-center gap-2 text-destructive">
                                                                             <AlertTriangle className="h-5 w-5" />
-                                                                            Credentials Expired
+                                                                            {t("credentialsExpiredTitle", { ns: "settings" })}
                                                                         </DialogTitle>
                                                                         <DialogDescription>
-                                                                            The initial admin credentials have already been used and cannot be recovered.
+                                                                            {t("credentialsExpiredDescription", { ns: "settings" })}
                                                                             <br /><br />
-                                                                            If you have lost your password, you will need to perform a factory reset to restore access.
+                                                                            {t("credentialsExpiredResetHint", { ns: "settings" })}
                                                                         </DialogDescription>
                                                                     </DialogHeader>
                                                                     <DialogFooter>
-                                                                        <Button variant="outline" onClick={() => setIsExpiredDialogOpen(false)}>Close</Button>
+                                                                        <Button variant="outline" onClick={() => setIsExpiredDialogOpen(false)}>{t("closeButton", { ns: "settings" })}</Button>
                                                                     </DialogFooter>
                                                                 </DialogContent>
                                                             </Dialog>
@@ -941,7 +954,7 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
                                                                 onClick={handleReset}
                                                                 disabled={isResetting || isCompleting}
                                                             >
-                                                                {isResetting ? "Resetting..." : "Reset Setup"}
+                                                                {isResetting ? t("resetting", { ns: "settings" }) : t("resetSetup", { ns: "settings" })}
                                                             </Button>
 
                                                             {setupStatus.steps_completed.includes("license") && (
@@ -953,19 +966,19 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
                                                                             className="bg-green-600 hover:bg-green-700"
                                                                             disabled={isResetting || isCompleting}
                                                                         >
-                                                                            {isCompleting ? "Completing..." : "Setup Completed"}
+                                                                            {isCompleting ? t("completing", { ns: "settings" }) : t("setupCompleted", { ns: "settings" })}
                                                                         </Button>
                                                                     </DialogTrigger>
                                                                     <DialogContent>
                                                                         <DialogHeader>
-                                                                            <DialogTitle>Complete Setup & Restart?</DialogTitle>
+                                                                            <DialogTitle>{t("completeSetupRestartTitle", { ns: "settings" })}</DialogTitle>
                                                                             <DialogDescription>
-                                                                                This will conclude the setup of Neo Core and trigger a restart of the container with the current configuration.
+                                                                                {t("completeSetupRestartDescription", { ns: "settings" })}
                                                                             </DialogDescription>
                                                                         </DialogHeader>
                                                                         <DialogFooter>
-                                                                            <Button variant="outline" onClick={() => setIsCompleteDialogOpen(false)}>Cancel</Button>
-                                                                            <Button onClick={handleCompleteSetup} className="bg-green-600 hover:bg-green-700">Confirm & Restart</Button>
+                                                                            <Button variant="outline" onClick={() => setIsCompleteDialogOpen(false)}>{t("cancelButton", { ns: "settings" })}</Button>
+                                                                            <Button onClick={handleCompleteSetup} className="bg-green-600 hover:bg-green-700">{t("confirmRestart", { ns: "settings" })}</Button>
                                                                         </DialogFooter>
                                                                     </DialogContent>
                                                                 </Dialog>
@@ -983,10 +996,10 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
                                             <CardHeader>
                                                 <CardTitle className="flex items-center gap-2">
                                                     <Activity className="h-5 w-5" />
-                                                    Neo MCP Information
+                                                    {t("mcpTitle", { ns: "settings" })}
                                                 </CardTitle>
                                                 <CardDescription>
-                                                    View the Model Context Protocol settings and capabilities for this instance.
+                                                    {t("mcpDescription", { ns: "settings" })}
                                                 </CardDescription>
                                             </CardHeader>
                                             <CardContent className="space-y-6">
@@ -994,32 +1007,32 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
                                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                         <div className="space-y-4">
                                                             <div>
-                                                                <h4 className="text-sm font-medium text-muted-foreground">Name</h4>
+                                                                <h4 className="text-sm font-medium text-muted-foreground">{t("nameLabel", { ns: "settings" })}</h4>
                                                                 <p className="text-sm">{mcpInfo.name}</p>
                                                             </div>
                                                             <div>
-                                                                <h4 className="text-sm font-medium text-muted-foreground">Version</h4>
+                                                                <h4 className="text-sm font-medium text-muted-foreground">{t("versionLabel", { ns: "settings" })}</h4>
                                                                 <p className="text-sm">{mcpInfo.version}</p>
                                                             </div>
                                                             <div>
-                                                                <h4 className="text-sm font-medium text-muted-foreground">Protocol Version</h4>
+                                                                <h4 className="text-sm font-medium text-muted-foreground">{t("protocolVersionLabel", { ns: "settings" })}</h4>
                                                                 <p className="text-sm">{mcpInfo.protocol_version}</p>
                                                             </div>
                                                             <div>
-                                                                <h4 className="text-sm font-medium text-muted-foreground">Transport</h4>
+                                                                <h4 className="text-sm font-medium text-muted-foreground">{t("transportLabel", { ns: "settings" })}</h4>
                                                                 <p className="text-sm capitalize">{mcpInfo.transport.replace('-', ' ')}</p>
                                                             </div>
                                                             <div className="flex items-center gap-2 pt-2">
-                                                                <h4 className="text-sm font-medium text-muted-foreground">OAuth Enabled</h4>
+                                                                <h4 className="text-sm font-medium text-muted-foreground">{t("oauthEnabledLabel", { ns: "settings" })}</h4>
                                                                 <Badge variant={mcpInfo.oauth_enabled ? "default" : "secondary"}>
-                                                                    {mcpInfo.oauth_enabled ? "Yes" : "No"}
+                                                                    {mcpInfo.oauth_enabled ? t("yesLabel", { ns: "settings" }) : t("noLabel", { ns: "settings" })}
                                                                 </Badge>
                                                             </div>
                                                         </div>
 
                                                         <div className="space-y-4">
                                                             <div>
-                                                                <h4 className="text-sm font-medium text-muted-foreground mb-2">Available Tools</h4>
+                                                                <h4 className="text-sm font-medium text-muted-foreground mb-2">{t("availableTools", { ns: "settings" })}</h4>
                                                                 <div className="flex flex-wrap gap-2">
                                                                     {mcpInfo.tools.map((tool) => (
                                                                         <Badge key={tool} variant="outline" className="bg-muted/50">
@@ -1029,7 +1042,7 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
                                                                 </div>
                                                             </div>
                                                             <div>
-                                                                <h4 className="text-sm font-medium text-muted-foreground mb-2">Endpoints</h4>
+                                                                <h4 className="text-sm font-medium text-muted-foreground mb-2">{t("endpointsLabel", { ns: "settings" })}</h4>
                                                                 <div className="space-y-2">
                                                                     {Object.entries(mcpInfo.endpoints).map(([key, url]) => (
                                                                         <div key={key} className="flex flex-col gap-1">
@@ -1048,14 +1061,14 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
                                                     </div>
                                                 ) : (
                                                     <div className="flex items-center justify-center p-8 text-muted-foreground">
-                                                        Fetching MCP Information...
+                                                        {t("fetchingMcpInformation", { ns: "settings" })}
                                                     </div>
                                                 )}
                                             </CardContent>
                                             {mcpInfo?.oauth_enabled && (
                                                 <CardFooter className="flex justify-end border-t p-6">
                                                     <Button onClick={handlers.handleOAuthLogin}>
-                                                        Retrieve MCP Token
+                                                        {t("retrieveMcpToken", { ns: "settings" })}
                                                     </Button>
                                                 </CardFooter>
                                             )}
@@ -1066,9 +1079,9 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
                                     <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
                                         <Card className="col-span-1 lg:col-span-3">
                                             <CardHeader>
-                                                <CardTitle>Cache Configuration</CardTitle>
+                                                <CardTitle>{t("cacheTitle", { ns: "settings" })}</CardTitle>
                                                 <CardDescription>
-                                                    Manage the performance and memory usage of the application cache.
+                                                    {t("cacheDescription", { ns: "settings" })}
                                                 </CardDescription>
                                             </CardHeader>
                                             <CardContent className="space-y-4">
@@ -1117,7 +1130,7 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
                                             <div className="border-t p-6 flex justify-end">
                                                 <Button onClick={handleSave}>
                                                     <Save className="mr-2 size-4" />
-                                                    Save Changes
+                                                    {t("saveChanges", { ns: "settings" })}
                                                 </Button>
                                             </div>
                                         </Card>
@@ -1127,9 +1140,9 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
                                     <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
                                         <Card className="col-span-1 lg:col-span-3">
                                             <CardHeader>
-                                                <CardTitle>Logging Configuration</CardTitle>
+                                                <CardTitle>{t("loggingTitle", { ns: "settings" })}</CardTitle>
                                                 <CardDescription>
-                                                    Control the verbosity of application logs.
+                                                    {t("loggingDescription", { ns: "settings" })}
                                                 </CardDescription>
                                             </CardHeader>
                                             <CardContent className="space-y-4">
@@ -1159,6 +1172,44 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
                                                 <Button onClick={handleSave}>
                                                     <Save className="mr-2 size-4" />
                                                     Save Changes
+                                                </Button>
+                                            </div>
+                                        </Card>
+                                    </div>
+                                </TabsContent>
+                                <TabsContent value="languages">
+                                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
+                                        <Card className="col-span-1 lg:col-span-3">
+                                            <CardHeader>
+                                                <CardTitle>{t("languagesTab", { ns: "settings" })}</CardTitle>
+                                                <CardDescription>
+                                                    {t("languageDescription", { ns: "settings" })}
+                                                </CardDescription>
+                                            </CardHeader>
+                                            <CardContent className="space-y-4">
+                                                <div className="grid gap-2">
+                                                    <Label htmlFor="display-language">{t("languageLabel", { ns: "settings" })}</Label>
+                                                    <Select value={localLocale} onValueChange={handleLocaleChange}>
+                                                        <SelectTrigger id="display-language">
+                                                            <SelectValue placeholder={t("language")} />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            {SUPPORTED_LOCALES.map((localeOption) => (
+                                                                <SelectItem key={localeOption} value={localeOption}>
+                                                                    {t(`languageOption_${localeOption}`)}
+                                                                </SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <p className="text-sm text-muted-foreground">
+                                                        {t("languageSaveHint", { ns: "settings" })}
+                                                    </p>
+                                                </div>
+                                            </CardContent>
+                                            <div className="border-t p-6 flex justify-end">
+                                                <Button onClick={handleSave}>
+                                                    <Save className="mr-2 size-4" />
+                                                    {t("saveChanges", { ns: "settings" })}
                                                 </Button>
                                             </div>
                                         </Card>

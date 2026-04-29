@@ -2,10 +2,6 @@
 "use client"
 
 import {
-  IconBrain,
-} from "@tabler/icons-react"
-
-import {
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -14,21 +10,25 @@ import {
 
 export function AppSidebarHeader() {
   return (
-      <SidebarHeader>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              asChild
-              className="data-[slot=sidebar-menu-button]:!p-1.5"
-              variant="default"
-            >
-              <a href="#">
-                <IconBrain className="!size-5" />
-                <span className="text-base font-semibold">Neo Console</span>
-              </a>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarHeader>
+    <SidebarHeader>
+      <SidebarMenu>
+        <SidebarMenuItem>
+          <SidebarMenuButton
+            asChild
+            className="data-[slot=sidebar-menu-button]:!p-1.5 data-[slot=sidebar-menu-button]:!items-center"
+            variant="default"
+          >
+            <a href="#">
+              <img
+                src="/netapp.svg"
+                alt="NetApp"
+                className="block h-5 w-auto"
+              />
+              <span className="text-base font-semibold">Neo Console</span>
+            </a>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      </SidebarMenu>
+    </SidebarHeader>
   )
 }
