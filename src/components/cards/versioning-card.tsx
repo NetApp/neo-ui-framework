@@ -29,9 +29,6 @@ interface VersioningCardProps {
 export function VersioningCard({ version, helmChartVersion, className }: VersioningCardProps) {
     const { t } = useTranslation()
     const versionLabel = version?.version ?? t("unknown", { ns: "monitoring" })
-    const buildDateLabel = version?.build_date
-        ? version.build_date.split("T")[0] ?? t("unknown", { ns: "monitoring" })
-        : t("unknown", { ns: "monitoring" })
     const latestAppVersion = helmChartVersion?.app_version ?? t("checking", { ns: "monitoring" })
     const latestChartVersion = helmChartVersion?.chart_version ?? t("checking", { ns: "monitoring" })
     const [latestUiVersion, setLatestUiVersion] = useState<string>(t("checking", { ns: "monitoring" }))
@@ -74,16 +71,15 @@ export function VersioningCard({ version, helmChartVersion, className }: Version
             </CardHeader>
             <CardContent className="space-y-4">
                 {/* Current Versions */}
-                <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                         <div className="flex items-center gap-2">
                             <Box className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm font-medium">{t("neoCore", { ns: "monitoring" })}</span>
+                            <span className="text-sm font-medium">Core</span>
                         </div>
-                        <div className="flex items-center justify-between">
-                            <div className="text-2xl font-bold">{versionLabel}</div>
-                            <Badge variant="outline">
-                                {buildDateLabel}
+                        <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="font-mono">
+                                {versionLabel}
                             </Badge>
                         </div>
                     </div>
@@ -91,17 +87,19 @@ export function VersioningCard({ version, helmChartVersion, className }: Version
                     <div className="space-y-2">
                         <div className="flex items-center gap-2">
                             <IconDeviceDesktop className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm font-medium">{t("uiFramework", { ns: "monitoring" })}</span>
+                            <span className="text-sm font-medium">Console</span>
                         </div>
-                        <div className="flex items-center justify-between">
-                            <a
-                                href="https://github.com/NetApp/neo-ui-framework"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-2xl font-bold hover:underline hover:text-primary transition-colors"
-                            >
-                                {__APP_VERSION__}
-                            </a>
+                        <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="font-mono">
+                                <a
+                                    href="https://github.com/NetApp/neo-ui-framework"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="hover:underline hover:text-primary transition-colors"
+                                >
+                                    {__APP_VERSION__}
+                                </a>
+                            </Badge>
                         </div>
                     </div>
                 </div>

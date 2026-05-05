@@ -133,31 +133,11 @@ export interface ReadyResponse { // only for v3
 // Dashboard Page Models 
 export interface HealthResponse {
   status: string
-  version: string
-  timestamp: string
-  components: {
-    database: {
-      status: string;
-      error: string | null
-    }
-    filesystem: {
-      status: string;
-      error: string | null
-    }
-    graph_connector?: { // only for v3
-      status: string
-      error: string | null
-    }
-    shares: {
-      active_count: number
-      errors: string[]
-    }
-  }
-  metrics: {
-    cpu_percent: number
-    memory_percent: number
-    disk_percent: number
-  }
+  service?: string
+  version?: string
+  timestamp?: string
+  worker_url?: string
+  components?: Record<string, string>
 }
 
 export interface LicenseResponse {

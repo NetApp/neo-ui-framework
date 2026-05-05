@@ -89,11 +89,11 @@ export function AclCacheCard({ stats, className }: AclCacheCardProps) {
                     <div className="grid grid-cols-2 gap-4">
                         <div className="bg-muted/50 p-2 rounded border">
                             <div className="text-xs text-muted-foreground">{t("hitRate", { ns: "monitoring" })}</div>
-                            <div className="text-xl font-bold">{(stats.hit_rate * 100).toFixed(1)}%</div>
+                            <div className="text-lg font-bold">{(stats.hit_rate * 100).toFixed(1)}%</div>
                         </div>
                         <div className="bg-muted/50 p-2 rounded border">
                             <div className="text-xs text-muted-foreground">{t("totalRequests", { ns: "monitoring" })}</div>
-                            <div className="text-xl font-bold">{stats.total_requests.toLocaleString()}</div>
+                            <div className="text-lg font-bold">{stats.total_requests.toLocaleString()}</div>
                         </div>
                         <div className="bg-muted/50 p-2 rounded border">
                             <div className="text-xs text-muted-foreground">{t("hits", { ns: "monitoring" })}</div>

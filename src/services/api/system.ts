@@ -120,9 +120,9 @@ export class SystemApiClient extends BaseApiClient {
   getHealth(token?: string) {
     appLogger.debug("Fetching health status")
     if (token) {
-      return this.requestWithToken<HealthResponse>("/health", token)
+      return this.requestWithToken<HealthResponse>("/health/detailed", token)
     }
-    return this.request<HealthResponse>("/health")
+    return this.request<HealthResponse>("/health/detailed")
   }
 
   getLicenseStatus(token?: string) {
