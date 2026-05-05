@@ -8,6 +8,7 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Clock, HardDrive } from "lucide-react"
 import { IconTable } from "@tabler/icons-react"
@@ -50,11 +51,15 @@ export function CacheStatsCard({ cacheStats, className }: CacheStatsCardProps) {
                         </div>
                         <div className="flex items-center justify-between text-sm">
                             <span className="text-muted-foreground">{t("monitoringLabel", { ns: "monitoring" })}:</span>
-                            <span className="font-mono">{monitoringTtl} {t("minSuffix", { ns: "monitoring" })}</span>
+                            <Badge variant="outline" className="font-mono text-xs">
+                                {monitoringTtl} {t("minSuffix", { ns: "monitoring" })}
+                            </Badge>
                         </div>
                         <div className="flex items-center justify-between text-sm">
                             <span className="text-muted-foreground">{t("filesLabel", { ns: "monitoring" })}:</span>
-                            <span className="font-mono">{filesTtl} {t("minSuffix", { ns: "monitoring" })}</span>
+                            <Badge variant="outline" className="font-mono text-xs">
+                                {filesTtl} {t("minSuffix", { ns: "monitoring" })}
+                            </Badge>
                         </div>
                     </div>
 
@@ -65,7 +70,9 @@ export function CacheStatsCard({ cacheStats, className }: CacheStatsCardProps) {
                         </div>
                         <div className="flex items-center justify-between text-sm">
                             <span className="text-muted-foreground">{t("maxSizeLabel", { ns: "monitoring" })}:</span>
-                            <span className="font-mono">{cacheMaxSize} MB</span>
+                            <Badge variant="outline" className="font-mono text-xs">
+                                {cacheMaxSize} MB
+                            </Badge>
                         </div>
                     </div>
 
@@ -79,11 +86,15 @@ export function CacheStatsCard({ cacheStats, className }: CacheStatsCardProps) {
                         </div>
                         <div className="flex items-center justify-between">
                             <span className="text-muted-foreground">{t("sizeLabel", { ns: "monitoring" })}:</span>
-                            <span className="font-mono">{formatBytes(cacheStats?.sizeBytes || 0)}</span>
+                            <Badge variant="outline" className="font-mono text-xs">
+                                {formatBytes(cacheStats?.sizeBytes || 0)}
+                            </Badge>
                         </div>
                         <div className="flex items-center justify-between">
                             <span className="text-muted-foreground">{t("itemsLabel", { ns: "monitoring" })}:</span>
-                            <span className="font-mono">{cacheStats?.items || 0}</span>
+                            <Badge variant="outline" className="font-mono text-xs">
+                                {cacheStats?.items || 0}
+                            </Badge>
                         </div>
                     </div>
                 </div>

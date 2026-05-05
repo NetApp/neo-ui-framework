@@ -217,14 +217,16 @@ export function VersioningCard({ version, helmChartVersion, health, license, cla
                                 <IconPackage className="h-3 w-3" />
                                 <span>{t("helmChart", { ns: "monitoring" })}</span>
                             </div>
-                            <a
-                                href="https://github.com/NetApp/Innovation-Labs/tree/main/charts/netapp-neo"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="font-mono bg-muted px-2 py-0.5 rounded text-xs hover:underline hover:text-primary transition-colors"
-                            >
-                                {latestChartVersion}
-                            </a>
+                            <Badge variant="outline" className="font-mono text-xs">
+                                <a
+                                    href="https://github.com/NetApp/Innovation-Labs/tree/main/charts/netapp-neo"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="hover:underline hover:text-primary transition-colors"
+                                >
+                                    {latestChartVersion}
+                                </a>
+                            </Badge>
                         </div>
 
                         {/* Neo Core (was App Version) */}
@@ -233,9 +235,9 @@ export function VersioningCard({ version, helmChartVersion, health, license, cla
                                 <Box className="h-3 w-3" />
                                 <span>{t("neoCore", { ns: "monitoring" })}</span>
                             </div>
-                            <span className="font-mono bg-muted px-2 py-0.5 rounded text-xs">
+                            <Badge variant="outline" className="font-mono text-xs">
                                 {helmChartVersion?.app_version === "Unknown" ? t("unableToCheck", { ns: "monitoring" }) : latestAppVersion}
-                            </span>
+                            </Badge>
                         </div>
 
                         {/* UI Framework Placeholder */}
@@ -244,9 +246,9 @@ export function VersioningCard({ version, helmChartVersion, health, license, cla
                                 <IconDeviceDesktop className="h-3 w-3" />
                                 <span>{t("neoConsole", { ns: "monitoring" })}</span>
                             </div>
-                            <span className="font-mono bg-muted px-2 py-0.5 rounded text-xs text-muted-foreground">
+                            <Badge variant="outline" className="font-mono text-xs text-muted-foreground">
                                 {latestUiVersion}
-                            </span>
+                            </Badge>
                         </div>
                     </div>
                 </div>

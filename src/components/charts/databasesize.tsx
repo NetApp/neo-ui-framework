@@ -60,10 +60,16 @@ export function DatabaseSizeCard({ databaseSize, className }: DatabaseSizeCardPr
               <HardDrive className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm font-medium">{t("databaseSize", { ns: "monitoring" })}</span>
             </div>
-            <div className="text-2xl font-bold">{databaseSize.database_size_info}</div>
-            <p className="text-xs text-muted-foreground">
-              {databaseSize.database_file_size_bytes.toLocaleString()} {t("bytesSuffix", { ns: "monitoring" })}
-            </p>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="font-mono">
+                {databaseSize.database_size_info}
+              </Badge>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="font-mono text-xs text-muted-foreground">
+                {databaseSize.database_file_size_bytes.toLocaleString()} {t("bytesSuffix", { ns: "monitoring" })}
+              </Badge>
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -71,10 +77,16 @@ export function DatabaseSizeCard({ databaseSize, className }: DatabaseSizeCardPr
               <FileText className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm font-medium">{t("filesTracked", { ns: "monitoring" })}</span>
             </div>
-            <div className="text-2xl font-bold">{databaseSize.total_files_tracked.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">
-              {t("totalValue", { ns: "monitoring" })}: {databaseSize.total_original_file_size_mb.toFixed(2)} {t("mbSuffix", { ns: "monitoring" })}
-            </p>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="font-mono">
+                {databaseSize.total_files_tracked.toLocaleString()}
+              </Badge>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="font-mono text-xs text-muted-foreground">
+                {t("totalValue", { ns: "monitoring" })}: {databaseSize.total_original_file_size_mb.toFixed(2)} {t("mbSuffix", { ns: "monitoring" })}
+              </Badge>
+            </div>
           </div>
         </div>
 
@@ -91,7 +103,7 @@ export function DatabaseSizeCard({ databaseSize, className }: DatabaseSizeCardPr
             {/* Shares */}
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">{t("sharesLabel", { ns: "monitoring" })}:</span>
-              <Badge variant="outline">
+              <Badge variant="outline" className="font-mono">
                 {databaseSize.table_statistics?.shares?.row_count ?? 0}
               </Badge>
             </div>
@@ -99,7 +111,7 @@ export function DatabaseSizeCard({ databaseSize, className }: DatabaseSizeCardPr
             {/* Users */}
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">{t("usersLabel", { ns: "monitoring" })}:</span>
-              <Badge variant="outline">
+              <Badge variant="outline" className="font-mono">
                 {databaseSize.table_statistics?.users?.row_count ?? 0}
               </Badge>
             </div>
@@ -107,7 +119,7 @@ export function DatabaseSizeCard({ databaseSize, className }: DatabaseSizeCardPr
             {/* File Metadata */}
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">{t("fileMetadata", { ns: "monitoring" })}:</span>
-              <Badge variant="outline">
+              <Badge variant="outline" className="font-mono">
                 {databaseSize.table_statistics?.file_metadata?.row_count ?? 0}
               </Badge>
             </div>
@@ -115,7 +127,7 @@ export function DatabaseSizeCard({ databaseSize, className }: DatabaseSizeCardPr
             {/* Operations Log */}
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">Operations Log:</span>
-              <Badge variant="outline">
+              <Badge variant="outline" className="font-mono">
                 {databaseSize.table_statistics?.operations_log?.row_count ?? 0}
               </Badge>
             </div>
@@ -131,27 +143,21 @@ export function DatabaseSizeCard({ databaseSize, className }: DatabaseSizeCardPr
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">{t("originalFiles", { ns: "monitoring" })}:</span>
-              <span className="font-mono">{databaseSize.total_original_file_size_mb.toFixed(2)} {t("mbSuffix", { ns: "monitoring" })}</span>
+              <Badge variant="outline" className="font-mono text-xs">{databaseSize.total_original_file_size_mb.toFixed(2)} {t("mbSuffix", { ns: "monitoring" })}</Badge>
             </div>
 
             <div className="flex justify-between">
               <span className="text-muted-foreground">{t("extractedContent", { ns: "monitoring" })}:</span>
-              <span className="font-mono">{databaseSize.total_file_content_size_mb.toFixed(2)} {t("mbSuffix", { ns: "monitoring" })}</span>
+              <Badge variant="outline" className="font-mono text-xs">{databaseSize.total_file_content_size_mb.toFixed(2)} {t("mbSuffix", { ns: "monitoring" })}</Badge>
             </div>
 
             <div className="flex justify-between">
               <span className="text-muted-foreground">{t("operationsLog", { ns: "monitoring" })}:</span>
-              <span className="font-mono">{databaseSize.table_statistics?.operations_log?.total_content_size_mb ?? "0.00"} {t("mbSuffix", { ns: "monitoring" })}</span>
+              <Badge variant="outline" className="font-mono text-xs">{databaseSize.table_statistics?.operations_log?.total_content_size_mb ?? "0.00"} {t("mbSuffix", { ns: "monitoring" })}</Badge>
             </div>
           </div>
         </div>
 
-        {/* Timestamp */}
-        <div className="pt-2">
-          <p className="text-xs text-muted-foreground">
-            {t("lastUpdated", { ns: "monitoring" })}: {new Date(databaseSize.timestamp).toLocaleString()}
-          </p>
-        </div>
       </CardContent>
     </Card>
   )
