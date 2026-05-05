@@ -165,7 +165,7 @@ export interface LicenseResponse {
   details: {
     connection_id: string
     days_remaining: number
-  }
+  } | null
 }
 
 export interface VersionResponse {

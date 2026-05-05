@@ -77,13 +77,13 @@ export function NeoInstanceCard({ health, license, className }: NeoInstanceCardP
                             <Badge
                                 variant="outline"
                                 className={`${(() => {
-                                    const days = license?.details.days_remaining
+                                    const days = license?.details?.days_remaining
                                     if (typeof days !== 'number') return ""
                                     if (days < 10) return "text-destructive border-destructive/50"
                                     return "text-green-600 border-green-200 dark:text-green-400 dark:border-green-800"
                                 })()}`}
                             >
-                                {license?.details.days_remaining ?? t("unknown", { ns: "monitoring" })} {t("daysSuffix", { ns: "monitoring" })}
+                                {license?.details?.days_remaining ?? t("unknown", { ns: "monitoring" })} {t("daysSuffix", { ns: "monitoring" })}
                             </Badge>
                         </div>
 
