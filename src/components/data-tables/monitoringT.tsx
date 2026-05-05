@@ -259,14 +259,14 @@ export function MonitoringChart({
             <CardContent>
               {workQueue ? (
                 <div className="space-y-2">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-2">
                       <div className="flex items-center gap-2">
                         <Badge variant="outline" className="font-mono">{totalItems}</Badge>
                       </div>
                       <p className="text-xs text-muted-foreground">{t("totalItems", { ns: "monitoring" })}</p>
                     </div>
-                    <div className="space-y-1">
+                    <div className="space-y-2">
                       <div className="flex items-center gap-2">
                         <Badge variant="outline" className="font-mono">{processingItems}</Badge>
                       </div>
