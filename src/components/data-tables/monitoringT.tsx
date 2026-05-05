@@ -45,7 +45,6 @@ import { FileTypeChart } from "@/components/charts/filetype"
 import { SharesDistributionChart } from "@/components/charts/sharesdistribution"
 import { DatabaseSizeCard } from "@/components/charts/databasesize"
 import { ContentSavingsChart } from "@/components/charts/contentsavings"
-import { NeoInstanceCard } from "@/components/cards/neo-instance-card"
 import { VersioningCard } from "@/components/cards/versioning-card"
 import { CacheStatsCard } from "@/components/cards/cache-stats-card"
 import { TasksSummaryCard } from "@/components/cards/tasks-summary-card"
@@ -161,11 +160,6 @@ export function MonitoringChart({
           <VersioningCard
             version={version}
             helmChartVersion={helmChartVersion}
-            className="md:col-span-1 lg:col-span-1"
-          />
-
-          {/* Neo Instance Card */}
-          <NeoInstanceCard
             health={health}
             license={license}
             className="md:col-span-1 lg:col-span-1"
