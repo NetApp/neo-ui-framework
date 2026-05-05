@@ -951,6 +951,12 @@ export function useNeoApi() {
       try {
         appLogger.info("Cancelling task", undefined, { taskId })
         const response = await api.deleteTask(token, taskId)
+        const wasCancelled = response.cancelled ?? response.status === "cancelled"
+        const responseTaskId = response.id ?? response.task_id ?? taskId
+        const responseMessage = response.message
+          ?? (wasCancelled
+            ? `Task ${responseTaskId} cancellation requested.`
+            : `Task ${responseTaskId} was not cancelled.`)
 
         // Refresh tasks after cancellation attempt
         api.clearCache()
@@ -967,14 +973,15 @@ export function useNeoApi() {
           aclCacheStats,
         }))
 
-        if (response.status === "cancelled") {
-          toast.success(`Task cancelled: ${response.message} `)
+        if (wasCancelled) {
+          toast.success(`Task cancelled: ${responseMessage}`)
         } else {
-          toast.warning(`Task cancellation: ${response.message} `)
+          toast.warning(`Task cancellation: ${responseMessage}`)
         }
 
         appLogger.info("Task cancellation response received", undefined, {
-          taskId,
+          taskId: responseTaskId,
+          cancelled: wasCancelled,
           status: response.status,
           graceful: response.graceful
         })

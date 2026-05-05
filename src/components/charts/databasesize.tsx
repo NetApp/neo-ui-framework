@@ -58,16 +58,11 @@ export function DatabaseSizeCard({ databaseSize, className }: DatabaseSizeCardPr
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <HardDrive className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-medium">{t("databaseSize", { ns: "monitoring" })}</span>
+              <span className="text-sm font-medium">Size</span>
             </div>
             <div className="flex items-center gap-2">
               <Badge variant="outline" className="font-mono">
                 {databaseSize.database_size_info}
-              </Badge>
-            </div>
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="font-mono text-xs text-muted-foreground">
-                {databaseSize.database_file_size_bytes.toLocaleString()} {t("bytesSuffix", { ns: "monitoring" })}
               </Badge>
             </div>
           </div>
@@ -75,16 +70,11 @@ export function DatabaseSizeCard({ databaseSize, className }: DatabaseSizeCardPr
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <FileText className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-medium">{t("filesTracked", { ns: "monitoring" })}</span>
+              <span className="text-sm font-medium">Items</span>
             </div>
             <div className="flex items-center gap-2">
               <Badge variant="outline" className="font-mono">
                 {databaseSize.total_files_tracked.toLocaleString()}
-              </Badge>
-            </div>
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="font-mono text-xs text-muted-foreground">
-                {t("totalValue", { ns: "monitoring" })}: {databaseSize.total_original_file_size_mb.toFixed(2)} {t("mbSuffix", { ns: "monitoring" })}
               </Badge>
             </div>
           </div>

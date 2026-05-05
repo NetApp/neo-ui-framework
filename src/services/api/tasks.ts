@@ -4,10 +4,12 @@ import { BaseApiClient } from "./base"
 import type { TasksListResponse, TaskStatisticsResponse, AclCacheStatisticsResponse } from "@/services/models"
 
 export interface TaskCancelResponse {
-  status: string
-  task_id: string
-  message: string
-  graceful: boolean
+  id?: string
+  cancelled?: boolean
+  status?: string
+  task_id?: string
+  message?: string
+  graceful?: boolean
 }
 
 export class TasksApiClient extends BaseApiClient {

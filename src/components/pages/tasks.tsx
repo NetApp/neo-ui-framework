@@ -153,10 +153,27 @@ export default function Tasks({ tasks, taskStats, aclCacheStats, onFetchTasks, o
         <SheetContent className="w-[90vw] sm:w-[85vw] sm:max-w-[85vw] flex flex-col p-0 gap-0">
           <div className="flex-1 overflow-y-auto p-6 flex flex-col">
             <SheetHeader className="mb-4 p-0">
-              <SheetTitle>{t("detailsTitle", { ns: "tasks" })}</SheetTitle>
-              <SheetDescription>
-                {t("detailsDescription", { ns: "tasks" })}
-              </SheetDescription>
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <SheetTitle>{t("detailsTitle", { ns: "tasks" })}</SheetTitle>
+                  <SheetDescription>
+                    {t("detailsDescription", { ns: "tasks" })}
+                  </SheetDescription>
+                </div>
+                {selectedTask && (
+                  <div className="pr-10">
+                    <Button
+                      variant={canCancelTask(selectedTask.status) ? "destructive" : "outline"}
+                      size="sm"
+                      onClick={() => handleCancelClick(selectedTask)}
+                      disabled={!canCancelTask(selectedTask.status)}
+                    >
+                      <IconTrash className="mr-2 size-4" />
+                      {t("cancelTask", { ns: "tasks" })}
+                    </Button>
+                  </div>
+                )}
+              </div>
             </SheetHeader>
 
             {selectedTask ? (
@@ -256,16 +273,6 @@ export default function Tasks({ tasks, taskStats, aclCacheStats, onFetchTasks, o
             ) : null}
           </div>
           <SheetFooter className="p-4 border-t gap-2 sm:gap-0">
-            {selectedTask && canCancelTask(selectedTask.status) && (
-              <Button
-                variant="destructive"
-                onClick={() => handleCancelClick(selectedTask)}
-                className="mr-auto"
-              >
-                <IconTrash className="mr-2 size-4" />
-                {t("cancelTask", { ns: "tasks" })}
-              </Button>
-            )}
             <SheetClose asChild>
               <Button variant="outline">{t("closeButton", { ns: "tasks" })}</Button>
             </SheetClose>
