@@ -100,6 +100,24 @@ export function MonitoringChart({
     sharesAnalytics
   } = monitoring
 
+  const staleWorkers = workers?.stale_workers
+    ?? workers?.workers?.filter((worker) => worker.status === "stale").length
+    ?? 0
+  const stoppingWorkers = workers?.stopping_workers
+    ?? workers?.workers?.filter((worker) => worker.status === "stopping").length
+    ?? 0
+  const stoppedWorkers = workers?.stopped_workers
+    ?? workers?.workers?.filter((worker) => worker.status === "stopped").length
+    ?? 0
+
+  const workQueue = overview?.work_queue
+  const pendingItems = workQueue?.total_pending ?? workQueue?.pending_items ?? 0
+  const claimedItems = workQueue?.total_claimed ?? workQueue?.claimed_items ?? 0
+  const processingItems = workQueue?.total_processing ?? workQueue?.processing_items ?? 0
+  const failedItemsCount = workQueue?.total_failed ?? workQueue?.failed_items ?? 0
+  const abandonedItems = workQueue?.total_abandoned ?? workQueue?.abandoned_items ?? 0
+  const totalItems = workQueue?.total_items ?? (pendingItems + claimedItems + processingItems + failedItemsCount + abandonedItems)
+
   const handleRetryWorkItems = onRetryWorkItems
   const [isRetrying, setIsRetrying] = useState(false)
 
@@ -203,20 +221,26 @@ export function MonitoringChart({
             <CardContent>
               {workers ? (
                 <div className="space-y-2">
-                  <div className="text-2xl font-bold">{workers?.total_workers ?? 0}</div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="font-mono">{workers?.total_workers ?? 0}</Badge>
+                  </div>
                   <p className="text-xs text-muted-foreground">{t("totalWorkers", { ns: "monitoring" })}</p>
-                  <div className="space-y-1">
+                  <div className="grid grid-cols-2 gap-2 text-xs">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs">{t("active", { ns: "monitoring" })}</span>
-                      <Badge variant="default">{workers?.active_workers ?? 0}</Badge>
+                      <span>{t("active", { ns: "monitoring" })}</span>
+                      <Badge variant="outline" className="font-mono text-xs">{workers?.active_workers ?? 0}</Badge>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-xs">{t("stopping", { ns: "monitoring" })}</span>
-                      <Badge variant="secondary">{workers?.stopping_workers ?? 0}</Badge>
+                      <span>{t("stale", { ns: "monitoring", defaultValue: "Stale" })}</span>
+                      <Badge variant="outline" className="font-mono text-xs">{staleWorkers}</Badge>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-xs">{t("stopped", { ns: "monitoring" })}</span>
-                      <Badge variant="outline">{workers?.stopped_workers ?? 0}</Badge>
+                      <span>{t("stopping", { ns: "monitoring" })}</span>
+                      <Badge variant="outline" className="font-mono text-xs">{stoppingWorkers}</Badge>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>{t("stopped", { ns: "monitoring" })}</span>
+                      <Badge variant="outline" className="font-mono text-xs">{stoppedWorkers}</Badge>
                     </div>
                   </div>
                 </div>
@@ -233,18 +257,38 @@ export function MonitoringChart({
               <IconActivity className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              {overview?.work_queue ? (
+              {workQueue ? (
                 <div className="space-y-2">
-                  <div className="text-2xl font-bold">{overview?.work_queue?.total_items ?? 0}</div>
-                  <p className="text-xs text-muted-foreground">{t("totalItems", { ns: "monitoring" })}</p>
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-xs">
-                      <span>{t("pending", { ns: "monitoring" })}: {overview?.work_queue?.pending_items ?? 0}</span>
-                      <span>{t("processing", { ns: "monitoring" })}: {overview?.work_queue?.processing_items ?? 0}</span>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="font-mono">{totalItems}</Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground">{t("totalItems", { ns: "monitoring" })}</p>
                     </div>
-                    <div className="flex justify-between text-xs">
-                      <span>{t("claimed", { ns: "monitoring" })}: {overview?.work_queue?.claimed_items ?? 0}</span>
-                      <span className="text-destructive">{t("failed", { ns: "monitoring" })}: {overview?.work_queue?.failed_items ?? 0}</span>
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="font-mono">{processingItems}</Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground">{t("processing", { ns: "monitoring" })}</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span>{t("pending", { ns: "monitoring" })}</span>
+                      <Badge variant="outline" className="font-mono text-xs">{pendingItems}</Badge>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>{t("claimed", { ns: "monitoring" })}</span>
+                      <Badge variant="outline" className="font-mono text-xs">{claimedItems}</Badge>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-destructive">{t("failed", { ns: "monitoring" })}</span>
+                      <Badge variant="outline" className="font-mono text-xs text-destructive border-destructive/50">{failedItemsCount}</Badge>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-destructive">{t("abandoned", { ns: "monitoring", defaultValue: "Abandoned" })}</span>
+                      <Badge variant="outline" className="font-mono text-xs text-destructive border-destructive/50">{abandonedItems}</Badge>
                     </div>
                   </div>
                 </div>
@@ -263,16 +307,18 @@ export function MonitoringChart({
             <CardContent>
               {enumeration ? (
                 <div className="space-y-2">
-                  <div className="text-2xl font-bold">{enumeration?.completed_enumerations_last_24h ?? 0}</div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="font-mono">{enumeration?.completed_enumerations_last_24h ?? 0}</Badge>
+                  </div>
                   <p className="text-xs text-muted-foreground">{t("completed24h", { ns: "monitoring" })}</p>
                   <div className="space-y-1">
                     <div className="flex justify-between text-xs">
                       <span>{t("avgDuration", { ns: "monitoring" })}:</span>
-                      <span>{enumeration?.avg_enumeration_duration_seconds?.toFixed(1) ?? "0.0"}s</span>
+                      <Badge variant="outline" className="font-mono text-xs">{enumeration?.avg_enumeration_duration_seconds?.toFixed(1) ?? "0.0"}s</Badge>
                     </div>
                     <div className="flex justify-between text-xs">
                       <span>{t("active", { ns: "monitoring" })}:</span>
-                      <Badge variant="default">{enumeration?.active_enumerations?.length ?? 0}</Badge>
+                      <Badge variant="outline" className="font-mono text-xs">{enumeration?.active_enumerations?.length ?? 0}</Badge>
                     </div>
                   </div>
                 </div>
@@ -291,14 +337,19 @@ export function MonitoringChart({
             <CardContent>
               {graphRateLimit ? (
                 <div className="space-y-2">
-                  <div className="text-2xl font-bold">{graphRateLimit?.requests_remaining ?? 0}</div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="font-mono">{graphRateLimit?.requests_remaining ?? 0}</Badge>
+                  </div>
                   <p className="text-xs text-muted-foreground">{t("requestsRemaining", { ns: "monitoring" })}</p>
                   <Progress
                     value={((graphRateLimit?.requests_remaining ?? 0) / ((graphRateLimit?.requests_made ?? 0) + (graphRateLimit?.requests_remaining ?? 1))) * 100}
                     className="h-2"
                   />
                   <div className="flex items-center justify-between text-xs">
-                    <span>{t("made", { ns: "monitoring" })}: {graphRateLimit?.requests_made ?? 0}</span>
+                    <span className="flex items-center gap-1">
+                      {t("made", { ns: "monitoring" })}:
+                      <Badge variant="outline" className="font-mono text-xs">{graphRateLimit?.requests_made ?? 0}</Badge>
+                    </span>
                     <Badge variant={graphRateLimit?.rate_limited ? "destructive" : "default"}>
                       {graphRateLimit?.rate_limited ? t("limited", { ns: "monitoring" }) : t("activeStatus", { ns: "monitoring" })}
                     </Badge>
@@ -337,7 +388,9 @@ export function MonitoringChart({
             <CardContent>
               {failedItems ? (
                 <div className="space-y-2">
-                  <div className="text-2xl font-bold text-destructive">{failedItems?.total_failed_items ?? 0}</div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="font-mono text-destructive border-destructive/50">{failedItems?.total_failed_items ?? 0}</Badge>
+                  </div>
                   <p className="text-xs text-muted-foreground">{t("totalFailed", { ns: "monitoring" })}</p>
                   {failedItems?.failed_items && failedItems.failed_items.length > 0 && (
                     <div className="space-y-1">

@@ -62,7 +62,7 @@ export function AclCacheCard({ stats, className }: AclCacheCardProps) {
                             <Database className="h-4 w-4" />
                             <span className="text-sm font-medium">{t("capacityUsed", { ns: "monitoring" })}</span>
                         </div>
-                        <span className="text-sm font-mono">{stats.capacity_used_percent.toFixed(1)}%</span>
+                        <Badge variant="outline" className="font-mono text-xs">{stats.capacity_used_percent.toFixed(1)}%</Badge>
                     </div>
                     {/* Progress bar for capacity */}
                     <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
@@ -72,8 +72,8 @@ export function AclCacheCard({ stats, className }: AclCacheCardProps) {
                         />
                     </div>
                     <div className="flex justify-between text-xs text-muted-foreground">
-                        <span>{stats.size} items</span>
-                        <span>{t("maxSizeLabel", { ns: "monitoring" })}: {stats.max_size}</span>
+                        <Badge variant="outline" className="font-mono text-xs">{stats.size} items</Badge>
+                        <Badge variant="outline" className="font-mono text-xs">{t("maxSizeLabel", { ns: "monitoring" })}: {stats.max_size}</Badge>
                     </div>
                 </div>
 
@@ -89,19 +89,27 @@ export function AclCacheCard({ stats, className }: AclCacheCardProps) {
                     <div className="grid grid-cols-2 gap-4">
                         <div className="bg-muted/50 p-2 rounded border">
                             <div className="text-xs text-muted-foreground">{t("hitRate", { ns: "monitoring" })}</div>
-                            <div className="text-lg font-bold">{(stats.hit_rate * 100).toFixed(1)}%</div>
+                            <div className="mt-1">
+                                <Badge variant="outline" className="font-mono text-xs">{(stats.hit_rate * 100).toFixed(1)}%</Badge>
+                            </div>
                         </div>
                         <div className="bg-muted/50 p-2 rounded border">
                             <div className="text-xs text-muted-foreground">{t("totalRequests", { ns: "monitoring" })}</div>
-                            <div className="text-lg font-bold">{stats.total_requests.toLocaleString()}</div>
+                            <div className="mt-1">
+                                <Badge variant="outline" className="font-mono text-xs">{stats.total_requests.toLocaleString()}</Badge>
+                            </div>
                         </div>
                         <div className="bg-muted/50 p-2 rounded border">
                             <div className="text-xs text-muted-foreground">{t("hits", { ns: "monitoring" })}</div>
-                            <div className="text-lg font-mono">{stats.hits.toLocaleString()}</div>
+                            <div className="mt-1">
+                                <Badge variant="outline" className="font-mono text-xs">{stats.hits.toLocaleString()}</Badge>
+                            </div>
                         </div>
                         <div className="bg-muted/50 p-2 rounded border">
                             <div className="text-xs text-muted-foreground">{t("misses", { ns: "monitoring" })}</div>
-                            <div className="text-lg font-mono">{stats.misses.toLocaleString()}</div>
+                            <div className="mt-1">
+                                <Badge variant="outline" className="font-mono text-xs">{stats.misses.toLocaleString()}</Badge>
+                            </div>
                         </div>
                     </div>
                 </div>

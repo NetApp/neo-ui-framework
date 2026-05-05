@@ -324,12 +324,20 @@ export interface OperationResponse {
 // Monitoring Page Models
 export interface MonitoringOverviewResponse { // only for v3
   work_queue: {
-    total_items: number
-    pending_items: number
-    claimed_items: number
-    processing_items: number
-    failed_items: number
-    abandoned_items: number
+    total_items?: number
+    pending_items?: number
+    claimed_items?: number
+    processing_items?: number
+    failed_items?: number
+    abandoned_items?: number
+    total_pending?: number
+    total_claimed?: number
+    total_processing?: number
+    total_completed?: number
+    total_failed?: number
+    total_abandoned?: number
+    average_processing_time_ms?: number | null
+    oldest_pending_age_seconds?: number | null
   }
   ennumeration: {
     active_enumerations: Array<{
@@ -388,11 +396,15 @@ export interface MonitoringEnumerationResponse {  // only for v3
 export interface MonitoringWorkersResponse { // only for v3
   total_workers: number
   active_workers: number
-  stopping_workers: number
-  stopped_workers: number
-  workers: {
-    additionalProp1: Record<string, unknown>
-  }
+  stale_workers?: number
+  stopping_workers?: number
+  stopped_workers?: number
+  workers: Array<{
+    instance_id?: string
+    hostname?: string
+    last_heartbeat?: string
+    status?: string
+  }>
 }
 
 export interface MonitoringGraphRateLimitResponse { // only for v3

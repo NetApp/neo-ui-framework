@@ -17,6 +17,7 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import type { TaskStatisticsResponse } from "@/services/models"
 
@@ -47,7 +48,9 @@ export function TasksSummaryCard({ stats, className }: TasksSummaryCardProps) {
                         <ListTodo className="h-4 w-4 text-muted-foreground" />
                         <span className="text-sm font-medium">{t("totalTasks", { ns: "monitoring" })}</span>
                     </div>
-                    <div className="text-2xl font-bold">{stats.total_tasks}</div>
+                    <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="font-mono">{stats.total_tasks}</Badge>
+                    </div>
                 </div>
 
                 <Separator />
@@ -65,9 +68,9 @@ export function TasksSummaryCard({ stats, className }: TasksSummaryCardProps) {
                                 <PlayCircle className="h-3 w-3 text-blue-500" />
                                 <span>{t("running", { ns: "monitoring" })}</span>
                             </div>
-                            <span className="font-mono bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded text-xs font-bold">
+                            <Badge variant="outline" className="font-mono text-xs font-bold bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800">
                                 {stats.by_status.running}
-                            </span>
+                            </Badge>
                         </div>
 
                         {/* Pending */}
@@ -76,9 +79,9 @@ export function TasksSummaryCard({ stats, className }: TasksSummaryCardProps) {
                                 <Clock className="h-3 w-3 text-yellow-500" />
                                 <span>{t("pending", { ns: "monitoring" })}</span>
                             </div>
-                            <span className="font-mono bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 px-2 py-0.5 rounded text-xs">
+                            <Badge variant="outline" className="font-mono text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800">
                                 {stats.by_status.pending}
-                            </span>
+                            </Badge>
                         </div>
 
                         {/* Completed */}
@@ -87,9 +90,9 @@ export function TasksSummaryCard({ stats, className }: TasksSummaryCardProps) {
                                 <CheckCircle2 className="h-3 w-3 text-green-500" />
                                 <span>{t("completed", { ns: "monitoring" })}</span>
                             </div>
-                            <span className="font-mono bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2 py-0.5 rounded text-xs">
+                            <Badge variant="outline" className="font-mono text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800">
                                 {stats.by_status.completed}
-                            </span>
+                            </Badge>
                         </div>
 
                         {/* Failed */}
@@ -98,9 +101,9 @@ export function TasksSummaryCard({ stats, className }: TasksSummaryCardProps) {
                                 <XCircle className="h-3 w-3 text-red-500" />
                                 <span>{t("failed", { ns: "monitoring" })}</span>
                             </div>
-                            <span className="font-mono bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 px-2 py-0.5 rounded text-xs">
+                            <Badge variant="outline" className="font-mono text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800">
                                 {stats.by_status.failed}
-                            </span>
+                            </Badge>
                         </div>
 
                         {/* Cancelled */}
@@ -109,9 +112,9 @@ export function TasksSummaryCard({ stats, className }: TasksSummaryCardProps) {
                                 <Ban className="h-3 w-3 text-gray-500" />
                                 <span>{t("cancelled", { ns: "monitoring" })}</span>
                             </div>
-                            <span className="font-mono bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 px-2 py-0.5 rounded text-xs">
+                            <Badge variant="outline" className="font-mono text-xs bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700">
                                 {stats.by_status.cancelled}
-                            </span>
+                            </Badge>
                         </div>
                     </div>
                 </div>
