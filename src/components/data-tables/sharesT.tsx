@@ -87,6 +87,7 @@ export function SharesTable({ shares, onShareClick }: SharesTableProps) {
   const [currentPage, setCurrentPage] = useState(1)
 
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>({
+    source_id: 110,
     share_path: 300,
     protocol: 110,
     files: 100,
@@ -174,6 +175,13 @@ export function SharesTable({ shares, onShareClick }: SharesTableProps) {
         <Table style={{ tableLayout: 'fixed', width: '100%' }}>
           <TableHeader className="sticky top-0 z-10 bg-muted">
             <TableRow>
+              <TableHead style={{ width: columnWidths.source_id, position: 'relative' }}>
+                Source Id
+                <div
+                  className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-primary/50"
+                  onMouseDown={(e) => handleResizeStart(e, 'source_id')}
+                />
+              </TableHead>
               <TableHead style={{ width: columnWidths.share_path, position: 'relative' }}>
                 Share Path
                 <div
@@ -227,6 +235,7 @@ export function SharesTable({ shares, onShareClick }: SharesTableProps) {
                   className="cursor-pointer hover:bg-muted/50"
                   data-id={share.id}
                 >
+                  <TableCell className="truncate" title={share.id}>{share.id.slice(0, 7)}</TableCell>
                   <TableCell className="truncate" title={share.share_path}>{share.share_path}</TableCell>
                   <TableCell className="truncate">{(share.protocol ?? "smb").toUpperCase()}</TableCell>
                   <TableCell className="truncate">{share.last_crawl_file_count}</TableCell>
@@ -239,7 +248,7 @@ export function SharesTable({ shares, onShareClick }: SharesTableProps) {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-sm text-muted-foreground">
+                <TableCell colSpan={7} className="text-center text-sm text-muted-foreground">
                   No shares available.
                 </TableCell>
               </TableRow>

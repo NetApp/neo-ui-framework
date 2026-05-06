@@ -40,6 +40,8 @@ export default function Connector({ health, license, version, helmChartVersion, 
               <VersioningCard
                 version={version}
                 helmChartVersion={helmChartVersion}
+                health={health}
+                license={license}
                 className="md:col-span-2 lg:col-span-2"
               />
             </div>
