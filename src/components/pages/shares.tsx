@@ -630,7 +630,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
           setSheetMode(null)
         }
       }}>
-        <SheetContent className="w-[90vw] sm:w-[85vw] sm:max-w-[85vw] flex flex-col p-0 gap-0">
+        <SheetContent side="bottom" className="max-h-[95vh] flex flex-col p-0 gap-0">
           <div className="flex-1 overflow-y-auto p-6 flex flex-col">
             <SheetHeader className="mb-4 p-0">
               <div className="flex items-center justify-between">
@@ -895,43 +895,52 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
             )}
 
             {(sheetMode === 'create' || sheetMode === 'edit') && (
-              <form className="space-y-4" onSubmit={handleSubmit}>
-                <div className="space-y-2">
-                  <Label htmlFor="share-path">Share Path*</Label>
-                  <Input
-                    id="share-path"
-                    placeholder="\\mysmbserver\myshare"
-                    value={sharePath}
-                    onChange={(event) => setSharePath(event.target.value)}
-                    required
-                  />
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="username">Username*</Label>
-                    <Input
-                      id="username"
-                      placeholder="user@domain"
-                      value={username}
-                      onChange={(event) => setUsername(event.target.value)}
-                      required={editingShareId === null}
-                    />
+              <form className="space-y-6" onSubmit={handleSubmit}>
+                <div className="rounded-lg border bg-muted/20 p-4 space-y-4">
+                  <div>
+                    <p className="text-sm font-semibold">Connection</p>
+                    <p className="text-xs text-muted-foreground">Define how Neo connects to your CIFS/SMB source.</p>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="password">Password*</Label>
+                    <Label htmlFor="share-path">Share Path*</Label>
                     <Input
-                      id="password"
-                      type="password"
-                      value={password}
-                      onChange={(event) => setPassword(event.target.value)}
-                      required={editingShareId === null}
-                      placeholder={editingShareId !== null ? "(Unchanged)" : undefined}
+                      id="share-path"
+                      placeholder="\\\\mysmbserver\\myshare"
+                      value={sharePath}
+                      onChange={(event) => setSharePath(event.target.value)}
+                      required
                     />
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="username">Username*</Label>
+                      <Input
+                        id="username"
+                        placeholder="user@domain"
+                        value={username}
+                        onChange={(event) => setUsername(event.target.value)}
+                        required={editingShareId === null}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="password">Password*</Label>
+                      <Input
+                        id="password"
+                        type="password"
+                        value={password}
+                        onChange={(event) => setPassword(event.target.value)}
+                        required={editingShareId === null}
+                        placeholder={editingShareId !== null ? "(Unchanged)" : "••••••••"}
+                      />
+                    </div>
                   </div>
                 </div>
 
-
-                <>
+                <div className="rounded-lg border bg-muted/20 p-4 space-y-4">
+                  <div>
+                    <p className="text-sm font-semibold">Crawling & Rules</p>
+                    <p className="text-xs text-muted-foreground">Control schedule and filtering behavior.</p>
+                  </div>
                   <div className="space-y-2">
                     <Label htmlFor="crawl-schedule">Crawl schedule</Label>
                     <Input
@@ -948,14 +957,19 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
                       value={rulesJson}
                       onChange={(event) => setRulesJson(event.target.value)}
                       placeholder={DEFAULT_RULES_JSON}
-                      className="min-h-[200px] font-mono text-sm"
+                      className="min-h-[220px] font-mono text-sm"
                       required
                     />
                     <p className="text-xs text-muted-foreground">
-                      Enter rules configuration in JSON format. Use the placeholder as a template.
-                      <br />
-                      <strong>Note:</strong> Ensure no trailing commas after the last property.
+                      Use valid JSON only. Avoid trailing commas after the last property.
                     </p>
+                  </div>
+                </div>
+
+                <div className="rounded-lg border bg-muted/20 p-4 space-y-4">
+                  <div>
+                    <p className="text-sm font-semibold">Directory Resolution</p>
+                    <p className="text-xs text-muted-foreground">Optional SMB and Kerberos tuning values.</p>
                   </div>
                   <div className="grid gap-4 sm:grid-cols-3">
                     <div className="space-y-2">
@@ -991,10 +1005,13 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
                       onChange={(event) => setResolveOrder(event.target.value)}
                     />
                   </div>
-                </>
+                </div>
 
-                {error ? <p className="text-sm text-destructive">{error}</p> : null}
+                {error ? <p className="text-sm text-destructive rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2">{error}</p> : null}
                 <SheetFooter className="gap-2">
+                  <Button type="submit" disabled={submitting}>
+                    {submitting ? (editingShareId != null ? "Saving…" : "Creating…") : editingShareId != null ? "Save changes" : "Create share"}
+                  </Button>
                   <Button
                     type="button"
                     variant="outline"
@@ -1009,115 +1026,138 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
                   >
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={submitting}>
-                    {submitting ? (editingShareId != null ? "Saving…" : "Creating…") : editingShareId != null ? "Save changes" : "Create share"}
-                  </Button>
                 </SheetFooter>
               </form>
             )}
 
             {sheetMode === 'create-s3' && (
-              <form className="space-y-4" onSubmit={handleSubmit}>
-                <div className="space-y-2">
-                  <Label htmlFor="s3-share-path">Share Path (S3 URI)*</Label>
-                  <Input
-                    id="s3-share-path"
-                    placeholder="s3://bucket-name"
-                    value={s3SharePath}
-                    onChange={(event) => setS3SharePath(event.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="s3-bucket">Bucket Name*</Label>
-                  <Input
-                    id="s3-bucket"
-                    placeholder="bucket-name"
-                    value={s3Bucket}
-                    onChange={(event) => setS3Bucket(event.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="s3-endpoint">Endpoint URL*</Label>
-                  <Input
-                    id="s3-endpoint"
-                    placeholder="http://minio.example.com:9000"
-                    value={s3EndpointUrl}
-                    onChange={(event) => setS3EndpointUrl(event.target.value)}
-                    required
-                  />
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2">
+              <form className="space-y-6" onSubmit={handleSubmit}>
+                <div className="rounded-lg border bg-muted/20 p-4 space-y-4">
+                  <div>
+                    <p className="text-sm font-semibold">Connection</p>
+                    <p className="text-xs text-muted-foreground">Define the S3 source and endpoint details.</p>
+                  </div>
                   <div className="space-y-2">
-                    <Label htmlFor="s3-region">Region*</Label>
+                    <Label htmlFor="s3-share-path">Share Path (S3 URI)*</Label>
                     <Input
-                      id="s3-region"
-                      placeholder="us-east-1"
-                      value={s3Region}
-                      onChange={(event) => setS3Region(event.target.value)}
+                      id="s3-share-path"
+                      placeholder="s3://bucket-name"
+                      value={s3SharePath}
+                      onChange={(event) => setS3SharePath(event.target.value)}
                       required
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="s3-use-ssl">Use SSL</Label>
-                    <div className="mt-2 flex items-center gap-2">
-                      <input
-                        id="s3-use-ssl"
-                        type="checkbox"
-                        checked={s3UseSsl}
-                        onChange={(event) => setS3UseSsl(event.target.checked)}
-                        className="h-4 w-4"
+                    <Label htmlFor="s3-bucket">Bucket Name*</Label>
+                    <Input
+                      id="s3-bucket"
+                      placeholder="bucket-name"
+                      value={s3Bucket}
+                      onChange={(event) => setS3Bucket(event.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="s3-endpoint">Endpoint URL*</Label>
+                    <Input
+                      id="s3-endpoint"
+                      placeholder="http://minio.example.com:9000"
+                      value={s3EndpointUrl}
+                      onChange={(event) => setS3EndpointUrl(event.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="s3-region">Region*</Label>
+                      <Input
+                        id="s3-region"
+                        placeholder="us-east-1"
+                        value={s3Region}
+                        onChange={(event) => setS3Region(event.target.value)}
+                        required
                       />
-                      <Label htmlFor="s3-use-ssl" className="font-normal">Enable SSL/TLS</Label>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="s3-use-ssl">Use SSL</Label>
+                      <div className="mt-2 flex items-center gap-2 rounded-md border bg-background px-3 py-2">
+                        <input
+                          id="s3-use-ssl"
+                          type="checkbox"
+                          checked={s3UseSsl}
+                          onChange={(event) => setS3UseSsl(event.target.checked)}
+                          className="h-4 w-4"
+                        />
+                        <Label htmlFor="s3-use-ssl" className="font-normal">Enable SSL/TLS</Label>
+                      </div>
                     </div>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="s3-crawl-schedule">Crawl Schedule</Label>
-                  <Input
-                    id="s3-crawl-schedule"
-                    value={s3CrawlSchedule}
-                    onChange={(event) => setS3CrawlSchedule(event.target.value)}
-                    placeholder="-"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="s3-rules">Rules (JSON format)</Label>
-                  <Textarea
-                    id="s3-rules"
-                    value={s3RulesJson}
-                    onChange={(event) => setS3RulesJson(event.target.value)}
-                    placeholder={DEFAULT_RULES_JSON}
-                    className="min-h-[200px] font-mono text-sm"
-                  />
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="s3-username">Username*</Label>
-                    <Input
-                      id="s3-username"
-                      placeholder="admin"
-                      value={s3Username}
-                      onChange={(event) => setS3Username(event.target.value)}
-                      required
-                    />
+
+                <div className="rounded-lg border bg-muted/20 p-4 space-y-4">
+                  <div>
+                    <p className="text-sm font-semibold">Access</p>
+                    <p className="text-xs text-muted-foreground">Credentials used to access the bucket.</p>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="s3-password">Password*</Label>
-                    <Input
-                      id="s3-password"
-                      type="password"
-                      value={s3Password}
-                      onChange={(event) => setS3Password(event.target.value)}
-                      required={editingShareId === null}
-                      placeholder={editingShareId !== null ? "(Unchanged)" : "••••••••"}
-                    />
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="s3-username">Username*</Label>
+                      <Input
+                        id="s3-username"
+                        placeholder="admin"
+                        value={s3Username}
+                        onChange={(event) => setS3Username(event.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="s3-password">Password*</Label>
+                      <Input
+                        id="s3-password"
+                        type="password"
+                        value={s3Password}
+                        onChange={(event) => setS3Password(event.target.value)}
+                        required={editingShareId === null}
+                        placeholder={editingShareId !== null ? "(Unchanged)" : "••••••••"}
+                      />
+                    </div>
                   </div>
                 </div>
 
-                {error ? <p className="text-sm text-destructive">{error}</p> : null}
+                <div className="rounded-lg border bg-muted/20 p-4 space-y-4">
+                  <div>
+                    <p className="text-sm font-semibold">Crawling & Rules</p>
+                    <p className="text-xs text-muted-foreground">Control schedule and filtering behavior.</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="s3-crawl-schedule">Crawl Schedule</Label>
+                    <Input
+                      id="s3-crawl-schedule"
+                      value={s3CrawlSchedule}
+                      onChange={(event) => setS3CrawlSchedule(event.target.value)}
+                      placeholder="-"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="s3-rules">Rules (JSON format)</Label>
+                    <Textarea
+                      id="s3-rules"
+                      value={s3RulesJson}
+                      onChange={(event) => setS3RulesJson(event.target.value)}
+                      placeholder={DEFAULT_RULES_JSON}
+                      className="min-h-[220px] font-mono text-sm"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Use valid JSON only. Avoid trailing commas after the last property.
+                    </p>
+                  </div>
+                </div>
+
+                {error ? <p className="text-sm text-destructive rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2">{error}</p> : null}
                 <SheetFooter className="gap-2">
+                  <Button type="submit" disabled={submitting}>
+                    {submitting ? (editingShareId != null ? "Saving…" : "Creating…") : editingShareId != null ? "Save changes" : "Create S3 bucket"}
+                  </Button>
                   <Button
                     type="button"
                     variant="outline"
@@ -1131,98 +1171,121 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
                     disabled={submitting}
                   >
                     Cancel
-                  </Button>
-                  <Button type="submit" disabled={submitting}>
-                    {submitting ? (editingShareId != null ? "Saving…" : "Creating…") : editingShareId != null ? "Save changes" : "Create S3 bucket"}
                   </Button>
                 </SheetFooter>
               </form>
             )}
 
             {sheetMode === 'create-nfs' && (
-              <form className="space-y-4" onSubmit={handleSubmit}>
-                <div className="space-y-2">
-                  <Label htmlFor="nfs-share-path">Share Path (NFS)*</Label>
-                  <Input
-                    id="nfs-share-path"
-                    placeholder="nas01:/exports/data"
-                    value={nfsSharePath}
-                    onChange={(event) => setNfsSharePath(event.target.value)}
-                    required
-                  />
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="nfs-version">NFS Version</Label>
-                    <Input
-                      id="nfs-version"
-                      placeholder="4"
-                      value={nfsVersion}
-                      onChange={(event) => setNfsVersion(event.target.value)}
-                    />
+              <form className="space-y-6" onSubmit={handleSubmit}>
+                <div className="rounded-lg border bg-muted/20 p-4 space-y-4">
+                  <div>
+                    <p className="text-sm font-semibold">Connection</p>
+                    <p className="text-xs text-muted-foreground">Set the NFS export and protocol options.</p>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="nfs-security">Security</Label>
+                    <Label htmlFor="nfs-share-path">Share Path (NFS)*</Label>
                     <Input
-                      id="nfs-security"
-                      placeholder="sys"
-                      value={nfsSecurity}
-                      onChange={(event) => setNfsSecurity(event.target.value)}
+                      id="nfs-share-path"
+                      placeholder="nas01:/exports/data"
+                      value={nfsSharePath}
+                      onChange={(event) => setNfsSharePath(event.target.value)}
+                      required
                     />
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="nfs-mount-options">Mount Options</Label>
-                  <Input
-                    id="nfs-mount-options"
-                    placeholder="soft,intr,timeo=30,retrans=2"
-                    value={nfsMountOptions}
-                    onChange={(event) => setNfsMountOptions(event.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="nfs-crawl-schedule">Crawl Schedule</Label>
-                  <Input
-                    id="nfs-crawl-schedule"
-                    value={nfsCrawlSchedule}
-                    onChange={(event) => setNfsCrawlSchedule(event.target.value)}
-                    placeholder="-"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="nfs-rules">Rules (JSON format)</Label>
-                  <Textarea
-                    id="nfs-rules"
-                    value={nfsRulesJson}
-                    onChange={(event) => setNfsRulesJson(event.target.value)}
-                    placeholder={DEFAULT_RULES_JSON}
-                    className="min-h-[200px] font-mono text-sm"
-                  />
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="nfs-username">Username (Kerberos)</Label>
-                    <Input
-                      id="nfs-username"
-                      placeholder="svc-neo@CORP.COM"
-                      value={nfsUsername}
-                      onChange={(event) => setNfsUsername(event.target.value)}
-                    />
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="nfs-version">NFS Version</Label>
+                      <Input
+                        id="nfs-version"
+                        placeholder="4"
+                        value={nfsVersion}
+                        onChange={(event) => setNfsVersion(event.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="nfs-security">Security</Label>
+                      <Input
+                        id="nfs-security"
+                        placeholder="sys"
+                        value={nfsSecurity}
+                        onChange={(event) => setNfsSecurity(event.target.value)}
+                      />
+                    </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="nfs-password">Password (Kerberos)</Label>
+                    <Label htmlFor="nfs-mount-options">Mount Options</Label>
                     <Input
-                      id="nfs-password"
-                      type="password"
-                      value={nfsPassword}
-                      onChange={(event) => setNfsPassword(event.target.value)}
-                      placeholder={editingShareId !== null ? "(Unchanged)" : "••••••••"}
+                      id="nfs-mount-options"
+                      placeholder="soft,intr,timeo=30,retrans=2"
+                      value={nfsMountOptions}
+                      onChange={(event) => setNfsMountOptions(event.target.value)}
                     />
                   </div>
                 </div>
 
-                {error ? <p className="text-sm text-destructive">{error}</p> : null}
+                <div className="rounded-lg border bg-muted/20 p-4 space-y-4">
+                  <div>
+                    <p className="text-sm font-semibold">Crawling & Rules</p>
+                    <p className="text-xs text-muted-foreground">Control schedule and filtering behavior.</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="nfs-crawl-schedule">Crawl Schedule</Label>
+                    <Input
+                      id="nfs-crawl-schedule"
+                      value={nfsCrawlSchedule}
+                      onChange={(event) => setNfsCrawlSchedule(event.target.value)}
+                      placeholder="-"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="nfs-rules">Rules (JSON format)</Label>
+                    <Textarea
+                      id="nfs-rules"
+                      value={nfsRulesJson}
+                      onChange={(event) => setNfsRulesJson(event.target.value)}
+                      placeholder={DEFAULT_RULES_JSON}
+                      className="min-h-[220px] font-mono text-sm"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Use valid JSON only. Avoid trailing commas after the last property.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="rounded-lg border bg-muted/20 p-4 space-y-4">
+                  <div>
+                    <p className="text-sm font-semibold">Kerberos (Optional)</p>
+                    <p className="text-xs text-muted-foreground">Provide credentials if your NFS environment requires it.</p>
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="nfs-username">Username (Kerberos)</Label>
+                      <Input
+                        id="nfs-username"
+                        placeholder="svc-neo@CORP.COM"
+                        value={nfsUsername}
+                        onChange={(event) => setNfsUsername(event.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="nfs-password">Password (Kerberos)</Label>
+                      <Input
+                        id="nfs-password"
+                        type="password"
+                        value={nfsPassword}
+                        onChange={(event) => setNfsPassword(event.target.value)}
+                        placeholder={editingShareId !== null ? "(Unchanged)" : "••••••••"}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {error ? <p className="text-sm text-destructive rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2">{error}</p> : null}
                 <SheetFooter className="gap-2">
+                  <Button type="submit" disabled={submitting}>
+                    {submitting ? (editingShareId != null ? "Saving…" : "Creating…") : editingShareId != null ? "Save changes" : "Create NFS share"}
+                  </Button>
                   <Button
                     type="button"
                     variant="outline"
@@ -1236,9 +1299,6 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
                     disabled={submitting}
                   >
                     Cancel
-                  </Button>
-                  <Button type="submit" disabled={submitting}>
-                    {submitting ? (editingShareId != null ? "Saving…" : "Creating…") : editingShareId != null ? "Save changes" : "Create NFS share"}
                   </Button>
                 </SheetFooter>
               </form>
