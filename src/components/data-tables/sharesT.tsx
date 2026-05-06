@@ -88,6 +88,7 @@ export function SharesTable({ shares, onShareClick }: SharesTableProps) {
 
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>({
     share_path: 300,
+    protocol: 110,
     files: 100,
     username: 150,
     last_crawled: 200,
@@ -180,6 +181,13 @@ export function SharesTable({ shares, onShareClick }: SharesTableProps) {
                   onMouseDown={(e) => handleResizeStart(e, 'share_path')}
                 />
               </TableHead>
+              <TableHead style={{ width: columnWidths.protocol, position: 'relative' }}>
+                Protocol
+                <div
+                  className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-primary/50"
+                  onMouseDown={(e) => handleResizeStart(e, 'protocol')}
+                />
+              </TableHead>
               <TableHead style={{ width: columnWidths.files, position: 'relative' }}>
                 Files
                 <div
@@ -220,6 +228,7 @@ export function SharesTable({ shares, onShareClick }: SharesTableProps) {
                   data-id={share.id}
                 >
                   <TableCell className="truncate" title={share.share_path}>{share.share_path}</TableCell>
+                  <TableCell className="truncate">{(share.protocol ?? "smb").toUpperCase()}</TableCell>
                   <TableCell className="truncate">{share.last_crawl_file_count}</TableCell>
                   <TableCell className="truncate" title={share.username}>{share.username}</TableCell>
                   <TableCell className="truncate">
@@ -230,7 +239,7 @@ export function SharesTable({ shares, onShareClick }: SharesTableProps) {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">
+                <TableCell colSpan={6} className="text-center text-sm text-muted-foreground">
                   No shares available.
                 </TableCell>
               </TableRow>

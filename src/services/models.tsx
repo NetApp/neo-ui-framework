@@ -206,6 +206,7 @@ export interface SharesResponse {
   status: string
   last_crawled: string
   last_crawl_file_count: number
+  protocol?: "smb" | "nfs" | "s3"
 }
 
 export interface ShareDetailsResponse {

@@ -8,7 +8,6 @@ import {
 } from "react"
 
 import {
-  IconPlus,
   IconDatabaseExport,
   IconEdit,
   IconTrash
@@ -179,7 +178,7 @@ function getStatusBadge(status: string) {
 
 export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShare, onStartCrawl, onFetchShareDetails, onRefresh, monitoringOverview, isAdmin }: SharesProps) {
   const [sheetOpen, setSheetOpen] = useState(false)
-  const [sheetMode, setSheetMode] = useState<'details' | 'edit' | 'create' | null>(null)
+  const [sheetMode, setSheetMode] = useState<'details' | 'edit' | 'create' | 'create-s3' | null>(null)
 
   const [sharePath, setSharePath] = useState("")
   const [username, setUsername] = useState("")
@@ -195,11 +194,22 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
   const [workgroup, setWorkgroup] = useState("")
   const [resolveOrder, setResolveOrder] = useState("host")
 
+  // S3 fields
+  const [s3SharePath, setS3SharePath] = useState("")
+  const [s3Bucket, setS3Bucket] = useState("")
+  const [s3EndpointUrl, setS3EndpointUrl] = useState("")
+  const [s3Region, setS3Region] = useState("us-east-1")
+  const [s3UseSsl, setS3UseSsl] = useState(false)
+  const [s3CrawlSchedule, setS3CrawlSchedule] = useState("-")
+  const [s3Username, setS3Username] = useState("")
+  const [s3Password, setS3Password] = useState("")
+
   const [editingShareId, setEditingShareId] = useState<string | null>(null)
 
   const [detailsLoading, setDetailsLoading] = useState(false)
   const [detailsError, setDetailsError] = useState<string | null>(null)
   const [selectedShareDetails, setSelectedShareDetails] = useState<ShareDetailsResponse | null>(null)
+  const [selectedProtocol, setSelectedProtocol] = useState<"smb" | "nfs" | "s3">("smb")
 
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
 
@@ -214,8 +224,18 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
     setWorkgroup("")
     setResolveOrder("host")
 
+    setS3SharePath("")
+    setS3Bucket("")
+    setS3EndpointUrl("")
+    setS3Region("us-east-1")
+    setS3UseSsl(false)
+    setS3CrawlSchedule("-")
+    setS3Username("")
+    setS3Password("")
+
     setEditingShareId(null)
     setError(null)
+    setSelectedProtocol("smb")
   }, [])
 
   const parseRules = useCallback((jsonString: string) => {
@@ -237,9 +257,48 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
       setError(null)
 
       try {
-        const parsedRules = parseRules(rulesJson)
+        if (sheetMode === "create-s3") {
+          if (editingShareId != null) {
+            await onUpdateShare(editingShareId, {
+              protocol: "s3",
+              share_path: s3SharePath,
+              username: s3Username,
+              password: s3Password,
+              crawl_schedule: s3CrawlSchedule,
+              s3_bucket: s3Bucket,
+              s3_endpoint_url: s3EndpointUrl,
+              s3_region: s3Region,
+              s3_use_ssl: s3UseSsl,
+            } as unknown as Parameters<SharesProps["onUpdateShare"]>[1])
 
-        if (editingShareId != null) {
+            const details = await onFetchShareDetails(editingShareId)
+            setSelectedShareDetails(details)
+            setSheetMode("details")
+          } else {
+            await onAddShare({
+              protocol: "s3",
+              share_path: s3SharePath,
+              username: s3Username,
+              password: s3Password,
+              crawl_schedule: s3CrawlSchedule,
+              rules: {},
+              realm: "",
+              use_kerberos: "required",
+              workgroup: "",
+              resolve_order: "host",
+              s3_bucket: s3Bucket,
+              s3_endpoint_url: s3EndpointUrl,
+              s3_region: s3Region,
+              s3_use_ssl: s3UseSsl,
+            } as unknown as ShareFormValues)
+
+            setSheetOpen(false)
+            resetForm()
+          }
+        } else {
+          const parsedRules = parseRules(rulesJson)
+
+          if (editingShareId != null) {
           await onUpdateShare(editingShareId, {
             share_path: sharePath,
             crawl_schedule: crawlSchedule,
@@ -250,24 +309,25 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
             resolve_order: resolveOrder,
           })
 
-          // Refresh details if we are in edit mode
-          const details = await onFetchShareDetails(editingShareId)
-          setSelectedShareDetails(details)
-          setSheetMode('details') // Switch back to details view
-        } else {
-          await onAddShare({
-            share_path: sharePath,
-            username,
-            password,
-            crawl_schedule: crawlSchedule,
-            rules: parsedRules,
-            realm,
-            use_kerberos: useKerberos,
-            workgroup,
-            resolve_order: resolveOrder,
-          })
-          setSheetOpen(false)
-          resetForm()
+            // Refresh details if we are in edit mode
+            const details = await onFetchShareDetails(editingShareId)
+            setSelectedShareDetails(details)
+            setSheetMode('details') // Switch back to details view
+          } else {
+            await onAddShare({
+              share_path: sharePath,
+              username,
+              password,
+              crawl_schedule: crawlSchedule,
+              rules: parsedRules,
+              realm,
+              use_kerberos: useKerberos,
+              workgroup,
+              resolve_order: resolveOrder,
+            })
+            setSheetOpen(false)
+            resetForm()
+          }
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Unable to create share.")
@@ -275,7 +335,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
         setSubmitting(false)
       }
     },
-    [onAddShare, onUpdateShare, password, resetForm, sharePath, username, crawlSchedule, rulesJson, realm, useKerberos, workgroup, resolveOrder, editingShareId, parseRules, onFetchShareDetails]
+    [onAddShare, onUpdateShare, password, resetForm, sharePath, username, crawlSchedule, rulesJson, realm, useKerberos, workgroup, resolveOrder, editingShareId, parseRules, onFetchShareDetails, sheetMode, s3SharePath, s3Bucket, s3EndpointUrl, s3Region, s3UseSsl, s3CrawlSchedule, s3Username, s3Password]
   )
 
   const handleCrawl = useCallback(
@@ -337,7 +397,20 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
 
   }, [])
 
+  const populateS3Form = useCallback((details: ShareDetailsResponse) => {
+    setS3SharePath(details.share_path ?? "")
+    setS3Bucket((details as ShareDetailsResponse & { s3_bucket?: string }).s3_bucket ?? "")
+    setS3EndpointUrl((details as ShareDetailsResponse & { s3_endpoint_url?: string }).s3_endpoint_url ?? "")
+    setS3Region((details as ShareDetailsResponse & { s3_region?: string }).s3_region ?? "us-east-1")
+    setS3UseSsl((details as ShareDetailsResponse & { s3_use_ssl?: boolean }).s3_use_ssl ?? false)
+    setS3CrawlSchedule(details.crawl_schedule ?? "-")
+    setS3Username(details.username ?? "")
+    setS3Password("")
+  }, [])
+
   const handleShareClick = useCallback(async (shareId: string) => {
+    const protocol = shares?.find((share) => share.id === shareId)?.protocol ?? "smb"
+    setSelectedProtocol(protocol)
     setSheetMode('details')
     setSheetOpen(true)
     setDetailsLoading(true)
@@ -353,7 +426,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
     } finally {
       setDetailsLoading(false)
     }
-  }, [onFetchShareDetails])
+  }, [onFetchShareDetails, shares])
 
   const handleAddClick = useCallback(() => {
     setSheetMode('create')
@@ -362,12 +435,25 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
     setSheetOpen(true)
   }, [resetForm])
 
+  const handleAddS3Click = useCallback(() => {
+    setSheetMode('create-s3')
+    setSelectedProtocol('s3')
+    setEditingShareId(null)
+    resetForm()
+    setSheetOpen(true)
+  }, [resetForm])
+
   const handleModifyClick = useCallback(() => {
     if (selectedShareDetails) {
+      if (selectedProtocol === "s3") {
+        populateS3Form(selectedShareDetails)
+        setSheetMode('create-s3')
+        return
+      }
       populateForm(selectedShareDetails)
       setSheetMode('edit')
     }
-  }, [selectedShareDetails, populateForm])
+  }, [selectedShareDetails, selectedProtocol, populateForm, populateS3Form])
 
   const handleDeleteClick = useCallback(() => {
     setDeleteConfirmOpen(true)
@@ -396,10 +482,12 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
                 showCacheStats={false}
               />
             </div>
-            <div className="mb-4 flex justify-end">
+            <div className="mb-4 flex justify-end gap-2">
               <Button onClick={handleAddClick} disabled={!isAdmin}>
-                <IconPlus className="mr-2 size-4" />
-                Add share
+                Add CIFS
+              </Button>
+              <Button onClick={handleAddS3Click} disabled={!isAdmin}>
+                Add S3
               </Button>
             </div>
             {alertMessage ? (
@@ -434,11 +522,12 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
               <div className="flex items-center justify-between">
                 <div>
                   <SheetTitle>
-                    {sheetMode === 'create' ? "Add a share" : sheetMode === 'edit' ? "Edit share" : "Share Details"}
+                    {sheetMode === 'create' ? "Add a share" : sheetMode === 'create-s3' ? (editingShareId ? "Edit S3 bucket" : "Add S3 bucket") : sheetMode === 'edit' ? "Edit share" : "Share Details"}
                   </SheetTitle>
                   <SheetDescription>
                     {sheetMode === 'details' && selectedShareDetails?.share_path}
                     {sheetMode === 'create' && "Configure a new SMB share"}
+                    {sheetMode === 'create-s3' && (editingShareId ? "Edit S3 bucket configuration" : "Configure a new S3 bucket")}
                     {sheetMode === 'edit' && "Edit share configuration"}
                   </SheetDescription>
                 </div>
@@ -489,76 +578,137 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
                   ) : detailsError ? (
                     <p className="text-sm text-destructive">{detailsError}</p>
                   ) : selectedShareDetails ? (
-                    <dl className="grid grid-cols-1 gap-y-3 text-sm text-muted-foreground sm:grid-cols-2 lg:grid-cols-3 sm:gap-x-6">
-                      <div>
-                        <dt className="font-medium text-foreground">Share path</dt>
-                        <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{selectedShareDetails.share_path}</pre></dd>
-                      </div>
-                      <div>
-                        <dt className="font-medium text-foreground">Username</dt>
-                        <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{selectedShareDetails.username}</pre></dd>
-                      </div>
-                      <div>
-                        <dt className="font-medium text-foreground">Status</dt>
-                        <dd className="p-1 font-bold">{getStatusBadge(selectedShareDetails.status)}</dd>
-                      </div>
-                      <div>
-                        <dt className="font-medium text-foreground">Created</dt>
-                        <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{new Date(selectedShareDetails.created_at).toLocaleString()}</pre></dd>
-                      </div>
-                      <div>
-                        <dt className="font-medium text-foreground">Last crawled</dt>
-                        <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">
-                          {selectedShareDetails.last_crawled
-                            ? new Date(selectedShareDetails.last_crawled).toLocaleString()
-                            : "N/A"}
-                        </pre></dd>
-                      </div>
-                      <div>
-                        <dt className="font-medium text-foreground">Last crawl duration (ms)</dt>
-                        <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{selectedShareDetails.last_crawl_duration_ms || "N/A"}</pre></dd>
-                      </div>
-                      <div>
-                        <dt className="font-medium text-foreground">Last crawl file count</dt>
-                        <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{selectedShareDetails.last_crawl_file_count || "N/A"}</pre></dd>
-                      </div>
-                      <div>
-                        <dt className="font-medium text-foreground">Crawl schedule</dt>
-                        <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{selectedShareDetails.crawl_schedule || "N/A"}</pre></dd>
-                      </div>
-                      <div>
-                        <dt className="font-medium text-foreground">Last connection attempt</dt>
-                        <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">
-                          {selectedShareDetails.last_connection_attempt
-                            ? new Date(selectedShareDetails.last_connection_attempt).toLocaleString()
-                            : "N/A"}
-                        </pre></dd>
-                      </div>
-                      <div>
-                        <dt className="font-medium text-foreground">Kerberos</dt>
-                        <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{selectedShareDetails.use_kerberos || "N/A"}</pre></dd>
-                      </div>
-                      <div>
-                        <dt className="font-medium text-foreground">Workgroup</dt>
-                        <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{selectedShareDetails.workgroup || "N/A"}</pre></dd>
-                      </div>
-                      <div>
-                        <dt className="font-medium text-foreground">Realm</dt>
-                        <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{selectedShareDetails.realm || "N/A"}</pre></dd>
-                      </div>
-                      <div className="sm:col-span-3">
-                        <dt className="font-medium text-foreground">Resolve order</dt>
-                        <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{selectedShareDetails.resolve_order || "N/A"}</pre></dd>
-                      </div>
-                      <div className="sm:col-span-3">
-                        <dt className="font-medium text-foreground">Rules</dt>
-                        <dd><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{JSON.stringify(selectedShareDetails.rules || "N/A", null, 2)}</pre></dd>
-                      </div>
-                      <div className="sm:col-span-3">
-                        <dt className="font-medium text-foreground">Error message</dt>
-                        <dd><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{selectedShareDetails.error_message || "N/A"}</pre></dd>
-                      </div>
-                    </dl>
+                    selectedProtocol === "s3" ? (
+                      <dl className="grid grid-cols-1 gap-y-3 text-sm text-muted-foreground sm:grid-cols-2 lg:grid-cols-3 sm:gap-x-6">
+                        <div>
+                          <dt className="font-medium text-foreground">Bucket path</dt>
+                          <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{selectedShareDetails.share_path}</pre></dd>
+                        </div>
+                        <div>
+                          <dt className="font-medium text-foreground">Bucket name</dt>
+                          <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{(selectedShareDetails as ShareDetailsResponse & { s3_bucket?: string }).s3_bucket || "N/A"}</pre></dd>
+                        </div>
+                        <div>
+                          <dt className="font-medium text-foreground">Status</dt>
+                          <dd className="p-1 font-bold">{getStatusBadge(selectedShareDetails.status)}</dd>
+                        </div>
+                        <div>
+                          <dt className="font-medium text-foreground">Endpoint URL</dt>
+                          <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{(selectedShareDetails as ShareDetailsResponse & { s3_endpoint_url?: string }).s3_endpoint_url || "N/A"}</pre></dd>
+                        </div>
+                        <div>
+                          <dt className="font-medium text-foreground">Region</dt>
+                          <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{(selectedShareDetails as ShareDetailsResponse & { s3_region?: string }).s3_region || "N/A"}</pre></dd>
+                        </div>
+                        <div>
+                          <dt className="font-medium text-foreground">Use SSL</dt>
+                          <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{String((selectedShareDetails as ShareDetailsResponse & { s3_use_ssl?: boolean }).s3_use_ssl ?? false)}</pre></dd>
+                        </div>
+                        <div>
+                          <dt className="font-medium text-foreground">Access key</dt>
+                          <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{selectedShareDetails.username || "N/A"}</pre></dd>
+                        </div>
+                        <div>
+                          <dt className="font-medium text-foreground">Crawl schedule</dt>
+                          <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{selectedShareDetails.crawl_schedule || "N/A"}</pre></dd>
+                        </div>
+                        <div>
+                          <dt className="font-medium text-foreground">Created</dt>
+                          <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{new Date(selectedShareDetails.created_at).toLocaleString()}</pre></dd>
+                        </div>
+                        <div>
+                          <dt className="font-medium text-foreground">Last crawled</dt>
+                          <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{selectedShareDetails.last_crawled ? new Date(selectedShareDetails.last_crawled).toLocaleString() : "N/A"}</pre></dd>
+                        </div>
+                        <div>
+                          <dt className="font-medium text-foreground">Last crawl duration (ms)</dt>
+                          <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{selectedShareDetails.last_crawl_duration_ms || "N/A"}</pre></dd>
+                        </div>
+                        <div>
+                          <dt className="font-medium text-foreground">Last crawl file count</dt>
+                          <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{selectedShareDetails.last_crawl_file_count || "N/A"}</pre></dd>
+                        </div>
+                        <div className="sm:col-span-3">
+                          <dt className="font-medium text-foreground">Last connection attempt</dt>
+                          <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{selectedShareDetails.last_connection_attempt ? new Date(selectedShareDetails.last_connection_attempt).toLocaleString() : "N/A"}</pre></dd>
+                        </div>
+                        <div className="sm:col-span-3">
+                          <dt className="font-medium text-foreground">Error message</dt>
+                          <dd><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{selectedShareDetails.error_message || "N/A"}</pre></dd>
+                        </div>
+                      </dl>
+                    ) : (
+                      <dl className="grid grid-cols-1 gap-y-3 text-sm text-muted-foreground sm:grid-cols-2 lg:grid-cols-3 sm:gap-x-6">
+                        <div>
+                          <dt className="font-medium text-foreground">Share path</dt>
+                          <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{selectedShareDetails.share_path}</pre></dd>
+                        </div>
+                        <div>
+                          <dt className="font-medium text-foreground">Username</dt>
+                          <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{selectedShareDetails.username}</pre></dd>
+                        </div>
+                        <div>
+                          <dt className="font-medium text-foreground">Status</dt>
+                          <dd className="p-1 font-bold">{getStatusBadge(selectedShareDetails.status)}</dd>
+                        </div>
+                        <div>
+                          <dt className="font-medium text-foreground">Created</dt>
+                          <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{new Date(selectedShareDetails.created_at).toLocaleString()}</pre></dd>
+                        </div>
+                        <div>
+                          <dt className="font-medium text-foreground">Last crawled</dt>
+                          <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">
+                            {selectedShareDetails.last_crawled
+                              ? new Date(selectedShareDetails.last_crawled).toLocaleString()
+                              : "N/A"}
+                          </pre></dd>
+                        </div>
+                        <div>
+                          <dt className="font-medium text-foreground">Last crawl duration (ms)</dt>
+                          <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{selectedShareDetails.last_crawl_duration_ms || "N/A"}</pre></dd>
+                        </div>
+                        <div>
+                          <dt className="font-medium text-foreground">Last crawl file count</dt>
+                          <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{selectedShareDetails.last_crawl_file_count || "N/A"}</pre></dd>
+                        </div>
+                        <div>
+                          <dt className="font-medium text-foreground">Crawl schedule</dt>
+                          <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{selectedShareDetails.crawl_schedule || "N/A"}</pre></dd>
+                        </div>
+                        <div>
+                          <dt className="font-medium text-foreground">Last connection attempt</dt>
+                          <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">
+                            {selectedShareDetails.last_connection_attempt
+                              ? new Date(selectedShareDetails.last_connection_attempt).toLocaleString()
+                              : "N/A"}
+                          </pre></dd>
+                        </div>
+                        <div>
+                          <dt className="font-medium text-foreground">Kerberos</dt>
+                          <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{selectedShareDetails.use_kerberos || "N/A"}</pre></dd>
+                        </div>
+                        <div>
+                          <dt className="font-medium text-foreground">Workgroup</dt>
+                          <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{selectedShareDetails.workgroup || "N/A"}</pre></dd>
+                        </div>
+                        <div>
+                          <dt className="font-medium text-foreground">Realm</dt>
+                          <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{selectedShareDetails.realm || "N/A"}</pre></dd>
+                        </div>
+                        <div className="sm:col-span-3">
+                          <dt className="font-medium text-foreground">Resolve order</dt>
+                          <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{selectedShareDetails.resolve_order || "N/A"}</pre></dd>
+                        </div>
+                        <div className="sm:col-span-3">
+                          <dt className="font-medium text-foreground">Rules</dt>
+                          <dd><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{JSON.stringify(selectedShareDetails.rules || "N/A", null, 2)}</pre></dd>
+                        </div>
+                        <div className="sm:col-span-3">
+                          <dt className="font-medium text-foreground">Error message</dt>
+                          <dd><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{selectedShareDetails.error_message || "N/A"}</pre></dd>
+                        </div>
+                      </dl>
+                    )
                   ) : (
                     <p className="text-sm text-muted-foreground">No details available.</p>
                   )}
@@ -685,6 +835,119 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
                   </Button>
                   <Button type="submit" disabled={submitting}>
                     {submitting ? (editingShareId != null ? "Saving…" : "Creating…") : editingShareId != null ? "Save changes" : "Create share"}
+                  </Button>
+                </SheetFooter>
+              </form>
+            )}
+
+            {sheetMode === 'create-s3' && (
+              <form className="space-y-4" onSubmit={handleSubmit}>
+                <div className="space-y-2">
+                  <Label htmlFor="s3-share-path">Share Path (S3 URI)*</Label>
+                  <Input
+                    id="s3-share-path"
+                    placeholder="s3://bucket-name"
+                    value={s3SharePath}
+                    onChange={(event) => setS3SharePath(event.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="s3-bucket">Bucket Name*</Label>
+                  <Input
+                    id="s3-bucket"
+                    placeholder="bucket-name"
+                    value={s3Bucket}
+                    onChange={(event) => setS3Bucket(event.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="s3-endpoint">Endpoint URL*</Label>
+                  <Input
+                    id="s3-endpoint"
+                    placeholder="http://minio.example.com:9000"
+                    value={s3EndpointUrl}
+                    onChange={(event) => setS3EndpointUrl(event.target.value)}
+                    required
+                  />
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="s3-region">Region*</Label>
+                    <Input
+                      id="s3-region"
+                      placeholder="us-east-1"
+                      value={s3Region}
+                      onChange={(event) => setS3Region(event.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="s3-use-ssl">Use SSL</Label>
+                    <div className="mt-2 flex items-center gap-2">
+                      <input
+                        id="s3-use-ssl"
+                        type="checkbox"
+                        checked={s3UseSsl}
+                        onChange={(event) => setS3UseSsl(event.target.checked)}
+                        className="h-4 w-4"
+                      />
+                      <Label htmlFor="s3-use-ssl" className="font-normal">Enable SSL/TLS</Label>
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="s3-crawl-schedule">Crawl Schedule</Label>
+                  <Input
+                    id="s3-crawl-schedule"
+                    value={s3CrawlSchedule}
+                    onChange={(event) => setS3CrawlSchedule(event.target.value)}
+                    placeholder="-"
+                  />
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="s3-username">Username*</Label>
+                    <Input
+                      id="s3-username"
+                      placeholder="admin"
+                      value={s3Username}
+                      onChange={(event) => setS3Username(event.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="s3-password">Password*</Label>
+                    <Input
+                      id="s3-password"
+                      type="password"
+                      value={s3Password}
+                      onChange={(event) => setS3Password(event.target.value)}
+                      required={editingShareId === null}
+                      placeholder={editingShareId !== null ? "(Unchanged)" : "••••••••"}
+                    />
+                  </div>
+                </div>
+
+                {error ? <p className="text-sm text-destructive">{error}</p> : null}
+                <SheetFooter className="gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      if (editingShareId != null) {
+                        setSheetMode('details')
+                      } else {
+                        setSheetOpen(false)
+                      }
+                    }}
+                    disabled={submitting}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={submitting}>
+                    {submitting ? (editingShareId != null ? "Saving…" : "Creating…") : editingShareId != null ? "Save changes" : "Create S3 bucket"}
                   </Button>
                 </SheetFooter>
               </form>
