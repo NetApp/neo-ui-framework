@@ -1,15 +1,13 @@
 // Copyright 2025 NetApp, Inc. All Rights Reserved.
-import { useEffect, useState, useCallback } from "react"
+import { lazy, Suspense, useEffect, useState, useCallback } from "react"
 import { useTranslation } from "react-i18next"
-import {
-    MonitoringChart
-} from "@/components/data-tables/monitoringT"
 import { OverviewCard } from "@/components/cards/overview-card"
 import {
     Alert,
     AlertDescription,
     AlertTitle
 } from "@/components/ui/alert"
+import { Spinner } from "@/components/ui/spinner"
 import {
     CheckCircle2Icon,
     AlertCircleIcon
@@ -31,6 +29,12 @@ import type {
     HelmChartVersionResponse,
 } from "@/services/neo-api"
 import { AuthenticationError } from "@/services/neo-api"
+
+const MonitoringChart = lazy(() =>
+    import("@/components/data-tables/monitoringT").then((module) => ({
+        default: module.MonitoringChart,
+    }))
+)
 
 interface MonitoringProps {
     databaseSize: DatabaseSizeResponse | null
@@ -124,17 +128,25 @@ export default function Monitoring({
                                 cacheStats={cacheStats}
                             />
                         </div>
-                        <MonitoringChart
-                            databaseSize={databaseSize}
-                            monitoring={monitoring}
-                            onRefreshMonitoring={onFetchMonitoring}
-                            onRetryWorkItems={onRetryWorkItems}
-                            health={health}
-                            license={license}
-                            version={version}
-                            helmChartVersion={helmChartVersion}
-                            cacheStats={cacheStats}
-                        />
+                        <Suspense
+                            fallback={
+                                <div className="flex min-h-[240px] items-center justify-center">
+                                    <Spinner className="size-6" />
+                                </div>
+                            }
+                        >
+                            <MonitoringChart
+                                databaseSize={databaseSize}
+                                monitoring={monitoring}
+                                onRefreshMonitoring={onFetchMonitoring}
+                                onRetryWorkItems={onRetryWorkItems}
+                                health={health}
+                                license={license}
+                                version={version}
+                                helmChartVersion={helmChartVersion}
+                                cacheStats={cacheStats}
+                            />
+                        </Suspense>
                     </div>
                 </div>
             </div>

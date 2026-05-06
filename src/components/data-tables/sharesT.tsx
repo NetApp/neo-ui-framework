@@ -198,13 +198,13 @@ export function SharesTable({ shares, onShareClick }: SharesTableProps) {
                   onMouseDown={(e) => handleResizeStart(e, 'share_path')}
                 />
               </TableHead>
-              {/* <TableHead style={{ width: columnWidths.username, position: 'relative' }}>
+              <TableHead style={{ width: columnWidths.username, position: 'relative' }}>
                 User
                 <div
                   className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-primary/50"
                   onMouseDown={(e) => handleResizeStart(e, 'username')}
                 />
-              </TableHead> */}
+              </TableHead>
               <TableHead style={{ width: columnWidths.last_crawled, position: 'relative' }}>
                 Last Crawled
                 <div
@@ -240,7 +240,7 @@ export function SharesTable({ shares, onShareClick }: SharesTableProps) {
                   <TableCell className="truncate" title={share.id}>{share.id.slice(0, 7)}</TableCell>
                   <TableCell className="truncate">{(share.protocol ?? "smb").toUpperCase()}</TableCell>
                   <TableCell className="truncate" title={share.share_path}>{share.share_path}</TableCell>
-                  {/* <TableCell className="truncate" title={share.username}>{share.username}</TableCell> */}
+                  <TableCell className="truncate" title={share.username}>{share.username}</TableCell>
                   <TableCell className="truncate">
                     {share.last_crawled ? new Date(share.last_crawled).toLocaleString() : "—"}
                   </TableCell>

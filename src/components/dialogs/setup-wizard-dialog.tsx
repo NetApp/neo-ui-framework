@@ -24,9 +24,9 @@ interface SetupWizardDialogProps {
     onComplete?: () => void
 }
 
-type WizardStep = "LICENSE" | "OAUTH" | "M365" | "PROXY" | "SSL" | "COMPLETE_ACTION" | "CREDENTIALS"
+type WizardStep = "LICENSE" | "M365" | "PROXY" | "SSL" | "COMPLETE_ACTION" | "CREDENTIALS"
 
-const WIZARD_STEPS: WizardStep[] = ["LICENSE", "OAUTH", "M365", "PROXY", "SSL", "COMPLETE_ACTION", "CREDENTIALS"]
+const WIZARD_STEPS: WizardStep[] = ["LICENSE", "M365", "PROXY", "SSL", "COMPLETE_ACTION", "CREDENTIALS"]
 
 export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizardDialogProps) {
     const { handlers } = useNeoApi()
@@ -37,12 +37,6 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
 
     // License State
     const [licenseKey, setLicenseKey] = useState("")
-
-    // OAuth State
-    const [oauthTenantId, setOauthTenantId] = useState("")
-    const [oauthClientId, setOauthClientId] = useState("")
-    const [oauthClientSecret, setOauthClientSecret] = useState("")
-    const [oauthEnabled, setOauthEnabled] = useState(false)
 
     // M365 State
     const [tenantId, setTenantId] = useState("")
@@ -128,9 +122,6 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
             case "LICENSE":
                 submitLicense()
                 break
-            case "OAUTH":
-                setStep("M365")
-                break
             case "M365":
                 setStep("PROXY")
                 break
@@ -149,9 +140,6 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
         setError(null)
         setSuccessMessage(null)
         switch (step) {
-            case "OAUTH":
-                setStep("M365")
-                break
             case "M365":
                 setStep("PROXY")
                 break
@@ -160,6 +148,27 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
                 break
             case "SSL":
                 setStep("COMPLETE_ACTION")
+                break
+            default:
+                break
+        }
+    }
+
+    const handleBack = () => {
+        setError(null)
+        setSuccessMessage(null)
+        switch (step) {
+            case "M365":
+                setStep("LICENSE")
+                break
+            case "PROXY":
+                setStep("M365")
+                break
+            case "SSL":
+                setStep("PROXY")
+                break
+            case "COMPLETE_ACTION":
+                setStep("SSL")
                 break
             default:
                 break
@@ -178,36 +187,10 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
                 setSuccessMessage("License configured successfully.")
                 setTimeout(() => {
                     setSuccessMessage(null)
-                    setStep("OAUTH")
-                }, 1000)
-            } else {
-                setError(res.message || "Failed to configure license.")
-            }
-        } catch (error: unknown) {
-            setError(getErrorMessage(error, "An error occurred."))
-        } finally {
-            setIsLoading(false)
-        }
-    }
-
-    const submitOauth = async () => {
-        setIsLoading(true)
-        const payload = {
-            tenant_id: oauthTenantId,
-            client_id: oauthClientId,
-            client_secret: oauthClientSecret,
-            enabled: oauthEnabled
-        }
-        try {
-            const res = await handlers.setupOauth(payload)
-            if (res.success) {
-                setSuccessMessage("OAuth configured successfully.")
-                setTimeout(() => {
-                    setSuccessMessage(null)
                     setStep("M365")
                 }, 1000)
             } else {
-                setError(res.message || "Failed to configure OAuth.")
+                setError(res.message || "Failed to configure license.")
             }
         } catch (error: unknown) {
             setError(getErrorMessage(error, "An error occurred."))
@@ -342,29 +325,6 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
                         </div>
                     </div>
                 )
-            case "OAUTH":
-                return (
-                    <div className="space-y-4">
-                        <div className="flex items-center space-x-2 pb-4">
-                            <Switch id="oauth-enabled" checked={oauthEnabled} onCheckedChange={setOauthEnabled} />
-                            <Label htmlFor="oauth-enabled">Enable Entra ID Authentication</Label>
-                        </div>
-                        <div className="grid gap-4 md:grid-cols-2">
-                            <div className="grid gap-2">
-                                <Label>Tenant ID</Label>
-                                <Input value={oauthTenantId} onChange={(e) => setOauthTenantId(e.target.value)} />
-                            </div>
-                            <div className="grid gap-2">
-                                <Label>Client ID</Label>
-                                <Input value={oauthClientId} onChange={(e) => setOauthClientId(e.target.value)} />
-                            </div>
-                            <div className="grid gap-2">
-                                <Label>Client Secret</Label>
-                                <Input type="password" value={oauthClientSecret} onChange={(e) => setOauthClientSecret(e.target.value)} />
-                            </div>
-                        </div>
-                    </div>
-                )
             case "M365":
                 return (
                     <div className="space-y-4">
@@ -485,23 +445,22 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
         switch (step) {
             case "LICENSE":
                 return (
-                    <Button onClick={handleNext} disabled={isLoading || !licenseKey}>
-                        {isLoading ? "Saving..." : "Next: OAuth Setup"}
-                    </Button>
-                )
-            case "OAUTH":
-                return (
                     <div className="flex justify-between w-full">
-                        <Button variant="outline" onClick={handleSkip}>Skip</Button>
-                        <Button onClick={submitOauth} disabled={isLoading}>
-                            {isLoading ? "Saving..." : "Save & Next"}
+                        <Button variant="outline" onClick={handleBack} disabled>
+                            Back
+                        </Button>
+                        <Button onClick={handleNext} disabled={isLoading || !licenseKey}>
+                            {isLoading ? "Saving..." : "Next: M365 Copilot Setup"}
                         </Button>
                     </div>
                 )
             case "M365":
                 return (
                     <div className="flex justify-between w-full">
-                        <Button variant="outline" onClick={handleSkip}>Skip</Button>
+                        <div className="flex gap-2">
+                            <Button variant="outline" onClick={handleBack} disabled={isLoading}>Back</Button>
+                            <Button variant="outline" onClick={handleSkip} disabled={isLoading}>Skip</Button>
+                        </div>
                         <Button onClick={submitM365} disabled={isLoading}>
                             {isLoading ? "Saving..." : "Save & Next"}
                         </Button>
@@ -510,7 +469,10 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
             case "PROXY":
                 return (
                     <div className="flex justify-between w-full">
-                        <Button variant="outline" onClick={handleSkip}>Skip</Button>
+                        <div className="flex gap-2">
+                            <Button variant="outline" onClick={handleBack} disabled={isLoading}>Back</Button>
+                            <Button variant="outline" onClick={handleSkip} disabled={isLoading}>Skip</Button>
+                        </div>
                         <Button onClick={submitProxy} disabled={isLoading}>
                             {isLoading ? "Saving..." : "Save & Next"}
                         </Button>
@@ -519,7 +481,10 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
             case "SSL":
                 return (
                     <div className="flex justify-between w-full">
-                        <Button variant="outline" onClick={handleSkip}>Skip</Button>
+                        <div className="flex gap-2">
+                            <Button variant="outline" onClick={handleBack} disabled={isLoading}>Back</Button>
+                            <Button variant="outline" onClick={handleSkip} disabled={isLoading}>Skip</Button>
+                        </div>
                         <Button onClick={submitSSL} disabled={isLoading}>
                             {isLoading ? "Saving..." : "Save & Next"}
                         </Button>
@@ -527,9 +492,12 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
                 )
             case "COMPLETE_ACTION":
                 return (
-                    <Button onClick={handleCompleteSetup} disabled={isLoading} className="w-full bg-green-600 hover:bg-green-700">
-                        {isLoading ? "Finalizing..." : "Finish Setup"}
-                    </Button>
+                    <div className="flex justify-between w-full">
+                        <Button variant="outline" onClick={handleBack} disabled={isLoading}>Back</Button>
+                        <Button onClick={handleCompleteSetup} disabled={isLoading} className="bg-green-600 hover:bg-green-700">
+                            {isLoading ? "Finalizing..." : "Finish Setup"}
+                        </Button>
+                    </div>
                 )
             case "CREDENTIALS":
                 return (
@@ -543,7 +511,6 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
     const getTitle = () => {
         switch (step) {
             case "LICENSE": return "Setup Wizard: License"
-            case "OAUTH": return "Setup Wizard: OAuth Setup (Optional)"
             case "M365": return "Setup Wizard: M365 Copilot (Optional)"
             case "PROXY": return "Setup Wizard: Proxy (Optional)"
             case "SSL": return "Setup Wizard: SSL (Optional)"
