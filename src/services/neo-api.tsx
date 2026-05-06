@@ -35,6 +35,7 @@ import type {
   SetupLicenseRequest,
   SetupLicenseResponse,
   SetupStatusResponse,
+    DatasetItemsResponse,
   SetupGraphRequest,
   SetupGraphConfigResponse,
   SetupGraphResponse,
@@ -100,6 +101,7 @@ export type {
   CreateDatasetRequest,
   DatasetResponse,
   DatasetListResponse,
+  DatasetItemsResponse,
   SetupLicenseRequest,
   SetupLicenseResponse,
   SetupGraphRequest,
@@ -116,7 +118,6 @@ export type {
   Body_configure_oauth_api_v1_setup_oauth_post,
 }
 export { AuthenticationError, AuthorizationError }
-
 function normalizeCacheKeyValue(value: unknown): unknown {
   if (Array.isArray(value)) {
     return value.map(normalizeCacheKeyValue)
@@ -371,6 +372,10 @@ export class NeoApiService extends BaseApiClient {
 
   getDatasets(token: string, page: number = 1, pageSize: number = 50, ownedOnly: boolean = false): Promise<DatasetListResponse> {
     return this.datasetsClient.getDatasets(token, page, pageSize, ownedOnly)
+  }
+
+  getDatasetItems(token: string, datasetId: string, page: number = 1, pageSize: number = 50): Promise<DatasetItemsResponse> {
+    return this.datasetsClient.getDatasetItems(token, datasetId, page, pageSize)
   }
 
   deleteDataset(token: string, datasetId: string): Promise<void> {

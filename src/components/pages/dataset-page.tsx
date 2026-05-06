@@ -1,14 +1,14 @@
 // Copyright 2025 NetApp, Inc. All Rights Reserved.
 "use client"
 
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo, useEffect, useCallback } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import Markdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import { OverviewCard } from "@/components/cards/overview-card"
 import { FilesTable } from "@/components/data-tables/filesT"
 import type { FilesResponse, FileMetadataResponse, FileEntry } from "@/services/neo-api"
-import type { Dataset } from "@/services/models"
+import type { Dataset, DatasetItem, DatasetItemsResponse } from "@/services/models"
 import { toast } from "sonner"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
@@ -20,70 +20,98 @@ import {
 } from "@/components/ui/sheet"
 import { Spinner } from "@/components/ui/spinner"
 import { Button } from "@/components/ui/button"
-import { IconTrash, IconInfoCircle } from "@tabler/icons-react"
+import { IconTrash } from "@tabler/icons-react"
 
 import { ConfirmDialog } from "@/components/dialogs/confirm-dialog"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 interface DatasetPageProps {
     datasets: Dataset[]
     onFetchFileMetadata: (shareId: string, fileId: string) => Promise<FileMetadataResponse>
     onDeleteDataset: (id: string) => Promise<void>
+    onFetchDatasetItems: (datasetId: string, page: number, pageSize: number) => Promise<DatasetItemsResponse>
+}
+
+function datasetItemToFileEntry(item: DatasetItem): FileEntry {
+    return {
+        id: item.file_id,
+        filename: item.filename,
+        file_path: item.file_path,
+        unc_path: item.unc_path,
+        share_id: item.share_id,
+        size: item.size,
+        modified_time: item.modified_time,
+        file_type: item.file_type,
+        is_directory: false,
+        created_at: item.added_at,
+        accessed_at: item.added_at,
+        indexed_at: item.added_at,
+    }
 }
 
 export default function DatasetPage({
     datasets,
     onFetchFileMetadata,
     onDeleteDataset,
+    onFetchDatasetItems,
 }: DatasetPageProps) {
     const { datasetId } = useParams()
     const navigate = useNavigate()
-    const [selectedFile, setSelectedFile] = useState<FileEntry | null>(null)
-    const [fileMetadata, setFileMetadata] = useState<FileMetadataResponse | null>(null)
-    const [contentLoading, setContentLoading] = useState(false)
 
     const dataset = useMemo(() =>
         datasets.find(d => d.id === datasetId),
         [datasets, datasetId]
     )
 
-    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+    // Items fetched from API
+    const [itemsResponse, setItemsResponse] = useState<DatasetItemsResponse | null>(null)
+    const [itemsLoading, setItemsLoading] = useState(false)
+    const PAGE_SIZE = 50
 
-    const handleDeleteClick = () => {
-        setIsDeleteDialogOpen(true)
-    }
-
-    const handleConfirmDelete = async () => {
-        if (dataset) {
-            await onDeleteDataset(dataset.id)
-            toast.success(`Dataset "${dataset.name}" deleted`)
-            navigate("/my-datasets/my-datasets")
+    const fetchItems = useCallback(async (page: number) => {
+        if (!datasetId) return
+        setItemsLoading(true)
+        try {
+            const response = await onFetchDatasetItems(datasetId, page, PAGE_SIZE)
+            setItemsResponse(response)
+        } catch {
+            toast.error("Failed to load dataset items")
+        } finally {
+            setItemsLoading(false)
         }
-    }
+    }, [datasetId, onFetchDatasetItems])
 
+    useEffect(() => {
+        fetchItems(1)
+    }, [fetchItems])
+
+    // Map API items → FilesResponse for FilesTable
     const filesResponse = useMemo<FilesResponse | null>(() => {
-        if (!dataset) return null
+        if (!itemsResponse || !dataset) return null
+        const files = itemsResponse.items.map(datasetItemToFileEntry)
         return {
             share_id: dataset.id,
             path: dataset.name,
-            files: dataset.files,
-            total_count: dataset.files.length,
-            total_size: dataset.files.reduce((acc, file) => acc + file.size, 0),
-            page: 1,
-            page_size: dataset.files.length,
-            total_pages: 1,
-            has_next: false,
-            has_previous: false,
+            files,
+            total_count: itemsResponse.total_count,
+            total_size: files.reduce((acc, f) => acc + f.size, 0),
+            page: itemsResponse.page,
+            page_size: itemsResponse.page_size,
+            total_pages: itemsResponse.total_pages,
+            has_next: itemsResponse.has_next,
+            has_previous: itemsResponse.has_previous,
         }
-    }, [dataset])
+    }, [itemsResponse, dataset])
+
+    // File detail sheet
+    const [selectedFile, setSelectedFile] = useState<FileEntry | null>(null)
+    const [fileMetadata, setFileMetadata] = useState<FileMetadataResponse | null>(null)
+    const [contentLoading, setContentLoading] = useState(false)
 
     useEffect(() => {
-        const fetchContent = async () => {
-            if (!selectedFile) return
-
+        if (!selectedFile) return
+        const load = async () => {
             setFileMetadata(null)
             setContentLoading(true)
-
             try {
                 const shareId = selectedFile.share_id || "dataset"
                 const metadata = await onFetchFileMetadata(shareId, selectedFile.id)
@@ -95,14 +123,23 @@ export default function DatasetPage({
                 setContentLoading(false)
             }
         }
-
-        fetchContent()
+        load()
     }, [selectedFile, onFetchFileMetadata])
 
     const handleFileClick = (file: FileEntry) => {
         setFileMetadata(null)
-        setContentLoading(true)
         setSelectedFile(file)
+    }
+
+    // Delete
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+
+    const handleConfirmDelete = async () => {
+        if (dataset) {
+            await onDeleteDataset(dataset.id)
+            toast.success(`Dataset "${dataset.name}" deleted`)
+            navigate("/my-datasets/my-datasets")
+        }
     }
 
     if (!dataset) {
@@ -122,21 +159,13 @@ export default function DatasetPage({
                             <OverviewCard
                                 overview={null}
                                 title={dataset.name}
-                                description={`Dataset created on ${new Date(dataset.createdAt).toLocaleString()}`}
+                                description={dataset.description || `Created on ${new Date(dataset.createdAt).toLocaleString()}`}
                                 showCacheStats={false}
                             />
                         </div>
 
-                        <Alert className="mb-4 border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/20 text-blue-800 dark:text-blue-300">
-                            <IconInfoCircle className="h-4 w-4" />
-                            <AlertTitle>Tech Preview feature</AlertTitle>
-                            <AlertDescription>
-                                Datasets are only persistent during the user session and will be deleted at logout with the cache.
-                            </AlertDescription>
-                        </Alert>
-
                         <div className="mb-4 flex justify-end gap-2">
-                            <Button variant="destructive" onClick={handleDeleteClick}>
+                            <Button variant="destructive" onClick={() => setIsDeleteDialogOpen(true)}>
                                 <IconTrash className="mr-2 size-4" />
                                 <span className="hidden sm:inline">Delete dataset</span>
                                 <span className="sm:hidden">Delete</span>
@@ -145,9 +174,10 @@ export default function DatasetPage({
 
                         <FilesTable
                             files={filesResponse}
-                            loading={false}
-                            emptyMessage="No documents in this dataset."
+                            loading={itemsLoading}
+                            emptyMessage="No items in this dataset."
                             onFileClick={handleFileClick}
+                            onPageChange={(page) => fetchItems(page)}
                         />
                     </div>
                 </div>
@@ -279,7 +309,7 @@ export default function DatasetPage({
                         </SheetClose>
                     </SheetFooter>
                 </SheetContent>
-            </Sheet >
+            </Sheet>
 
             <ConfirmDialog
                 open={isDeleteDialogOpen}
@@ -290,6 +320,6 @@ export default function DatasetPage({
                 confirmText="Delete"
                 variant="destructive"
             />
-        </div >
+        </div>
     )
 }

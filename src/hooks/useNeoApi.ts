@@ -51,6 +51,7 @@ import type {
   FileEntry,
   Dataset,
   CreateDatasetRequest,
+  DatasetItemsResponse,
 } from "@/services/models"
 
 import { useSettings } from "@/context/settings-context"
@@ -867,6 +868,21 @@ export function useNeoApi() {
     }
   }, [token, clearSystemData])
 
+  const handleFetchDatasetItems = useCallback(async (
+    datasetId: string,
+    page: number = 1,
+    pageSize: number = 50
+  ): Promise<DatasetItemsResponse> => {
+    if (!token) {
+      appLogger.warn("Fetch dataset items attempted without active token")
+      throw new AuthenticationError()
+    }
+
+    const api = apiRef.current
+    appLogger.debug("Fetching dataset items", undefined, { datasetId, page, pageSize })
+    return api.getDatasetItems(token, datasetId, page, pageSize)
+  }, [token])
+
   const handleFetchDatasets = useCallback(async (page: number = 1, pageSize: number = 50, ownedOnly: boolean = false) => {
     if (!token) {
       appLogger.warn("Fetch datasets attempted without active token")
@@ -1167,6 +1183,7 @@ export function useNeoApi() {
       handleCreateDataset,
       handleDeleteDataset,
       handleFetchDatasets,
+      handleFetchDatasetItems,
       handleContentSearch,
       handleRetryWorkItems,
       clearCache: useCallback(() => apiRef.current.clearCache(), []),

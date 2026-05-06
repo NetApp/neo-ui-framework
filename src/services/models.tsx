@@ -597,6 +597,33 @@ export interface DatasetResponse {
   created_at: string
 }
 
+export interface DatasetItem {
+  id: string
+  file_id: string
+  filename: string
+  file_path: string
+  unc_path: string
+  share_id: string
+  share_name: string
+  size: number
+  modified_time: string
+  file_type: string
+  added_at: string
+  added_by_username: string | null
+  position: number | null
+  notes: string | null
+}
+
+export interface DatasetItemsResponse {
+  items: DatasetItem[]
+  total_count: number
+  page: number
+  page_size: number
+  total_pages: number
+  has_next: boolean
+  has_previous: boolean
+}
+
 export interface DatasetListItem {
   id: string
   name: string
