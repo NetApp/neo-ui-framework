@@ -226,6 +226,27 @@ export interface ShareDetailsResponse {
   use_kerberos: string
   workgroup: string
   resolve_order: string
+  // S3 fields
+  s3_bucket?: string
+  s3_endpoint_url?: string
+  s3_region?: string
+  s3_use_ssl?: boolean
+  // NFS fields
+  nfs_version?: string
+  nfs_security?: string
+  nfs_mount_options?: string
+}
+
+export interface NFSShareCreateRequest {
+  protocol: 'nfs'
+  share_path: string
+  nfs_version?: string
+  nfs_security?: string
+  nfs_mount_options?: string
+  username?: string
+  password?: string
+  crawl_schedule?: string
+  rules?: Record<string, unknown>
 }
 
 // Files Page Models
