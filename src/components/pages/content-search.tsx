@@ -6,8 +6,10 @@ import type {
     ContentSearchResponse,
     MonitoringOverviewResponse,
     FileEntry,
-    VersionResponse
+    VersionResponse,
+    CreateDatasetRequest,
 } from "@/services/models"
+import type { CreateDatasetFormValues } from "@/components/dialogs/create-dataset-dialog"
 import {
     IconSearch,
     IconFilter,
@@ -52,7 +54,7 @@ import { CreateDatasetDialog } from "@/components/dialogs/create-dataset-dialog"
 interface ContentSearchProps {
     shares: SharesResponse[] | null
     onContentSearch: (payload: ContentSearchRequest) => Promise<ContentSearchResponse>
-    onCreateDataset: (name: string, files: FileEntry[]) => Promise<void>
+    onCreateDataset: (payload: Omit<CreateDatasetRequest, "file_ids">, files: FileEntry[]) => Promise<void>
     monitoringOverview: MonitoringOverviewResponse | null
     version: VersionResponse | null
 }
@@ -141,7 +143,7 @@ export default function ContentSearch({ shares, onContentSearch, onCreateDataset
         setFiltersOpen(false)
     }
 
-    const handleCreateDataset = async (name: string) => {
+    const handleCreateDataset = async (values: CreateDatasetFormValues) => {
         if (!results?.results) return
 
         let filesToProcess = results.results
@@ -164,8 +166,16 @@ export default function ContentSearch({ shares, onContentSearch, onCreateDataset
             share_id: r.share_id
         }))
 
-        await onCreateDataset(name, files)
-        toast.success(`Dataset "${name}" created with ${files.length} files`)
+        await onCreateDataset(
+            {
+                name: values.name,
+                description: values.description,
+                is_public: values.is_public,
+                acl_override_enabled: values.acl_override_enabled,
+            },
+            files
+        )
+        toast.success(`Dataset "${values.name}" created with ${files.length} files`)
         setSelectedIds(new Set())
     }
 
@@ -418,6 +428,7 @@ export default function ContentSearch({ shares, onContentSearch, onCreateDataset
                         open={createDatasetDialogOpen}
                         onOpenChange={setCreateDatasetDialogOpen}
                         onSave={handleCreateDataset}
+                        fileCount={selectedIds.size > 0 ? selectedIds.size : results?.results.length}
                     />
                 </div>
             </div>

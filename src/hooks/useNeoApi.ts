@@ -49,7 +49,8 @@ import {
 import type {
   ConnectionCredentials,
   FileEntry,
-  Dataset
+  Dataset,
+  CreateDatasetRequest,
 } from "@/services/models"
 
 import { useSettings } from "@/context/settings-context"
@@ -825,15 +826,46 @@ export function useNeoApi() {
   )
 
 
-  const handleCreateDataset = useCallback(async (name: string, files: FileEntry[]) => {
-    const newDataset: Dataset = {
-      id: crypto.randomUUID(),
-      name: name, // Assuming 'name' from parameters should be used
-      files: files, // Assuming 'files' from parameters should be used
-      createdAt: new Date().toISOString(),
+  const handleCreateDataset = useCallback(async (
+    payload: Omit<CreateDatasetRequest, "file_ids">,
+    files: FileEntry[]
+  ) => {
+    if (!token) {
+      appLogger.warn("Dataset creation attempted without active token")
+      throw new AuthenticationError()
     }
-    setDatasets((prev) => [...prev, newDataset])
-  }, [])
+
+    const api = apiRef.current
+    const file_ids = files.map(f => f.id)
+
+    try {
+      appLogger.info("Creating dataset via API", undefined, { name: payload.name, file_count: file_ids.length })
+      const response = await api.createDataset(token, { ...payload, file_ids })
+
+      const newDataset: Dataset = {
+        id: response.id,
+        name: response.name,
+        description: response.description,
+        is_public: response.is_public,
+        acl_override_enabled: response.acl_override_enabled,
+        files,
+        createdAt: response.created_at,
+      }
+      setDatasets((prev) => [...prev, newDataset])
+      appLogger.info("Dataset created successfully", undefined, { id: response.id, name: response.name })
+    } catch (error) {
+      if (error instanceof AuthenticationError) {
+        clearSystemData()
+        setToken(null)
+      }
+      appLogger.error(
+        "Dataset creation failed",
+        error instanceof Error ? error.message : "Unknown error",
+        { name: payload.name }
+      )
+      throw error
+    }
+  }, [token, clearSystemData])
 
   const handleDeleteDataset = useCallback((id: string) => {
     setDatasets((prev) => prev.filter((d) => d.id !== id))

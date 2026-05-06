@@ -31,8 +31,10 @@ import type {
   FileSearchParams,
   FileSearchResponse,
   MonitoringOverviewResponse,
-  FileEntry
+  FileEntry,
+  CreateDatasetRequest,
 } from "@/services/neo-api"
+import type { CreateDatasetFormValues } from "@/components/dialogs/create-dataset-dialog"
 import { OverviewCard } from "@/components/cards/overview-card"
 
 import {
@@ -88,7 +90,7 @@ interface FilesProps {
   onFetchFileMetadata: (shareId: string, fileId: string) => Promise<FileMetadataResponse> // Fix parameter order
   onSearchFiles: (params: FileSearchParams) => Promise<FileSearchResponse>
   onPageChange?: (page: number) => Promise<void>
-  onCreateDataset: (name: string, files: FileEntry[]) => Promise<void>
+  onCreateDataset: (payload: Omit<CreateDatasetRequest, "file_ids">, files: FileEntry[]) => Promise<void>
   onRefresh: () => Promise<void>
   monitoringOverview: MonitoringOverviewResponse | null
   cacheStats?: {
@@ -225,10 +227,18 @@ export default function Files({
     setSearchResults(null)
   }
 
-  const handleCreateDataset = async (name: string) => {
+  const handleCreateDataset = async (values: CreateDatasetFormValues) => {
     if (searchResults?.files) {
-      await onCreateDataset(name, searchResults.files)
-      toast.success(`Dataset "${name}" created`)
+      await onCreateDataset(
+        {
+          name: values.name,
+          description: values.description,
+          is_public: values.is_public,
+          acl_override_enabled: values.acl_override_enabled,
+        },
+        searchResults.files
+      )
+      toast.success(`Dataset "${values.name}" created`)
     }
   }
 

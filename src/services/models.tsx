@@ -579,9 +579,30 @@ export interface ContentSearchResponse {
   database_type?: string
 }
 
+export interface CreateDatasetRequest {
+  name: string
+  description?: string
+  file_ids: string[]
+  is_public?: boolean
+  acl_override_enabled?: boolean
+}
+
+export interface DatasetResponse {
+  id: string
+  name: string
+  description?: string
+  file_ids: string[]
+  is_public: boolean
+  acl_override_enabled: boolean
+  created_at: string
+}
+
 export interface Dataset {
   id: string
   name: string
+  description?: string
+  is_public: boolean
+  acl_override_enabled: boolean
   files: FileEntry[]
   createdAt: string
 }

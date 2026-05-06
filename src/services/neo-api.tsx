@@ -29,6 +29,8 @@ import type {
   TokenResponse,
   ContentSearchRequest,
   ContentSearchResponse,
+  CreateDatasetRequest,
+  DatasetResponse,
   SetupLicenseRequest,
   SetupLicenseResponse,
   SetupStatusResponse,
@@ -93,6 +95,8 @@ export type {
   TaskCancelResponse,
   ContentSearchRequest,
   ContentSearchResponse,
+  CreateDatasetRequest,
+  DatasetResponse,
   SetupLicenseRequest,
   SetupLicenseResponse,
   SetupGraphRequest,
@@ -354,6 +358,10 @@ export class NeoApiService extends BaseApiClient {
   searchContent(token: string, payload: ContentSearchRequest) {
     const key = buildNormalizedCacheKey("searchContent", token, payload)
     return this.dataLoader.load(key, () => this.files.searchContent(token, payload), this.filesTtl)
+  }
+
+  createDataset(token: string, payload: CreateDatasetRequest): Promise<DatasetResponse> {
+    return this.files.createDataset(token, payload)
   }
 
   getMyDocuments(token: string, page: number = 1, pageSize: number = 100) {

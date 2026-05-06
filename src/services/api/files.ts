@@ -8,6 +8,8 @@ import type {
   FileSearchResponse,
   ContentSearchRequest,
   ContentSearchResponse,
+  CreateDatasetRequest,
+  DatasetResponse,
 } from "@/services/models"
 
 export class FilesApiClient extends BaseApiClient {
@@ -97,6 +99,17 @@ export class FilesApiClient extends BaseApiClient {
   searchContent(token: string, payload: ContentSearchRequest) {
     appLogger.debug("Performing content search", undefined, { query: payload.query })
     return this.requestWithToken<ContentSearchResponse>("/search", token, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    })
+  }
+
+  createDataset(token: string, payload: CreateDatasetRequest) {
+    appLogger.debug("Creating dataset", undefined, { name: payload.name, file_count: payload.file_ids.length })
+    return this.requestWithToken<DatasetResponse>("/datasets", token, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
