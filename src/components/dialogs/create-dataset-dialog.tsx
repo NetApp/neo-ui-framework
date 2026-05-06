@@ -33,8 +33,8 @@ import { Button } from "@/components/ui/button"
 const formSchema = z.object({
     name: z.string().min(1, "Name is required"),
     description: z.string().optional(),
-    is_public: z.boolean().default(false),
-    acl_override_enabled: z.boolean().default(false),
+    is_public: z.boolean(),
+    acl_override_enabled: z.boolean(),
 })
 
 export type CreateDatasetFormValues = z.infer<typeof formSchema>
