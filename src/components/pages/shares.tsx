@@ -280,16 +280,24 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
       try {
         if (sheetMode === "create-nfs") {
           if (editingShareId != null) {
-            await onUpdateShare(editingShareId, {
-              protocol: "nfs",
+            const parsedRules = parseRules(nfsRulesJson)
+            const nfsUpdatePayload: Parameters<SharesProps["onUpdateShare"]>[1] = {
               share_path: nfsSharePath,
+              crawl_schedule: nfsCrawlSchedule,
+              rules: parsedRules,
               nfs_version: nfsVersion,
               nfs_security: nfsSecurity,
               nfs_mount_options: nfsMountOptions,
-              username: nfsUsername,
-              password: nfsPassword,
-              crawl_schedule: nfsCrawlSchedule,
-            } as unknown as Parameters<SharesProps["onUpdateShare"]>[1])
+            } as unknown as Parameters<SharesProps["onUpdateShare"]>[1]
+
+            if (nfsUsername.trim() !== "") {
+              nfsUpdatePayload.username = nfsUsername
+            }
+            if (nfsPassword.trim() !== "") {
+              nfsUpdatePayload.password = nfsPassword
+            }
+
+            await onUpdateShare(editingShareId, nfsUpdatePayload)
 
             const details = await onFetchShareDetails(editingShareId)
             setSelectedShareDetails(details)
@@ -313,17 +321,23 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
           }
         } else if (sheetMode === "create-s3") {
           if (editingShareId != null) {
-            await onUpdateShare(editingShareId, {
-              protocol: "s3",
+            const s3UpdatePayload: Parameters<SharesProps["onUpdateShare"]>[1] = {
               share_path: s3SharePath,
-              username: s3Username,
-              password: s3Password,
               crawl_schedule: s3CrawlSchedule,
               s3_bucket: s3Bucket,
               s3_endpoint_url: s3EndpointUrl,
               s3_region: s3Region,
               s3_use_ssl: s3UseSsl,
-            } as unknown as Parameters<SharesProps["onUpdateShare"]>[1])
+            } as unknown as Parameters<SharesProps["onUpdateShare"]>[1]
+
+            if (s3Username.trim() !== "") {
+              s3UpdatePayload.username = s3Username
+            }
+            if (s3Password.trim() !== "") {
+              s3UpdatePayload.password = s3Password
+            }
+
+            await onUpdateShare(editingShareId, s3UpdatePayload)
 
             const details = await onFetchShareDetails(editingShareId)
             setSelectedShareDetails(details)
@@ -354,15 +368,24 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
           const parsedRules = parseRules(rulesJson)
 
           if (editingShareId != null) {
-          await onUpdateShare(editingShareId, {
-            share_path: sharePath,
-            crawl_schedule: crawlSchedule,
-            rules: parsedRules,
-            realm,
-            use_kerberos: useKerberos,
-            workgroup,
-            resolve_order: resolveOrder,
-          })
+            const smbUpdatePayload: Parameters<SharesProps["onUpdateShare"]>[1] = {
+              share_path: sharePath,
+              crawl_schedule: crawlSchedule,
+              rules: parsedRules,
+              realm,
+              use_kerberos: useKerberos,
+              workgroup,
+              resolve_order: resolveOrder,
+            }
+
+            if (username.trim() !== "") {
+              smbUpdatePayload.username = username
+            }
+            if (password.trim() !== "") {
+              smbUpdatePayload.password = password
+            }
+
+            await onUpdateShare(editingShareId, smbUpdatePayload)
 
             // Refresh details if we are in edit mode
             const details = await onFetchShareDetails(editingShareId)
@@ -892,7 +915,6 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
                       value={username}
                       onChange={(event) => setUsername(event.target.value)}
                       required={editingShareId === null}
-                      disabled={editingShareId !== null}
                     />
                   </div>
                   <div className="space-y-2">
@@ -903,7 +925,6 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
                       value={password}
                       onChange={(event) => setPassword(event.target.value)}
                       required={editingShareId === null}
-                      disabled={editingShareId !== null}
                       placeholder={editingShareId !== null ? "(Unchanged)" : undefined}
                     />
                   </div>

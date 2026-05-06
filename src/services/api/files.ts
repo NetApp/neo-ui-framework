@@ -15,6 +15,9 @@ export class FilesApiClient extends BaseApiClient {
     const params = new URLSearchParams()
     if (page !== undefined) params.append("page", page.toString())
     if (pageSize !== undefined) params.append("page_size", pageSize.toString())
+    if (shareId === "all" || shareId === "__all__") {
+      params.append("include_counts", "false")
+    }
 
     let endpoint = `/files?${params}`
 

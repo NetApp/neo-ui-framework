@@ -254,11 +254,11 @@ export interface FilesResponse {
   share_id: string
   path: string
   files: FileEntry[]
-  total_count: number
-  total_size: number
+  total_count: number | null
+  total_size: number | null
   page: number
   page_size: number
-  total_pages: number
+  total_pages: number | null
   has_next: boolean
   has_previous: boolean
 }
@@ -302,11 +302,11 @@ export interface FileEntry {
 
 export interface FileSearchResponse {
   files: FileEntry[]
-  total_count: number
-  total_size: number
+  total_count: number | null
+  total_size: number | null
   page: number
   page_size: number
-  total_pages: number
+  total_pages: number | null
   has_next: boolean
   has_previous: boolean
 }

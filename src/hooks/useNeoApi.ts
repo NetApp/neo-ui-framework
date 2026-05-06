@@ -729,28 +729,18 @@ export function useNeoApi() {
       try {
         appLogger.info("Loading files", undefined, { shareKey, page })
         if (shareKey === "all") {
-          // Use the /files endpoint to get ALL files across all shares with pagination
-          const searchParams: FileSearchParams = {
-            page: page || 1,
-            page_size: 100
-          }
-          const response = await api.searchFiles(token, searchParams)
+          // Use the standard listing endpoint for all-shares mode.
+          // This avoids the search pipeline and keeps pagination behavior consistent.
+          const response = await api.getFiles(token, "all", page || 1, 100)
 
-          const aggregated: FilesResponse = {
+          const allShares: FilesResponse = {
+            ...response,
             share_id: "all",
             path: "All shares",
-            files: response.files,
-            total_count: response.total_count,
-            total_size: response.total_size,
-            page: response.page,
-            page_size: response.page_size,
-            total_pages: response.total_pages,
-            has_next: response.has_next,
-            has_previous: response.has_previous,
           }
 
-          setFiles(aggregated)
-          appLogger.info("Files loaded from all shares via /files endpoint", undefined, {
+          setFiles(allShares)
+          appLogger.info("Files loaded from all shares", undefined, {
             total_files: response.files.length,
             page: response.page,
             total_pages: response.total_pages
