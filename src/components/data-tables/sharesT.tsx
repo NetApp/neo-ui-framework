@@ -48,6 +48,7 @@ function getStatusIcon(status: string) {
     case "scheduled":
       return <Clock className="size-4 text-yellow-600" />
     case "warning":
+    case "connection_failed":
       return <AlertCircle className="size-4 text-orange-600" />
     default:
       return null
@@ -68,6 +69,7 @@ function getStatusBadge(status: string) {
     pending: "text-yellow-600 border-yellow-200 dark:text-yellow-400 dark:border-yellow-800",
     scheduled: "text-yellow-600 border-yellow-200 dark:text-yellow-400 dark:border-yellow-800",
     warning: "text-orange-600 border-orange-200 dark:text-orange-400 dark:border-orange-800",
+    connection_failed: "text-orange-600 border-orange-200 dark:text-orange-400 dark:border-orange-800",
   }
 
   return (
@@ -176,17 +178,10 @@ export function SharesTable({ shares, onShareClick }: SharesTableProps) {
           <TableHeader className="sticky top-0 z-10 bg-muted">
             <TableRow>
               <TableHead style={{ width: columnWidths.source_id, position: 'relative' }}>
-                Source Id
+                Id
                 <div
                   className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-primary/50"
                   onMouseDown={(e) => handleResizeStart(e, 'source_id')}
-                />
-              </TableHead>
-              <TableHead style={{ width: columnWidths.share_path, position: 'relative' }}>
-                Share Path
-                <div
-                  className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-primary/50"
-                  onMouseDown={(e) => handleResizeStart(e, 'share_path')}
                 />
               </TableHead>
               <TableHead style={{ width: columnWidths.protocol, position: 'relative' }}>
@@ -196,25 +191,32 @@ export function SharesTable({ shares, onShareClick }: SharesTableProps) {
                   onMouseDown={(e) => handleResizeStart(e, 'protocol')}
                 />
               </TableHead>
-              <TableHead style={{ width: columnWidths.files, position: 'relative' }}>
-                Files
+              <TableHead style={{ width: columnWidths.share_path, position: 'relative' }}>
+                Path
                 <div
                   className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-primary/50"
-                  onMouseDown={(e) => handleResizeStart(e, 'files')}
+                  onMouseDown={(e) => handleResizeStart(e, 'share_path')}
                 />
               </TableHead>
-              <TableHead style={{ width: columnWidths.username, position: 'relative' }}>
+              {/* <TableHead style={{ width: columnWidths.username, position: 'relative' }}>
                 User
                 <div
                   className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-primary/50"
                   onMouseDown={(e) => handleResizeStart(e, 'username')}
                 />
-              </TableHead>
+              </TableHead> */}
               <TableHead style={{ width: columnWidths.last_crawled, position: 'relative' }}>
                 Last Crawled
                 <div
                   className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-primary/50"
                   onMouseDown={(e) => handleResizeStart(e, 'last_crawled')}
+                />
+              </TableHead>
+              <TableHead style={{ width: columnWidths.files, position: 'relative' }}>
+                Files
+                <div
+                  className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-primary/50"
+                  onMouseDown={(e) => handleResizeStart(e, 'files')}
                 />
               </TableHead>
               <TableHead style={{ width: columnWidths.status, position: 'relative' }}>
@@ -236,13 +238,13 @@ export function SharesTable({ shares, onShareClick }: SharesTableProps) {
                   data-id={share.id}
                 >
                   <TableCell className="truncate" title={share.id}>{share.id.slice(0, 7)}</TableCell>
-                  <TableCell className="truncate" title={share.share_path}>{share.share_path}</TableCell>
                   <TableCell className="truncate">{(share.protocol ?? "smb").toUpperCase()}</TableCell>
-                  <TableCell className="truncate">{share.last_crawl_file_count}</TableCell>
-                  <TableCell className="truncate" title={share.username}>{share.username}</TableCell>
+                  <TableCell className="truncate" title={share.share_path}>{share.share_path}</TableCell>
+                  {/* <TableCell className="truncate" title={share.username}>{share.username}</TableCell> */}
                   <TableCell className="truncate">
                     {share.last_crawled ? new Date(share.last_crawled).toLocaleString() : "—"}
                   </TableCell>
+                  <TableCell className="truncate">{share.last_crawl_file_count}</TableCell>
                   <TableCell className="truncate">{getStatusBadge(share.status)}</TableCell>
                 </TableRow >
               ))
