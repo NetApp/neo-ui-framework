@@ -69,7 +69,6 @@ function App() {
             isConnected={!!state.token}
             onConnect={handlers.handleConnect}
             onLogout={handlers.handleLogout}
-            datasets={state.datasets}
           />
           <SidebarInset>
             <SiteHeader
@@ -164,6 +163,7 @@ function App() {
                       datasets={state.datasets}
                       onFetchFileMetadata={handlers.handleFetchFileMetadata}
                       onDeleteDataset={handlers.handleDeleteDataset}
+                      onFetchDatasets={handlers.handleFetchDatasets}
                       monitoringOverview={state.monitoring.overview}
                       cacheStats={state.cacheStats}
                     />

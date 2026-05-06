@@ -597,14 +597,49 @@ export interface DatasetResponse {
   created_at: string
 }
 
+export interface DatasetListItem {
+  id: string
+  name: string
+  description?: string
+  owner_id: number
+  owner_username: string
+  is_public: boolean
+  acl_override_enabled: boolean
+  item_count: number
+  created_at: string
+  updated_at: string
+  expires_at: string
+  expires_in_hours: number
+  source_query: Record<string, unknown>
+  user_permission: string
+  metadata: Record<string, unknown>
+}
+
+export interface DatasetListResponse {
+  datasets: DatasetListItem[]
+  total_count: number
+  page: number
+  page_size: number
+  total_pages: number
+  has_next: boolean
+  has_previous: boolean
+}
+
 export interface Dataset {
   id: string
   name: string
   description?: string
+  owner_id?: number
+  owner_username?: string
   is_public: boolean
   acl_override_enabled: boolean
+  item_count?: number
   files: FileEntry[]
   createdAt: string
+  updatedAt?: string
+  expiresAt?: string
+  expiresInHours?: number
+  userPermission?: string
 }
 
 export interface MeResponse {

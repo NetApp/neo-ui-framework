@@ -867,9 +867,64 @@ export function useNeoApi() {
     }
   }, [token, clearSystemData])
 
-  const handleDeleteDataset = useCallback((id: string) => {
-    setDatasets((prev) => prev.filter((d) => d.id !== id))
-  }, [])
+  const handleFetchDatasets = useCallback(async (page: number = 1, pageSize: number = 50, ownedOnly: boolean = false) => {
+    if (!token) {
+      appLogger.warn("Fetch datasets attempted without active token")
+      throw new AuthenticationError()
+    }
+
+    const api = apiRef.current
+    try {
+      appLogger.debug("Fetching datasets", undefined, { page, pageSize, ownedOnly })
+      const response = await api.getDatasets(token, page, pageSize, ownedOnly)
+      const mapped: Dataset[] = response.datasets.map(item => ({
+        id: item.id,
+        name: item.name,
+        description: item.description,
+        owner_id: item.owner_id,
+        owner_username: item.owner_username,
+        is_public: item.is_public,
+        acl_override_enabled: item.acl_override_enabled,
+        item_count: item.item_count,
+        files: [],
+        createdAt: item.created_at,
+        updatedAt: item.updated_at,
+        expiresAt: item.expires_at,
+        expiresInHours: item.expires_in_hours,
+        userPermission: item.user_permission,
+      }))
+      setDatasets(mapped)
+      appLogger.info("Datasets fetched", undefined, { count: mapped.length })
+    } catch (error) {
+      if (error instanceof AuthenticationError) {
+        clearSystemData()
+        setToken(null)
+      }
+      appLogger.error("Failed to fetch datasets", error instanceof Error ? error.message : "Unknown error")
+      throw error
+    }
+  }, [token, clearSystemData])
+
+  const handleDeleteDataset = useCallback(async (id: string) => {
+    if (!token) {
+      appLogger.warn("Dataset deletion attempted without active token")
+      throw new AuthenticationError()
+    }
+
+    const api = apiRef.current
+    try {
+      await api.deleteDataset(token, id)
+      setDatasets((prev) => prev.filter((d) => d.id !== id))
+      appLogger.info("Dataset deleted", undefined, { id })
+    } catch (error) {
+      if (error instanceof AuthenticationError) {
+        clearSystemData()
+        setToken(null)
+      }
+      appLogger.error("Dataset deletion failed", error instanceof Error ? error.message : "Unknown error", { id })
+      throw error
+    }
+  }, [token, clearSystemData])
 
   const handleFilesPageChange = useCallback(
     async (page: number) => {
@@ -1111,6 +1166,7 @@ export function useNeoApi() {
       handleFetchMyDocuments,
       handleCreateDataset,
       handleDeleteDataset,
+      handleFetchDatasets,
       handleContentSearch,
       handleRetryWorkItems,
       clearCache: useCallback(() => apiRef.current.clearCache(), []),

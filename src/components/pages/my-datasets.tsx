@@ -1,7 +1,7 @@
 // Copyright 2025 NetApp, Inc. All Rights Reserved.
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import {
     Table,
@@ -13,17 +13,19 @@ import {
 } from "@/components/ui/table"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Button } from "@/components/ui/button"
-import { IconTrash, IconInfoCircle, IconDatabase } from "@tabler/icons-react"
+import { Badge } from "@/components/ui/badge"
+import { Skeleton } from "@/components/ui/skeleton"
+import { IconTrash, IconDatabase, IconRefresh } from "@tabler/icons-react"
 import { OverviewCard } from "@/components/cards/overview-card"
 import type { Dataset, FileMetadataResponse } from "@/services/models"
 import type { MonitoringOverviewResponse } from "@/services/neo-api"
 import { ConfirmDialog } from "@/components/dialogs/confirm-dialog"
 import { toast } from "sonner"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 interface MyDatasetsProps {
     datasets: Dataset[]
-    onDeleteDataset: (id: string) => void
+    onDeleteDataset: (id: string) => Promise<void>
+    onFetchDatasets: () => Promise<void>
     onFetchFileMetadata: (shareId: string, fileId: string) => Promise<FileMetadataResponse>
     monitoringOverview: MonitoringOverviewResponse | null
     cacheStats?: {
@@ -35,6 +37,7 @@ interface MyDatasetsProps {
 export default function MyDatasets({
     datasets,
     onDeleteDataset,
+    onFetchDatasets,
     onFetchFileMetadata,
     monitoringOverview,
     // cacheStats,
@@ -43,6 +46,22 @@ export default function MyDatasets({
     const [selectedDatasets, setSelectedDatasets] = useState<Set<string>>(new Set())
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
     const [isWarmingUp, setIsWarmingUp] = useState(false)
+    const [isFetching, setIsFetching] = useState(false)
+
+    useEffect(() => {
+        const load = async () => {
+            setIsFetching(true)
+            try {
+                await onFetchDatasets()
+            } catch {
+                toast.error("Failed to load datasets")
+            } finally {
+                setIsFetching(false)
+            }
+        }
+        load()
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
 
     const toggleSelectAll = () => {
         if (selectedDatasets.size === datasets.length) {
@@ -62,10 +81,15 @@ export default function MyDatasets({
         setSelectedDatasets(newSelected)
     }
 
-    const handleDelete = () => {
-        selectedDatasets.forEach((id) => onDeleteDataset(id))
-        setSelectedDatasets(new Set())
-        toast.success(`Deleted ${selectedDatasets.size} dataset(s)`)
+    const handleDelete = async () => {
+        const count = selectedDatasets.size
+        try {
+            await Promise.all(Array.from(selectedDatasets).map(id => onDeleteDataset(id)))
+            setSelectedDatasets(new Set())
+            toast.success(`Deleted ${count} dataset(s)`)
+        } catch {
+            toast.error("Failed to delete one or more datasets")
+        }
     }
 
     const handleCacheWarmup = async () => {
@@ -73,7 +97,7 @@ export default function MyDatasets({
         const totalFiles = targetDatasets.reduce((acc, d) => acc + d.files.length, 0)
 
         if (totalFiles === 0) {
-            toast.error("No files in selected datasets to cache")
+            toast.error("No locally-loaded files in selected datasets to cache")
             return
         }
 
@@ -105,7 +129,6 @@ export default function MyDatasets({
                 const fileList = failedFiles.slice(0, limit).join(", ")
                 const remaining = failedFiles.length - limit
                 const detail = remaining > 0 ? `${fileList} and ${remaining} more` : fileList
-
                 toast.warning(`Cache warmup finished with errors. ${successCount} cached, ${failCount} failed.`)
                 toast.error(`Failed files: ${detail}`)
             } else {
@@ -132,30 +155,41 @@ export default function MyDatasets({
                             />
                         </div>
 
-                        <Alert className="mb-4 border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/20 text-blue-800 dark:text-blue-300">
-                            <IconInfoCircle className="h-4 w-4" />
-                            <AlertTitle>Tech Preview feature</AlertTitle>
-                            <AlertDescription>
-                                Datasets are only persistent during the user session and will be deleted at logout with the cache.
-                            </AlertDescription>
-                        </Alert>
-
-                        {selectedDatasets.size > 0 && (
-                            <div className="mb-4 flex justify-end gap-2">
+                        <div className="mb-4 flex items-center justify-between">
+                            <p className="text-sm text-muted-foreground">
+                                {isFetching ? "Loading datasets…" : `${datasets.length} dataset${datasets.length !== 1 ? "s" : ""}`}
+                            </p>
+                            <div className="flex gap-2">
+                                {selectedDatasets.size > 0 && (
+                                    <>
+                                        <Button
+                                            variant="outline"
+                                            onClick={handleCacheWarmup}
+                                            disabled={isWarmingUp}
+                                        >
+                                            <IconDatabase className="mr-2 size-4" />
+                                            {isWarmingUp ? "Caching..." : "Cache files"}
+                                        </Button>
+                                        <Button variant="destructive" onClick={() => setIsDeleteDialogOpen(true)}>
+                                            <IconTrash className="mr-2 size-4" />
+                                            Delete ({selectedDatasets.size})
+                                        </Button>
+                                    </>
+                                )}
                                 <Button
                                     variant="outline"
-                                    onClick={handleCacheWarmup}
-                                    disabled={isWarmingUp}
+                                    size="icon"
+                                    onClick={async () => {
+                                        setIsFetching(true)
+                                        try { await onFetchDatasets() } catch { toast.error("Failed to refresh datasets") } finally { setIsFetching(false) }
+                                    }}
+                                    disabled={isFetching}
+                                    aria-label="Refresh datasets"
                                 >
-                                    <IconDatabase className="mr-2 size-4" />
-                                    {isWarmingUp ? "Caching..." : "Cache all files"}
-                                </Button>
-                                <Button variant="destructive" onClick={() => setIsDeleteDialogOpen(true)}>
-                                    <IconTrash className="mr-2 size-4" />
-                                    Delete Dataset(s)
+                                    <IconRefresh className={`size-4 ${isFetching ? "animate-spin" : ""}`} />
                                 </Button>
                             </div>
-                        )}
+                        </div>
 
                         <div className="overflow-hidden rounded-lg border">
                             <Table>
@@ -169,16 +203,24 @@ export default function MyDatasets({
                                             />
                                         </TableHead>
                                         <TableHead>Name</TableHead>
-                                        <TableHead>Files</TableHead>
-                                        <TableHead>Total Size</TableHead>
-                                        <TableHead>Created At</TableHead>
+                                        <TableHead>Owner</TableHead>
+                                        <TableHead>Items</TableHead>
+                                        <TableHead>Visibility</TableHead>
+                                        <TableHead>Expires</TableHead>
+                                        <TableHead>Created</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {datasets.length === 0 ? (
+                                    {isFetching ? (
+                                        Array.from({ length: 3 }).map((_, i) => (
+                                            <TableRow key={i}>
+                                                <TableCell colSpan={7}><Skeleton className="h-5 w-full" /></TableCell>
+                                            </TableRow>
+                                        ))
+                                    ) : datasets.length === 0 ? (
                                         <TableRow>
-                                            <TableCell colSpan={5} className="py-6 text-center text-sm text-muted-foreground">
-                                                No datasets created yet.
+                                            <TableCell colSpan={7} className="py-6 text-center text-sm text-muted-foreground">
+                                                No datasets yet.
                                             </TableCell>
                                         </TableRow>
                                     ) : (
@@ -196,14 +238,29 @@ export default function MyDatasets({
                                                     />
                                                 </TableCell>
                                                 <TableCell className="font-medium">
-                                                    {dataset.name}
+                                                    <div>{dataset.name}</div>
+                                                    {dataset.description && (
+                                                        <div className="text-xs text-muted-foreground truncate max-w-[220px]">{dataset.description}</div>
+                                                    )}
                                                 </TableCell>
-                                                <TableCell>{dataset.files.length} files</TableCell>
-                                                <TableCell>
-                                                    {dataset.files.reduce((acc, file) => acc + file.size, 0).toLocaleString()} bytes
+                                                <TableCell className="text-sm text-muted-foreground">
+                                                    {dataset.owner_username ?? "—"}
                                                 </TableCell>
                                                 <TableCell>
-                                                    {new Date(dataset.createdAt).toLocaleDateString()}
+                                                    {dataset.item_count ?? dataset.files.length}
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Badge variant={dataset.is_public ? "default" : "secondary"}>
+                                                        {dataset.is_public ? "Public" : "Private"}
+                                                    </Badge>
+                                                </TableCell>
+                                                <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                                                    {dataset.expiresAt
+                                                        ? new Date(dataset.expiresAt).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })
+                                                        : "—"}
+                                                </TableCell>
+                                                <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                                                    {new Date(dataset.createdAt).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}
                                                 </TableCell>
                                             </TableRow>
                                         ))

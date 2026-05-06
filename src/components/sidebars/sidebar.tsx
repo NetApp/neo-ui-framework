@@ -19,21 +19,18 @@ import {
   AppSidebarFooter
 } from "@/components/sidebars/sidebar-footer"
 
-import type { Dataset } from "@/services/models"
-
 interface AppSidebarProps {
   me?: MeResponse | null
   isConnected?: boolean
   onConnect?: (credentials: ConnectionCredentials) => Promise<void>
   onLogout?: () => void
-  datasets?: Dataset[]
 }
 
-export function AppSidebar({ me, isConnected = false, onConnect, onLogout, datasets }: AppSidebarProps) {
+export function AppSidebar({ me, isConnected = false, onConnect, onLogout }: AppSidebarProps) {
   return (
     <Sidebar collapsible="icon">
       <AppSidebarHeader />
-      <AppSidebarContent datasets={datasets} />
+      <AppSidebarContent />
       <AppSidebarFooter
         me={me}
         isConnected={isConnected}

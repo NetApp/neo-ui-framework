@@ -31,6 +31,7 @@ import type {
   ContentSearchResponse,
   CreateDatasetRequest,
   DatasetResponse,
+  DatasetListResponse,
   SetupLicenseRequest,
   SetupLicenseResponse,
   SetupStatusResponse,
@@ -60,6 +61,7 @@ import { MonitoringApiClient } from "./api/monitoring"
 import { TasksApiClient, type TaskCancelResponse } from "./api/tasks"
 import { AnalyticsApiClient } from "./api/analytics"
 import { HelmApiClient } from "./api/helm"
+import { DatasetsApiClient } from "./api/datasets"
 import { DataLoader } from "./data-loader"
 
 
@@ -97,6 +99,7 @@ export type {
   ContentSearchResponse,
   CreateDatasetRequest,
   DatasetResponse,
+  DatasetListResponse,
   SetupLicenseRequest,
   SetupLicenseResponse,
   SetupGraphRequest,
@@ -146,6 +149,7 @@ export class NeoApiService extends BaseApiClient {
   private tasks: TasksApiClient
   private analytics: AnalyticsApiClient
   private helm: HelmApiClient
+  private datasetsClient: DatasetsApiClient
   private dataLoader: DataLoader
   private monitoringTtl: number = 10 * 60 * 1000
   private filesTtl: number = 10 * 60 * 1000
@@ -162,6 +166,7 @@ export class NeoApiService extends BaseApiClient {
     this.tasks = new TasksApiClient(baseUrl)
     this.analytics = new AnalyticsApiClient(baseUrl)
     this.helm = new HelmApiClient()
+    this.datasetsClient = new DatasetsApiClient(baseUrl)
     this.dataLoader = new DataLoader(30000) // 30 seconds default TTL
   }
 
@@ -362,6 +367,14 @@ export class NeoApiService extends BaseApiClient {
 
   createDataset(token: string, payload: CreateDatasetRequest): Promise<DatasetResponse> {
     return this.files.createDataset(token, payload)
+  }
+
+  getDatasets(token: string, page: number = 1, pageSize: number = 50, ownedOnly: boolean = false): Promise<DatasetListResponse> {
+    return this.datasetsClient.getDatasets(token, page, pageSize, ownedOnly)
+  }
+
+  deleteDataset(token: string, datasetId: string): Promise<void> {
+    return this.datasetsClient.deleteDataset(token, datasetId)
   }
 
   getMyDocuments(token: string, page: number = 1, pageSize: number = 100) {

@@ -10,7 +10,6 @@ import {
   IconSettings,
   IconFileSearch,
   IconFolders,
-  IconFolderCode,
   // IconArrowsJoin,
   IconFolderShare,
   IconFiles,
@@ -93,30 +92,13 @@ const data = {
   ],
 }
 
-import type { Dataset } from "@/services/models"
-
-interface AppSidebarContentProps extends React.ComponentProps<typeof SidebarContent> {
-  datasets?: Dataset[]
-}
-
-export function AppSidebarContent({ datasets = [], ...props }: AppSidebarContentProps) {
-  const datasetItems = datasets.map((dataset) => ({
-    name: dataset.name,
-    url: `#/my-datasets/${dataset.id}`,
-    icon: IconFolderCode,
-  }))
-
-  const navDatasets = [
-    ...data.navDatasets,
-    ...datasetItems
-  ]
-
+export function AppSidebarContent({ ...props }: React.ComponentProps<typeof SidebarContent>) {
   return (
     <SidebarContent {...props}>
       <NavMain items={data.navMain} />
       <NavMain items={data.navDataEstate} labelKey="dataEstate" labelNamespace="nav" />
       <NavMain items={data.navDiscovery} labelKey="discovery" labelNamespace="nav" />
-      <NavMain items={navDatasets} labelKey="datasets" labelNamespace="nav" />
+      <NavMain items={data.navDatasets} labelKey="datasets" labelNamespace="nav" />
       <NavMain items={data.navSecondary} className="mt-auto" />
     </SidebarContent>
   )

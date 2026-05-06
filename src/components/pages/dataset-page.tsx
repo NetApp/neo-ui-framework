@@ -28,7 +28,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 interface DatasetPageProps {
     datasets: Dataset[]
     onFetchFileMetadata: (shareId: string, fileId: string) => Promise<FileMetadataResponse>
-    onDeleteDataset: (id: string) => void
+    onDeleteDataset: (id: string) => Promise<void>
 }
 
 export default function DatasetPage({
@@ -53,9 +53,9 @@ export default function DatasetPage({
         setIsDeleteDialogOpen(true)
     }
 
-    const handleConfirmDelete = () => {
+    const handleConfirmDelete = async () => {
         if (dataset) {
-            onDeleteDataset(dataset.id)
+            await onDeleteDataset(dataset.id)
             toast.success(`Dataset "${dataset.name}" deleted`)
             navigate("/my-datasets/my-datasets")
         }
