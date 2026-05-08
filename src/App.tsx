@@ -174,8 +174,11 @@ function App() {
                   element={
                     <ContentSearch
                       shares={state.shares}
+                      datasets={state.datasets}
                       onContentSearch={handlers.handleContentSearch}
                       onCreateDataset={handlers.handleCreateDataset}
+                      onAddToDataset={handlers.handleAddDatasetItems}
+                      onFetchDatasets={handlers.handleFetchDatasets}
                       monitoringOverview={state.monitoring.overview}
                       version={state.version}
                     />

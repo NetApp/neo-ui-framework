@@ -942,6 +942,31 @@ export function useNeoApi() {
     }
   }, [token, clearSystemData])
 
+  const handleAddDatasetItems = useCallback(async (datasetId: string, fileIds: string[], notes?: string) => {
+    if (!token) {
+      appLogger.warn("Add dataset items attempted without active token")
+      throw new AuthenticationError()
+    }
+
+    if (!fileIds.length) {
+      appLogger.warn("No file IDs provided for adding to dataset")
+      return
+    }
+
+    const api = apiRef.current
+    try {
+      await api.addDatasetItems(token, datasetId, fileIds, notes)
+      appLogger.info("Items added to dataset", undefined, { datasetId, fileCount: fileIds.length })
+    } catch (error) {
+      if (error instanceof AuthenticationError) {
+        clearSystemData()
+        setToken(null)
+      }
+      appLogger.error("Add dataset items failed", error instanceof Error ? error.message : "Unknown error", { datasetId })
+      throw error
+    }
+  }, [token, clearSystemData])
+
   const handleDeleteDatasetItems = useCallback(async (datasetId: string, fileIds: string[]) => {
     if (!token) {
       appLogger.warn("Dataset items deletion attempted without active token")
@@ -1208,6 +1233,7 @@ export function useNeoApi() {
       handleCreateDataset,
       handleDeleteDataset,
       handleDeleteDatasetItems,
+      handleAddDatasetItems,
       handleFetchDatasets,
       handleFetchDatasetItems,
       handleContentSearch,

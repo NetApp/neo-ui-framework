@@ -50,11 +50,16 @@ import {
 } from "@/components/ui/alert"
 import { toast } from "sonner"
 import { CreateDatasetDialog } from "@/components/dialogs/create-dataset-dialog"
+import { AddToDatasetDialog } from "@/components/dialogs/add-to-dataset-dialog"
+import type { Dataset } from "@/services/models"
 
 interface ContentSearchProps {
     shares: SharesResponse[] | null
+    datasets: Dataset[]
     onContentSearch: (payload: ContentSearchRequest) => Promise<ContentSearchResponse>
     onCreateDataset: (payload: Omit<CreateDatasetRequest, "file_ids">, files: FileEntry[]) => Promise<void>
+    onAddToDataset: (datasetId: string, fileIds: string[], notes?: string) => Promise<void>
+    onFetchDatasets: () => Promise<void>
     monitoringOverview: MonitoringOverviewResponse | null
     version: VersionResponse | null
 }
@@ -86,12 +91,13 @@ const renderSnippet = (snippet: string) => {
     })
 }
 
-export default function ContentSearch({ shares, onContentSearch, onCreateDataset, version }: ContentSearchProps) {
+export default function ContentSearch({ shares, datasets, onContentSearch, onCreateDataset, onAddToDataset, onFetchDatasets, version }: ContentSearchProps) {
     const [query, setQuery] = useState("")
     const [results, setResults] = useState<ContentSearchResponse | null>(null)
     const [loading, setLoading] = useState(false)
     const [filtersOpen, setFiltersOpen] = useState(false)
     const [createDatasetDialogOpen, setCreateDatasetDialogOpen] = useState(false)
+    const [addToDatasetDialogOpen, setAddToDatasetDialogOpen] = useState(false)
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
 
     // Filters
@@ -352,7 +358,13 @@ export default function ContentSearch({ shares, onContentSearch, onCreateDataset
                                     )}
                                 </div>
 
-                                <div className="flex justify-end mb-4">
+                                <div className="flex justify-end gap-2 mb-4">
+                                    <Button variant="outline" onClick={() => { onFetchDatasets(); setAddToDatasetDialogOpen(true) }}>
+                                        <IconPlus className="mr-2 h-4 w-4" />
+                                        {selectedIds.size > 0
+                                            ? `Add to dataset (${selectedIds.size} selected)`
+                                            : "Add to dataset (All)"}
+                                    </Button>
                                     <Button variant="default" onClick={() => setCreateDatasetDialogOpen(true)}>
                                         <IconPlus className="mr-2 h-4 w-4" />
                                         {selectedIds.size > 0
@@ -429,6 +441,22 @@ export default function ContentSearch({ shares, onContentSearch, onCreateDataset
                         onOpenChange={setCreateDatasetDialogOpen}
                         onSave={handleCreateDataset}
                         fileCount={selectedIds.size > 0 ? selectedIds.size : results?.results.length}
+                    />
+
+                    <AddToDatasetDialog
+                        open={addToDatasetDialogOpen}
+                        onOpenChange={setAddToDatasetDialogOpen}
+                        datasets={datasets}
+                        fileCount={selectedIds.size > 0 ? selectedIds.size : (results?.results.length ?? 0)}
+                        onAdd={async (datasetId, notes) => {
+                            if (!results?.results) return
+                            const fileIds = selectedIds.size > 0
+                                ? results.results.filter(r => selectedIds.has(r.id)).map(r => r.id)
+                                : results.results.map(r => r.id)
+                            await onAddToDataset(datasetId, fileIds, notes)
+                            const datasetName = datasets.find(d => d.id === datasetId)?.name ?? datasetId
+                            toast.success(`${fileIds.length} file${fileIds.length !== 1 ? "s" : ""} added to "${datasetName}"`)
+                        }}
                     />
                 </div>
             </div>

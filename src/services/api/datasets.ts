@@ -47,4 +47,13 @@ export class DatasetsApiClient extends BaseApiClient {
       body: JSON.stringify({ file_ids: fileIds }),
     })
   }
+
+  addDatasetItems(token: string, datasetId: string, fileIds: string[], notes?: string) {
+    appLogger.debug("Adding items to dataset", undefined, { datasetId, fileCount: fileIds.length })
+    return this.requestWithToken<void>(`/datasets/${datasetId}/items`, token, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ file_ids: fileIds, ...(notes ? { notes } : {}) }),
+    })
+  }
 }
