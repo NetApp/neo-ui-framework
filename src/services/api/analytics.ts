@@ -6,6 +6,38 @@ import type { FileSearchResponse } from "@/services/models"
 const ANALYTICS_MAX_PAGES = 500
 const ANALYTICS_MAX_FILES = 500_000
 
+function resolveFileType(fileType: string | undefined, filename: string | undefined) {
+  const mimeToExtension: Record<string, string> = {
+    "application/pdf": "pdf",
+    "application/msword": "doc",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
+    "application/vnd.ms-powerpoint": "ppt",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation": "pptx",
+    "text/plain": "txt",
+  }
+
+  const normalized = fileType?.trim().toLowerCase()
+  if (normalized) {
+    const mimeCandidate = normalized.split(";")[0].trim()
+    if (mimeToExtension[mimeCandidate]) {
+      return mimeToExtension[mimeCandidate]
+    }
+
+    const extCandidate = mimeCandidate.startsWith(".")
+      ? mimeCandidate.slice(1)
+      : mimeCandidate.includes("/")
+        ? mimeCandidate.split("/").pop() ?? mimeCandidate
+        : mimeCandidate
+
+    if (extCandidate) {
+      return extCandidate
+    }
+  }
+
+  const filenameExt = filename?.split(".").pop()?.trim().toLowerCase()
+  return filenameExt || "unknown"
+}
+
 export class AnalyticsApiClient extends BaseApiClient {
   async getFileAnalytics(token: string) {
     appLogger.debug("Fetching file analytics data")
@@ -34,12 +66,12 @@ export class AnalyticsApiClient extends BaseApiClient {
 
       appLogger.debug(`Fetching files page ${page}`)
       const response = await this.requestWithToken<FileSearchResponse>(
-        `/files?page=${page}&page_size=100`,
+        `/files?page=${page}&page_size=100&include_counts=false`,
         token
       )
 
       for (const file of response.files) {
-        const fileType = file.file_type?.toLowerCase() || "unknown"
+        const fileType = resolveFileType(file.file_type, file.filename)
         const key = targetTypes.includes(fileType) ? fileType : "other"
         const current = fileTypeMap.get(key)!
 
@@ -113,7 +145,7 @@ export class AnalyticsApiClient extends BaseApiClient {
 
       appLogger.debug(`Fetching files page ${page} for shares analytics`)
       const response = await this.requestWithToken<FileSearchResponse>(
-        `/files?page=${page}&page_size=1000`,
+        `/files?page=${page}&page_size=1000&include_counts=false`,
         token
       )
 

@@ -116,7 +116,7 @@ export function DatabaseSizeCard({ databaseSize, className }: DatabaseSizeCardPr
 
             {/* Operations Log */}
             <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Operations Log:</span>
+              <span className="text-muted-foreground">Ops:</span>
               <Badge variant="outline" className="font-mono">
                 {databaseSize.table_statistics?.operations_log?.row_count ?? 0}
               </Badge>
