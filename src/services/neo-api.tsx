@@ -382,6 +382,10 @@ export class NeoApiService extends BaseApiClient {
     return this.datasetsClient.deleteDataset(token, datasetId)
   }
 
+  deleteDatasetItems(token: string, datasetId: string, fileIds: string[]): Promise<void> {
+    return this.datasetsClient.deleteDatasetItems(token, datasetId, fileIds)
+  }
+
   getMyDocuments(token: string, page: number = 1, pageSize: number = 100) {
     const key = `myDocuments:${token}:${page}:${pageSize}`
     return this.dataLoader.load(key, () => this.files.getMyDocuments(token, page, pageSize), this.filesTtl)

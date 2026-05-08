@@ -39,4 +39,12 @@ export class DatasetsApiClient extends BaseApiClient {
       method: "DELETE",
     })
   }
+
+  deleteDatasetItems(token: string, datasetId: string, fileIds: string[]) {
+    appLogger.debug("Deleting dataset items", undefined, { datasetId, fileIds })
+    return this.requestWithToken<void>(`/datasets/${datasetId}/items`, token, {
+      method: "DELETE",
+      body: JSON.stringify({ file_ids: fileIds }),
+    })
+  }
 }

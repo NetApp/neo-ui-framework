@@ -942,6 +942,31 @@ export function useNeoApi() {
     }
   }, [token, clearSystemData])
 
+  const handleDeleteDatasetItems = useCallback(async (datasetId: string, fileIds: string[]) => {
+    if (!token) {
+      appLogger.warn("Dataset items deletion attempted without active token")
+      throw new AuthenticationError()
+    }
+
+    if (!fileIds.length) {
+      appLogger.warn("No file IDs provided for deletion")
+      return
+    }
+
+    const api = apiRef.current
+    try {
+      await api.deleteDatasetItems(token, datasetId, fileIds)
+      appLogger.info("Dataset items deleted", undefined, { datasetId, fileIds })
+    } catch (error) {
+      if (error instanceof AuthenticationError) {
+        clearSystemData()
+        setToken(null)
+      }
+      appLogger.error("Dataset items deletion failed", error instanceof Error ? error.message : "Unknown error", { datasetId })
+      throw error
+    }
+  }, [token, clearSystemData])
+
   const handleFilesPageChange = useCallback(
     async (page: number) => {
       if (currentShareId !== null) {
@@ -1182,6 +1207,7 @@ export function useNeoApi() {
       handleFetchMyDocuments,
       handleCreateDataset,
       handleDeleteDataset,
+      handleDeleteDatasetItems,
       handleFetchDatasets,
       handleFetchDatasetItems,
       handleContentSearch,

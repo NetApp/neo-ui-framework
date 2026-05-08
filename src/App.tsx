@@ -188,6 +188,7 @@ function App() {
                       datasets={state.datasets}
                       onFetchFileMetadata={handlers.handleFetchFileMetadata}
                       onDeleteDataset={handlers.handleDeleteDataset}
+                      onDeleteDatasetItems={handlers.handleDeleteDatasetItems}
                       onFetchDatasetItems={handlers.handleFetchDatasetItems}
                     />
                   }

@@ -6,8 +6,7 @@ import { useParams, useNavigate } from "react-router-dom"
 import Markdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import { OverviewCard } from "@/components/cards/overview-card"
-import { FilesTable } from "@/components/data-tables/filesT"
-import type { FilesResponse, FileMetadataResponse, FileEntry } from "@/services/neo-api"
+import type { FileMetadataResponse, FileEntry } from "@/services/neo-api"
 import type { Dataset, DatasetItem, DatasetItemsResponse } from "@/services/models"
 import { toast } from "sonner"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -20,6 +19,15 @@ import {
 } from "@/components/ui/sheet"
 import { Spinner } from "@/components/ui/spinner"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table"
 import { IconTrash } from "@tabler/icons-react"
 
 import { ConfirmDialog } from "@/components/dialogs/confirm-dialog"
@@ -28,6 +36,7 @@ interface DatasetPageProps {
     datasets: Dataset[]
     onFetchFileMetadata: (shareId: string, fileId: string) => Promise<FileMetadataResponse>
     onDeleteDataset: (id: string) => Promise<void>
+    onDeleteDatasetItems: (datasetId: string, fileIds: string[]) => Promise<void>
     onFetchDatasetItems: (datasetId: string, page: number, pageSize: number) => Promise<DatasetItemsResponse>
 }
 
@@ -52,6 +61,7 @@ export default function DatasetPage({
     datasets,
     onFetchFileMetadata,
     onDeleteDataset,
+    onDeleteDatasetItems,
     onFetchDatasetItems,
 }: DatasetPageProps) {
     const { datasetId } = useParams()
@@ -65,14 +75,23 @@ export default function DatasetPage({
     // Items fetched from API
     const [itemsResponse, setItemsResponse] = useState<DatasetItemsResponse | null>(null)
     const [itemsLoading, setItemsLoading] = useState(false)
+    const [currentPage, setCurrentPage] = useState(1)
     const PAGE_SIZE = 50
+
+    // Selected items for deletion
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+    const [isDeleteItemsDialogOpen, setIsDeleteItemsDialogOpen] = useState(false)
+    const [isDeletingItems, setIsDeletingItems] = useState(false)
 
     const fetchItems = useCallback(async (page: number) => {
         if (!datasetId) return
         setItemsLoading(true)
+        setCurrentPage(page)
         try {
             const response = await onFetchDatasetItems(datasetId, page, PAGE_SIZE)
             setItemsResponse(response)
+            // Clear selection when page changes
+            setSelectedIds(new Set())
         } catch {
             toast.error("Failed to load dataset items")
         } finally {
@@ -84,23 +103,75 @@ export default function DatasetPage({
         fetchItems(1)
     }, [fetchItems])
 
-    // Map API items → FilesResponse for FilesTable
-    const filesResponse = useMemo<FilesResponse | null>(() => {
-        if (!itemsResponse || !dataset) return null
-        const files = itemsResponse.items.map(datasetItemToFileEntry)
-        return {
-            share_id: dataset.id,
-            path: dataset.name,
-            files,
-            total_count: itemsResponse.total_count,
-            total_size: files.reduce((acc, f) => acc + f.size, 0),
-            page: itemsResponse.page,
-            page_size: itemsResponse.page_size,
-            total_pages: itemsResponse.total_pages,
-            has_next: itemsResponse.has_next,
-            has_previous: itemsResponse.has_previous,
+    // Handle checkbox toggle
+    const toggleItemSelection = useCallback((fileId: string) => {
+        setSelectedIds(prev => {
+            const newSet = new Set(prev)
+            if (newSet.has(fileId)) {
+                newSet.delete(fileId)
+            } else {
+                newSet.add(fileId)
+            }
+            return newSet
+        })
+    }, [])
+
+    // Handle select all checkboxes on current page
+    const toggleSelectAll = useCallback(() => {
+        if (!itemsResponse) return
+        const pageFileIds = new Set(itemsResponse.items.map(item => item.file_id))
+        
+        setSelectedIds(prev => {
+            if (prev.size === itemsResponse.items.length && 
+                itemsResponse.items.every(item => prev.has(item.file_id))) {
+                // Deselect all
+                return new Set()
+            } else {
+                // Select all on this page
+                return pageFileIds
+            }
+        })
+    }, [itemsResponse])
+
+    // Handle delete selected items
+    const handleDeleteSelectedItems = async () => {
+        if (!dataset || selectedIds.size === 0) return
+
+        setIsDeletingItems(true)
+        try {
+            const fileIds = Array.from(selectedIds)
+            await onDeleteDatasetItems(dataset.id, fileIds)
+            toast.success(`${fileIds.length} item(s) deleted`)
+            setSelectedIds(new Set())
+            setIsDeleteItemsDialogOpen(false)
+            // Refresh current page
+            await fetchItems(currentPage)
+        } catch (error) {
+            toast.error("Failed to delete items")
+            console.error("Delete items error", error)
+        } finally {
+            setIsDeletingItems(false)
         }
-    }, [itemsResponse, dataset])
+    }
+
+    // Map API items → FilesResponse for FilesTable
+    // Note: This is kept for reference but not used since we render custom table
+    // const filesResponse = useMemo<FilesResponse | null>(() => {
+    //     if (!itemsResponse || !dataset) return null
+    //     const files = itemsResponse.items.map(datasetItemToFileEntry)
+    //     return {
+    //         share_id: dataset.id,
+    //         path: dataset.name,
+    //         files,
+    //         total_count: itemsResponse.total_count,
+    //         total_size: files.reduce((acc, f) => acc + f.size, 0),
+    //         page: itemsResponse.page,
+    //         page_size: itemsResponse.page_size,
+    //         total_pages: itemsResponse.total_pages,
+    //         has_next: itemsResponse.has_next,
+    //         has_previous: itemsResponse.has_previous,
+    //     }
+    // }, [itemsResponse, dataset])
 
     // File detail sheet
     const [selectedFile, setSelectedFile] = useState<FileEntry | null>(null)
@@ -164,7 +235,20 @@ export default function DatasetPage({
                             />
                         </div>
 
-                        <div className="mb-4 flex justify-end gap-2">
+                        <div className="mb-4 flex justify-between items-center gap-2">
+                            <div className="flex gap-2">
+                                {selectedIds.size > 0 && (
+                                    <Button 
+                                        variant="destructive" 
+                                        onClick={() => setIsDeleteItemsDialogOpen(true)}
+                                        disabled={isDeletingItems}
+                                    >
+                                        <IconTrash className="mr-2 size-4" />
+                                        <span className="hidden sm:inline">Delete selected ({selectedIds.size})</span>
+                                        <span className="sm:hidden">Delete ({selectedIds.size})</span>
+                                    </Button>
+                                )}
+                            </div>
                             <Button variant="destructive" onClick={() => setIsDeleteDialogOpen(true)}>
                                 <IconTrash className="mr-2 size-4" />
                                 <span className="hidden sm:inline">Delete dataset</span>
@@ -172,13 +256,107 @@ export default function DatasetPage({
                             </Button>
                         </div>
 
-                        <FilesTable
-                            files={filesResponse}
-                            loading={itemsLoading}
-                            emptyMessage="No items in this dataset."
-                            onFileClick={handleFileClick}
-                            onPageChange={(page) => fetchItems(page)}
-                        />
+                        {/* Custom items table with selection */}
+                        <div className="rounded-lg border overflow-hidden">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead className="w-12">
+                                            <Checkbox
+                                                checked={
+                                                    !!(itemsResponse && itemsResponse.items.length > 0 &&
+                                                    itemsResponse.items.every(item => selectedIds.has(item.file_id)))
+                                                }
+                                                onCheckedChange={() => toggleSelectAll()}
+                                                aria-label="Select all items"
+                                            />
+                                        </TableHead>
+                                        <TableHead>Filename</TableHead>
+                                        <TableHead>Share</TableHead>
+                                        <TableHead>Size</TableHead>
+                                        <TableHead>Modified</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {itemsLoading ? (
+                                        <TableRow>
+                                            <TableCell colSpan={5} className="text-center py-8">
+                                                <Spinner className="size-6 mx-auto" />
+                                            </TableCell>
+                                        </TableRow>
+                                    ) : itemsResponse && itemsResponse.items.length > 0 ? (
+                                        itemsResponse.items.map((item) => (
+                                            <TableRow key={item.file_id} className="cursor-pointer hover:bg-muted/50">
+                                                <TableCell onClick={(e) => e.stopPropagation()}>
+                                                    <Checkbox
+                                                        checked={selectedIds.has(item.file_id)}
+                                                        onCheckedChange={() => toggleItemSelection(item.file_id)}
+                                                        aria-label={`Select ${item.filename}`}
+                                                    />
+                                                </TableCell>
+                                                <TableCell 
+                                                    onClick={() => handleFileClick(datasetItemToFileEntry(item))}
+                                                    className="font-medium truncate"
+                                                >
+                                                    {item.filename}
+                                                </TableCell>
+                                                <TableCell 
+                                                    onClick={() => handleFileClick(datasetItemToFileEntry(item))}
+                                                    className="text-sm text-muted-foreground"
+                                                >
+                                                    {item.share_name || item.share_id}
+                                                </TableCell>
+                                                <TableCell 
+                                                    onClick={() => handleFileClick(datasetItemToFileEntry(item))}
+                                                    className="text-sm text-right"
+                                                >
+                                                    {(item.size / 1024 / 1024).toFixed(2)} MB
+                                                </TableCell>
+                                                <TableCell 
+                                                    onClick={() => handleFileClick(datasetItemToFileEntry(item))}
+                                                    className="text-sm text-muted-foreground"
+                                                >
+                                                    {new Date(item.modified_time).toLocaleString()}
+                                                </TableCell>
+                                            </TableRow>
+                                        ))
+                                    ) : (
+                                        <TableRow>
+                                            <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                                                No items in this dataset.
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </div>
+
+                        {/* Pagination controls */}
+                        {itemsResponse && itemsResponse.total_pages > 1 && (
+                            <div className="mt-4 flex items-center justify-between">
+                                <div className="text-sm text-muted-foreground">
+                                    Page {itemsResponse.page} of {itemsResponse.total_pages} ({itemsResponse.total_count} total items)
+                                </div>
+                                <div className="flex gap-2">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => fetchItems(itemsResponse.page - 1)}
+                                        disabled={!itemsResponse.has_previous || itemsLoading}
+                                    >
+                                        Previous
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => fetchItems(itemsResponse.page + 1)}
+                                        disabled={!itemsResponse.has_next || itemsLoading}
+                                    >
+                                        Next
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -310,6 +488,16 @@ export default function DatasetPage({
                     </SheetFooter>
                 </SheetContent>
             </Sheet>
+
+            <ConfirmDialog
+                open={isDeleteItemsDialogOpen}
+                onOpenChange={setIsDeleteItemsDialogOpen}
+                title="Delete Items"
+                description={`Are you sure you want to delete ${selectedIds.size} item(s) from this dataset? This action cannot be undone.`}
+                onConfirm={handleDeleteSelectedItems}
+                confirmText="Delete"
+                variant="destructive"
+            />
 
             <ConfirmDialog
                 open={isDeleteDialogOpen}
