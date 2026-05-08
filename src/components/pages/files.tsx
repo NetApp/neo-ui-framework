@@ -17,7 +17,8 @@ import {
 
 import {
   IconFileSearch,
-  IconPlus
+  IconPlus,
+  IconRefresh
 } from "@tabler/icons-react"
 
 import {
@@ -110,7 +111,7 @@ export default function Files({
   onSearchFiles,
   onPageChange,
   onCreateDataset,
-  // onRefresh, // Unused
+  onRefresh,
   monitoringOverview,
   cacheStats,
 }: FilesProps) {
@@ -121,6 +122,7 @@ export default function Files({
   const [createDatasetDialogOpen, setCreateDatasetDialogOpen] = useState(false)
   const [searchResults, setSearchResults] = useState<FileSearchResponse | null>(null)
   const [isSearchMode, setIsSearchMode] = useState(false)
+  const [isRefreshing, setIsRefreshing] = useState(false)
 
   // Sheet state
   const [sheetOpen, setSheetOpen] = useState(false)
@@ -225,6 +227,33 @@ export default function Files({
   const handleClearSearch = () => {
     setIsSearchMode(false)
     setSearchResults(null)
+  }
+
+  const handleRefreshTable = async () => {
+    if (isSearchMode) {
+      toast.info("Clear search to refresh the selected share table")
+      return
+    }
+
+    setIsRefreshing(true)
+    setLoading(true)
+
+    try {
+      await onRefresh()
+
+      if (value === NONE_VALUE) {
+        await onSelectShare(null)
+      } else if (value === ALL_VALUE) {
+        await onSelectShare("all")
+      } else {
+        await onSelectShare(value)
+      }
+    } catch {
+      toast.error("Failed to refresh files")
+    } finally {
+      setLoading(false)
+      setIsRefreshing(false)
+    }
   }
 
   const handleCreateDataset = async (values: CreateDatasetFormValues) => {
@@ -405,10 +434,21 @@ export default function Files({
                 ) : null}
               </div>
 
-              <Button variant="default" onClick={() => setSearchDialogOpen(true)}>
-                <IconFileSearch className="mr-2 size-4" />
-                Search files
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="default" onClick={() => setSearchDialogOpen(true)}>
+                  <IconFileSearch className="mr-2 size-4" />
+                  Search files
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={handleRefreshTable}
+                  disabled={isRefreshing || loading}
+                  aria-label="Refresh files"
+                >
+                  <IconRefresh className={`size-4 ${isRefreshing ? "animate-spin" : ""}`} />
+                </Button>
+              </div>
             </div>
 
             {isSearchMode ? (

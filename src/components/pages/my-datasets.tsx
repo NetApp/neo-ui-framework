@@ -206,8 +206,8 @@ export default function MyDatasets({
                                         <TableHead>Owner</TableHead>
                                         <TableHead>Items</TableHead>
                                         <TableHead>Visibility</TableHead>
-                                        <TableHead>Expires</TableHead>
                                         <TableHead>Created</TableHead>
+                                        <TableHead>Expires</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -255,12 +255,12 @@ export default function MyDatasets({
                                                     </Badge>
                                                 </TableCell>
                                                 <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                                                    {new Date(dataset.createdAt).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}
+                                                </TableCell>
+                                                <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
                                                     {dataset.expiresAt
                                                         ? new Date(dataset.expiresAt).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })
                                                         : "—"}
-                                                </TableCell>
-                                                <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
-                                                    {new Date(dataset.createdAt).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}
                                                 </TableCell>
                                             </TableRow>
                                         ))
