@@ -12,6 +12,7 @@ interface SettingsContextType {
     cacheMaxSize: number
     logLevel: LogLevel
     locale: AppLocale
+    contentVisibilityEnabled: boolean
     updateSettings: (settings: Partial<SettingsState>) => void
 }
 
@@ -21,6 +22,7 @@ interface SettingsState {
     cacheMaxSize: number
     logLevel: LogLevel
     locale: AppLocale
+    contentVisibilityEnabled: boolean
 }
 
 const DEFAULT_SETTINGS: SettingsState = {
@@ -29,6 +31,7 @@ const DEFAULT_SETTINGS: SettingsState = {
     cacheMaxSize: 100, // MB
     logLevel: "INFO",
     locale: "en",
+    contentVisibilityEnabled: false,
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined)
@@ -94,6 +97,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
                 cacheMaxSize: settings.cacheMaxSize,
                 logLevel: settings.logLevel,
                 locale: settings.locale,
+                contentVisibilityEnabled: settings.contentVisibilityEnabled,
                 updateSettings,
             }}
         >

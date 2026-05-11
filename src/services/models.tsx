@@ -324,7 +324,6 @@ export interface FilesResponse {
 }
 
 export interface FileSearchParams {
-  path?: string
   filename?: string
   file_type?: string
   fields?: string
@@ -332,12 +331,8 @@ export interface FileSearchParams {
   include_content?: boolean
   include_counts?: boolean
   after_modified_time?: string
-  sort_by?: "relevance" | "modified_time" | "created_at" | "accessed_at" | "filename" | "size" | "share_name"
-  sort_order?: "asc" | "desc"
   page?: number
   page_size?: number
-  query?: string
-  share_id?: string
 }
 
 export interface FileEntry {

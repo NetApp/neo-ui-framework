@@ -65,7 +65,7 @@ interface SettingsProps {
 }
 
 export default function Settings({ monitoringOverview, state, handlers }: SettingsProps) {
-    const { monitoringTtl, filesTtl, cacheMaxSize, logLevel, locale, updateSettings } = useSettings()
+    const { monitoringTtl, filesTtl, cacheMaxSize, logLevel, locale, contentVisibilityEnabled, updateSettings } = useSettings()
     const { t } = useTranslation()
 
     const getSetupGraph = handlers.getSetupGraph
@@ -80,6 +80,7 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
     const [localCacheMaxSize, setLocalCacheMaxSize] = useState(cacheMaxSize)
     const [localLogLevel, setLocalLogLevel] = useState<LogLevel>(logLevel)
     const [localLocale, setLocalLocale] = useState<AppLocale>(locale)
+    const [localContentVisibilityEnabled, setLocalContentVisibilityEnabled] = useState(contentVisibilityEnabled)
 
     // Setup Status State
     const [isResetting, setIsResetting] = useState(false)
@@ -142,7 +143,8 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
         setLocalCacheMaxSize(cacheMaxSize)
         setLocalLogLevel(logLevel)
         setLocalLocale(locale)
-    }, [monitoringTtl, filesTtl, cacheMaxSize, logLevel, locale])
+        setLocalContentVisibilityEnabled(contentVisibilityEnabled)
+    }, [monitoringTtl, filesTtl, cacheMaxSize, logLevel, locale, contentVisibilityEnabled])
 
     const [mcpInfo, setMcpInfo] = useState<McpInfoResponse | null>(null)
 
@@ -251,6 +253,7 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
             cacheMaxSize: Number(localCacheMaxSize),
             logLevel: localLogLevel,
             locale: localLocale,
+            contentVisibilityEnabled: localContentVisibilityEnabled,
         })
         toast.success(t("settingsSaved", { ns: "settings" }))
     }
@@ -482,6 +485,7 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
                                 <TabsList>
                                     <TabsTrigger value="neo-core">{t("neoCoreTab", { ns: "settings" })}</TabsTrigger>
                                     <TabsTrigger value="neo-mcp">{t("neoMcpTab", { ns: "settings" })}</TabsTrigger>
+                                    <TabsTrigger value="content-visibility">{t("contentVisibilityTab", { ns: "settings" })}</TabsTrigger>
                                     <TabsTrigger value="cache">{t("cacheTab", { ns: "settings" })}</TabsTrigger>
                                     <TabsTrigger value="languages">{t("languagesTab", { ns: "settings" })}</TabsTrigger>
                                     <TabsTrigger value="logging">{t("loggingTab", { ns: "settings" })}</TabsTrigger>
@@ -1072,6 +1076,49 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
                                                     </Button>
                                                 </CardFooter>
                                             )}
+                                        </Card>
+                                    </div>
+                                </TabsContent>
+                                <TabsContent value="content-visibility">
+                                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
+                                        <Card className="col-span-1 lg:col-span-3">
+                                            <CardHeader>
+                                                <CardTitle>{t("contentVisibilityTitle", { ns: "settings" })}</CardTitle>
+                                                <CardDescription>
+                                                    {t("contentVisibilityDescription", { ns: "settings" })}
+                                                </CardDescription>
+                                            </CardHeader>
+                                            <CardContent className="space-y-5">
+                                                <Alert variant="destructive">
+                                                    <IconAlertTriangle className="h-4 w-4" />
+                                                    <AlertTitle>{t("contentVisibilityWarningTitle", { ns: "settings" })}</AlertTitle>
+                                                    <AlertDescription>
+                                                        {t("contentVisibilityWarningDescription", { ns: "settings" })}
+                                                    </AlertDescription>
+                                                </Alert>
+
+                                                <div className="flex flex-row items-center justify-between rounded-lg border p-4">
+                                                    <div className="space-y-1 pr-6">
+                                                        <Label htmlFor="content-visibility-toggle" className="text-sm font-medium">
+                                                            {t("contentVisibilityToggleLabel", { ns: "settings" })}
+                                                        </Label>
+                                                        <p className="text-sm text-muted-foreground">
+                                                            {t("contentVisibilityToggleHint", { ns: "settings" })}
+                                                        </p>
+                                                    </div>
+                                                    <Switch
+                                                        id="content-visibility-toggle"
+                                                        checked={localContentVisibilityEnabled}
+                                                        onCheckedChange={setLocalContentVisibilityEnabled}
+                                                    />
+                                                </div>
+                                            </CardContent>
+                                            <div className="border-t p-6 flex justify-end">
+                                                <Button onClick={handleSave}>
+                                                    <Save className="mr-2 size-4" />
+                                                    {t("saveChanges", { ns: "settings" })}
+                                                </Button>
+                                            </div>
                                         </Card>
                                     </div>
                                 </TabsContent>

@@ -55,6 +55,7 @@ import {
 import {
   cn
 } from "@/lib/utils"
+import { useSettings } from "@/context/settings-context"
 
 import {
   Button
@@ -118,6 +119,7 @@ export default function Files({
   cacheStats,
 }: FilesProps) {
   const { t } = useTranslation()
+  const { contentVisibilityEnabled } = useSettings()
   const [open, setOpen] = useState(false)
   const [value, setValue] = useState<string>(NONE_VALUE)
   const [loading, setLoading] = useState(false)
@@ -342,6 +344,26 @@ export default function Files({
     }
   }, [selectedShareId, onFetchFileMetadata])
 
+  const metadataWithoutContent = useMemo(() => {
+    if (!metadata) return null
+    const { content, content_chunks, ...rest } = metadata
+    return rest
+  }, [metadata])
+
+  const metadataContent = useMemo(() => {
+    if (!metadata || !contentVisibilityEnabled) return null
+
+    if (metadata.content) {
+      return metadata.content
+    }
+
+    if (metadata.content_chunks?.length) {
+      return metadata.content_chunks.join("")
+    }
+
+    return null
+  }, [metadata, contentVisibilityEnabled])
+
   return (
     <div className="flex flex-1 flex-col">
       <div className="@container/main flex flex-1 flex-col gap-2">
@@ -483,6 +505,7 @@ export default function Files({
         open={searchDialogOpen}
         onOpenChange={setSearchDialogOpen}
         onSearch={handleSearch}
+        allowContentVisibility={contentVisibilityEnabled}
       />
 
       <CreateDatasetDialog
@@ -587,27 +610,21 @@ export default function Files({
                       )}
                     </dd>
                   </div>
-                  <div className="sm:col-span-3">
-                    <dt className="font-medium text-foreground">Content</dt>
-                    <dd className="p-1">
-                      {metadata.content ? (
-                        <pre className="mt-1 max-h-200 overflow-auto rounded bg-muted p-2 text-xs">
-                          {metadata.content}
+                  {contentVisibilityEnabled ? (
+                    <div className="sm:col-span-3">
+                      <dt className="font-medium text-foreground">Content</dt>
+                      <dd className="p-1">
+                        <pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs whitespace-pre-wrap break-words">
+                          {metadataContent || "—"}
                         </pre>
-                      ) : metadata.content_chunks && metadata.content_chunks.length > 0 ? (
-                        <pre className="mt-1 max-h-200 overflow-auto rounded bg-muted p-2 text-xs">
-                          {metadata.content_chunks.join("")}
-                        </pre>
-                      ) : (
-                        <pre className="mt-1 max-h-40 overflow-auto rounded bg-muted p-2 text-xs">"—"</pre>
-                      )}
-                    </dd>
-                  </div>
+                      </dd>
+                    </div>
+                  ) : null}
                   <div className="sm:col-span-3">
                     <dt className="font-medium text-foreground">All Fields</dt>
                     <dd className="p-1">
                       <pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">
-                        {JSON.stringify(metadata, null, 2)}
+                        {JSON.stringify(contentVisibilityEnabled ? metadata : metadataWithoutContent, null, 2)}
                       </pre>
                     </dd>
                   </div>

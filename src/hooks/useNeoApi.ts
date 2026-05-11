@@ -62,7 +62,7 @@ import { useSettings } from "@/context/settings-context"
 const neoApiService = new NeoApiService()
 
 export function useNeoApi() {
-  const { monitoringTtl, filesTtl, cacheMaxSize } = useSettings()
+  const { monitoringTtl, filesTtl, cacheMaxSize, contentVisibilityEnabled } = useSettings()
   const [health, setHealth] = useState<HealthResponse | null>(null)
   const [license, setLicense] = useState<LicenseResponse | null>(null)
   const [version, setVersion] = useState<VersionResponse | null>(null)
@@ -641,11 +641,11 @@ export function useNeoApi() {
 
       const api = apiRef.current
       appLogger.debug("Fetching file metadata", undefined, { shareId, fileId })
-      const metadata = await api.getFileMetadata(token, shareId, fileId)
+      const metadata = await api.getFileMetadata(token, shareId, fileId, contentVisibilityEnabled)
       setCacheStats(api.getCacheStats())
       return metadata
     },
-    [token]
+    [token, contentVisibilityEnabled]
   )
 
   const handleSearchFiles = useCallback(
@@ -656,12 +656,19 @@ export function useNeoApi() {
       }
 
       const api = apiRef.current
-      appLogger.debug("Searching files", undefined, { query: params.query, share_id: params.share_id })
-      const results = await api.searchFiles(token, params)
+      appLogger.debug("Searching files", undefined, {
+        filename: params.filename,
+        file_type: params.file_type,
+        field_set: params.field_set,
+      })
+      const results = await api.searchFiles(token, {
+        ...params,
+        include_content: contentVisibilityEnabled ? Boolean(params.include_content) : false,
+      })
       setCacheStats(api.getCacheStats())
       return results
     },
-    [token]
+    [token, contentVisibilityEnabled]
   )
 
   const handleContentSearch = useCallback(
@@ -706,7 +713,7 @@ export function useNeoApi() {
         if (shareKey === "all") {
           // Use the standard listing endpoint for all-shares mode.
           // This avoids the search pipeline and keeps pagination behavior consistent.
-          const response = await api.getFiles(token, "all", page || 1, 100)
+          const response = await api.getFiles(token, "all", page || 1, 100, contentVisibilityEnabled)
 
           const allShares: FilesResponse = {
             ...response,
@@ -722,7 +729,7 @@ export function useNeoApi() {
           })
         } else {
           // Use the /shares/{shareId}/files endpoint for specific shares
-          const response = await api.getFiles(token, shareKey, page || 1, 100)
+          const response = await api.getFiles(token, shareKey, page || 1, 100, contentVisibilityEnabled)
           setFiles(response)
           appLogger.info("Files loaded from specific share", undefined, {
             shareKey,
@@ -747,7 +754,7 @@ export function useNeoApi() {
         toast.error("Failed to load files")
       }
     },
-    [token, clearSystemData]
+    [token, clearSystemData, contentVisibilityEnabled]
   )
 
   const handleFetchMyDocuments = useCallback(
@@ -761,7 +768,7 @@ export function useNeoApi() {
 
       try {
         appLogger.info("Fetching my documents", undefined, { page })
-        const response = await api.getMyDocuments(token, page, pageSize)
+        const response = await api.getMyDocuments(token, page, pageSize, contentVisibilityEnabled)
 
         // Adapt FileSearchResponse to FilesResponse for consistency if needed, 
         // or just return it. The FilesTable expects FilesResponse structure mostly.
@@ -796,7 +803,7 @@ export function useNeoApi() {
         throw error
       }
     },
-    [token]
+    [token, contentVisibilityEnabled]
   )
 
 

@@ -13,10 +13,11 @@ import type {
 } from "@/services/models"
 
 export class FilesApiClient extends BaseApiClient {
-  async getFiles(token: string, shareId: string, page?: number, pageSize?: number) {
+  async getFiles(token: string, shareId: string, page?: number, pageSize?: number, includeContent: boolean = false) {
     const params = new URLSearchParams()
     if (page !== undefined) params.append("page", page.toString())
     if (pageSize !== undefined) params.append("page_size", pageSize.toString())
+    params.append("include_content", includeContent ? "true" : "false")
     if (shareId === "all" || shareId === "__all__") {
       params.append("include_counts", "false")
     }
@@ -56,18 +57,23 @@ export class FilesApiClient extends BaseApiClient {
     } as FilesResponse
   }
 
-  getFileMetadata(token: string, shareId: string, fileId: string) {
+  getFileMetadata(token: string, shareId: string, fileId: string, includeContent: boolean = false) {
     appLogger.debug("Fetching file metadata", undefined, { shareId, fileId })
+    const params = new URLSearchParams()
+    params.append("file_id", fileId)
+    params.append("include_content", includeContent ? "true" : "false")
+
     return this.requestWithToken<FileMetadataResponse>(
-      this.buildApiV1Path(`/shares/${shareId}/files/metadata?file_id=${encodeURIComponent(fileId)}`),
+      this.buildApiV1Path(`/shares/${shareId}/files/metadata?${params.toString()}`),
       token
     )
   }
 
   searchFiles(token: string, params: FileSearchParams) {
     appLogger.debug("Searching files", undefined, {
-      query: params.query,
-      share_id: params.share_id,
+      filename: params.filename,
+      file_type: params.file_type,
+      field_set: params.field_set,
     })
 
     const searchParams = new URLSearchParams()
@@ -86,10 +92,11 @@ export class FilesApiClient extends BaseApiClient {
     return this.requestWithToken<FileSearchResponse>(this.buildApiV1Path(`/files${query ? `?${query}` : ""}`), token)
   }
 
-  getMyDocuments(token: string, page: number = 1, pageSize: number = 100) {
+  getMyDocuments(token: string, page: number = 1, pageSize: number = 100, includeContent: boolean = false) {
     const params = new URLSearchParams()
     params.append("page", page.toString())
     params.append("page_size", pageSize.toString())
+    params.append("include_content", includeContent ? "true" : "false")
 
     appLogger.debug("Fetching my documents", undefined, { page, pageSize })
     // Using /files endpoint which returns files accessible to the user
