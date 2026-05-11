@@ -149,7 +149,7 @@ function getStatusBadge(status: string) {
 export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShare, onStartCrawl, onFetchShareDetails, onRefresh, monitoringOverview, isAdmin }: SharesProps) {
   const { t } = useTranslation()
   const [sheetOpen, setSheetOpen] = useState(false)
-  const [sheetMode, setSheetMode] = useState<'details' | 'edit' | 'create' | 'create-s3' | 'create-nfs' | null>(null)
+  const [sheetMode, setSheetMode] = useState<'details' | 'create' | 'create-s3' | 'create-nfs' | null>(null)
 
   const [sharePath, setSharePath] = useState("")
   const [username, setUsername] = useState("")
@@ -183,7 +183,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
   const [nfsVersion, setNfsVersion] = useState("4")
   const [nfsSecurity, setNfsSecurity] = useState("sys")
   const [nfsMountOptions, setNfsMountOptions] = useState("")
-  const [nfsCrawlSchedule, setNfsCrawlSchedule] = useState("-")
+  const [nfsCrawlSchedule, setNfsCrawlSchedule] = useState("0 0 * * *")
   const [nfsRulesJson, setNfsRulesJson] = useState(DEFAULT_RULES_JSON)
   const [nfsUsername, setNfsUsername] = useState("")
   const [nfsPassword, setNfsPassword] = useState("")
@@ -224,7 +224,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
     setNfsVersion("4")
     setNfsSecurity("sys")
     setNfsMountOptions("")
-    setNfsCrawlSchedule("-")
+    setNfsCrawlSchedule("0 0 * * *")
     setNfsRulesJson(DEFAULT_RULES_JSON)
     setNfsUsername("")
     setNfsPassword("")
@@ -477,7 +477,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
     setNfsVersion(details.nfs_version ?? "4")
     setNfsSecurity(details.nfs_security ?? "sys")
     setNfsMountOptions(details.nfs_mount_options ?? "")
-    setNfsCrawlSchedule(details.crawl_schedule ?? "-")
+    setNfsCrawlSchedule(details.crawl_schedule ?? "0 0 * * *")
     try {
       setNfsRulesJson(JSON.stringify(details.rules ?? {}, null, 2))
     } catch {
@@ -544,7 +544,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
         return
       }
       populateForm(selectedShareDetails)
-      setSheetMode('edit')
+      setSheetMode('create')
     }
   }, [selectedShareDetails, selectedProtocol, populateForm, populateS3Form, populateNFSForm])
 
@@ -618,14 +618,13 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
               <div className="flex items-center justify-between">
                 <div>
                   <SheetTitle>
-                    {sheetMode === 'create' ? "Add a share" : sheetMode === 'create-s3' ? (editingShareId ? "Edit S3 bucket" : "Add S3 bucket") : sheetMode === 'create-nfs' ? (editingShareId ? "Edit NFS share" : "Add NFS share") : sheetMode === 'edit' ? "Edit share" : "Share Details"}
+                    {sheetMode === 'create' ? (editingShareId ? "Edit CIFS share" : "Add CIFS") : sheetMode === 'create-s3' ? (editingShareId ? "Edit S3 bucket" : "Add S3 bucket") : sheetMode === 'create-nfs' ? (editingShareId ? "Edit NFS export" : "Add NFS export") : "Share Details"}
                   </SheetTitle>
                   <SheetDescription>
                     {sheetMode === 'details' && selectedShareDetails?.share_path}
-                    {sheetMode === 'create' && "Configure a new SMB share"}
+                    {sheetMode === 'create' && (editingShareId ? "Edit CIFS share configuration" : "Configure a new SMB share")}
                     {sheetMode === 'create-s3' && (editingShareId ? "Edit S3 bucket configuration" : "Configure a new S3 bucket")}
-                    {sheetMode === 'create-nfs' && (editingShareId ? "Edit NFS share configuration" : "Configure a new NFS share")}
-                    {sheetMode === 'edit' && "Edit share configuration"}
+                    {sheetMode === 'create-nfs' && (editingShareId ? "Edit NFS export configuration" : "Configure a new NFS export")}
                   </SheetDescription>
                 </div>
                 {sheetMode === 'details' && (
@@ -676,7 +675,12 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
                     <p className="text-sm text-destructive">{detailsError}</p>
                   ) : selectedShareDetails ? (
                     selectedProtocol === "nfs" ? (
-                      <dl className="grid grid-cols-1 gap-y-3 text-sm text-muted-foreground sm:grid-cols-2 lg:grid-cols-3 sm:gap-x-6">
+                      <div className="rounded-lg border bg-muted/20 p-4 space-y-4">
+                        <div>
+                          <p className="text-sm font-semibold">Details</p>
+                          <p className="text-xs text-muted-foreground">Current NFS configuration and crawl metadata.</p>
+                        </div>
+                        <dl className="grid grid-cols-1 gap-y-3 text-sm text-muted-foreground sm:grid-cols-2 lg:grid-cols-3 sm:gap-x-6">
                         <div>
                           <dt className="font-medium text-foreground">Share path</dt>
                           <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{selectedShareDetails.share_path}</pre></dd>
@@ -733,9 +737,15 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
                           <dt className="font-medium text-foreground">Error message</dt>
                           <dd><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{selectedShareDetails.error_message || "N/A"}</pre></dd>
                         </div>
-                      </dl>
+                        </dl>
+                      </div>
                     ) : selectedProtocol === "s3" ? (
-                      <dl className="grid grid-cols-1 gap-y-3 text-sm text-muted-foreground sm:grid-cols-2 lg:grid-cols-3 sm:gap-x-6">
+                      <div className="rounded-lg border bg-muted/20 p-4 space-y-4">
+                        <div>
+                          <p className="text-sm font-semibold">Details</p>
+                          <p className="text-xs text-muted-foreground">Current S3 configuration and crawl metadata.</p>
+                        </div>
+                        <dl className="grid grid-cols-1 gap-y-3 text-sm text-muted-foreground sm:grid-cols-2 lg:grid-cols-3 sm:gap-x-6">
                         <div>
                           <dt className="font-medium text-foreground">Bucket path</dt>
                           <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{selectedShareDetails.share_path}</pre></dd>
@@ -800,9 +810,15 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
                           <dt className="font-medium text-foreground">Error message</dt>
                           <dd><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{selectedShareDetails.error_message || "N/A"}</pre></dd>
                         </div>
-                      </dl>
+                        </dl>
+                      </div>
                     ) : (
-                      <dl className="grid grid-cols-1 gap-y-3 text-sm text-muted-foreground sm:grid-cols-2 lg:grid-cols-3 sm:gap-x-6">
+                      <div className="rounded-lg border bg-muted/20 p-4 space-y-4">
+                        <div>
+                          <p className="text-sm font-semibold">Details</p>
+                          <p className="text-xs text-muted-foreground">Current SMB/CIFS configuration and crawl metadata.</p>
+                        </div>
+                        <dl className="grid grid-cols-1 gap-y-3 text-sm text-muted-foreground sm:grid-cols-2 lg:grid-cols-3 sm:gap-x-6">
                         <div>
                           <dt className="font-medium text-foreground">Share path</dt>
                           <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{selectedShareDetails.share_path}</pre></dd>
@@ -875,7 +891,8 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
                           <dt className="font-medium text-foreground">Error message</dt>
                           <dd><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{selectedShareDetails.error_message || "N/A"}</pre></dd>
                         </div>
-                      </dl>
+                        </dl>
+                      </div>
                     )
                   ) : (
                     <p className="text-sm text-muted-foreground">No details available.</p>
@@ -884,7 +901,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
               </>
             )}
 
-            {(sheetMode === 'create' || sheetMode === 'edit') && (
+            {sheetMode === 'create' && (
               <form className="space-y-6" onSubmit={handleSubmit}>
                 <div className="rounded-lg border bg-muted/20 p-4 space-y-4">
                   <div>
@@ -1015,7 +1032,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
                     type="button"
                     variant="outline"
                     onClick={() => {
-                      if (sheetMode === 'edit') {
+                      if (editingShareId != null) {
                         setSheetMode('details')
                       } else {
                         setSheetOpen(false)
@@ -1192,7 +1209,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
                     <p className="text-xs text-muted-foreground">Set the NFS export and protocol options.</p>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="nfs-share-path">Share Path (NFS) <span className="text-destructive">*</span></Label>
+                    <Label htmlFor="nfs-share-path">Export Path <span className="text-destructive">*</span></Label>
                     <Input
                       id="nfs-share-path"
                       placeholder="nas01:/exports/data"
@@ -1200,71 +1217,6 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
                       onChange={(event) => setNfsSharePath(event.target.value)}
                       required
                     />
-                  </div>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="nfs-version">NFS Version</Label>
-                      <Input
-                        id="nfs-version"
-                        placeholder="4"
-                        value={nfsVersion}
-                        onChange={(event) => setNfsVersion(event.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="nfs-security">Security</Label>
-                      <Input
-                        id="nfs-security"
-                        placeholder="sys"
-                        value={nfsSecurity}
-                        onChange={(event) => setNfsSecurity(event.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="nfs-mount-options">Mount Options</Label>
-                    <Input
-                      id="nfs-mount-options"
-                      placeholder="soft,intr,timeo=30,retrans=2"
-                      value={nfsMountOptions}
-                      onChange={(event) => setNfsMountOptions(event.target.value)}
-                    />
-                  </div>
-                </div>
-
-                <div className="rounded-lg border bg-muted/20 p-4 space-y-4">
-                  <div>
-                    <p className="text-sm font-semibold">Crawling & Rules</p>
-                    <p className="text-xs text-muted-foreground">Control schedule and filtering behavior.</p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="nfs-crawl-schedule">Crawl Schedule</Label>
-                    <Input
-                      id="nfs-crawl-schedule"
-                      value={nfsCrawlSchedule}
-                      onChange={(event) => setNfsCrawlSchedule(event.target.value)}
-                      placeholder="-"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="nfs-rules">Rules (JSON format)</Label>
-                    <Textarea
-                      id="nfs-rules"
-                      value={nfsRulesJson}
-                      onChange={(event) => setNfsRulesJson(event.target.value)}
-                      placeholder={DEFAULT_RULES_JSON}
-                      className="min-h-[220px] font-mono text-sm"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Use valid JSON only. Avoid trailing commas after the last property.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="rounded-lg border bg-muted/20 p-4 space-y-4">
-                  <div>
-                    <p className="text-sm font-semibold">Kerberos (Optional)</p>
-                    <p className="text-xs text-muted-foreground">Provide credentials if your NFS environment requires it.</p>
                   </div>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-2">
@@ -1287,12 +1239,71 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
                       />
                     </div>
                   </div>
+                  <div className="grid gap-4 sm:grid-cols-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="nfs-version">NFS Version</Label>
+                      <Input
+                        id="nfs-version"
+                        placeholder="4"
+                        value={nfsVersion}
+                        onChange={(event) => setNfsVersion(event.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="nfs-security">Security</Label>
+                      <Input
+                        id="nfs-security"
+                        placeholder="sys"
+                        value={nfsSecurity}
+                        onChange={(event) => setNfsSecurity(event.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="nfs-mount-options">Mount Options</Label>
+                      <Input
+                        id="nfs-mount-options"
+                        placeholder="soft,intr,timeo=30,retrans=2"
+                        value={nfsMountOptions}
+                        onChange={(event) => setNfsMountOptions(event.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-lg border bg-muted/20 p-4 space-y-4">
+                  <div>
+                    <p className="text-sm font-semibold">Crawling & Rules</p>
+                    <p className="text-xs text-muted-foreground">Control schedule and filtering behavior.</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="nfs-crawl-schedule">Crawl Schedule</Label>
+                    <Input
+                      id="nfs-crawl-schedule"
+                      value={nfsCrawlSchedule}
+                      onChange={(event) => setNfsCrawlSchedule(event.target.value)}
+                      placeholder="0 0 * * *"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="nfs-rules">Rules (JSON format) <span className="text-destructive">*</span></Label>
+                    <Textarea
+                      id="nfs-rules"
+                      value={nfsRulesJson}
+                      onChange={(event) => setNfsRulesJson(event.target.value)}
+                      placeholder={DEFAULT_RULES_JSON}
+                      className="min-h-[220px] font-mono text-sm"
+                      required
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Use valid JSON only. Avoid trailing commas after the last property.
+                    </p>
+                  </div>
                 </div>
 
                 {error ? <p className="text-sm text-destructive rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2">{error}</p> : null}
                 <SheetFooter className="gap-2">
                   <Button type="submit" disabled={submitting}>
-                    {submitting ? (editingShareId != null ? "Saving…" : "Creating…") : editingShareId != null ? "Save changes" : "Create NFS share"}
+                    {submitting ? (editingShareId != null ? "Saving…" : "Creating…") : editingShareId != null ? "Save changes" : "Create NFS export"}
                   </Button>
                   <Button
                     type="button"
