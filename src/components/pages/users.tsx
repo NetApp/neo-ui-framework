@@ -28,6 +28,7 @@ import type {
   MonitoringOverviewResponse
 } from "@/services/neo-api"
 import { AuthenticationError } from "@/services/neo-api"
+import { useTranslation } from "react-i18next"
 import { OverviewCard } from "@/components/cards/overview-card"
 
 import {
@@ -81,6 +82,7 @@ interface UsersProps {
 }
 
 export default function Users({ users, me, onAddUser, onChangePassword, onRefresh, onLinkEntra, onUnlinkEntra, monitoringOverview }: UsersProps) {
+  const { t } = useTranslation()
   const [alertMessage, setAlertMessage] = useState<string | null>(null)
   const [alertVariant, setAlertVariant] = useState<"success" | "error">("success")
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false)
@@ -222,7 +224,7 @@ export default function Users({ users, me, onAddUser, onChangePassword, onRefres
             <div className="mb-4">
               <OverviewCard
                 overview={monitoringOverview}
-                title="Users Overview"
+                title={t("usersOverviewTitle", { ns: "pages" })}
                 showCacheStats={false}
               />
             </div>

@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
+import { useTranslation } from "react-i18next"
 import {
     Table,
     TableBody,
@@ -43,6 +44,7 @@ export default function MyDatasets({
     // cacheStats,
 }: MyDatasetsProps) {
     const navigate = useNavigate()
+    const { t } = useTranslation()
     const [selectedDatasets, setSelectedDatasets] = useState<Set<string>>(new Set())
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
     const [isWarmingUp, setIsWarmingUp] = useState(false)
@@ -149,7 +151,7 @@ export default function MyDatasets({
                         <div className="mb-4">
                             <OverviewCard
                                 overview={monitoringOverview}
-                                title="My Datasets"
+                                title={t("collectionsOverviewTitle", { ns: "pages" })}
                                 variant="files"
                                 showCacheStats={false}
                             />

@@ -7,6 +7,8 @@ import {
   useState
 } from "react"
 
+import { useTranslation } from "react-i18next"
+
 import {
   IconDatabaseExport,
   IconEdit,
@@ -177,6 +179,7 @@ function getStatusBadge(status: string) {
 }
 
 export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShare, onStartCrawl, onFetchShareDetails, onRefresh, monitoringOverview, isAdmin }: SharesProps) {
+  const { t } = useTranslation()
   const [sheetOpen, setSheetOpen] = useState(false)
   const [sheetMode, setSheetMode] = useState<'details' | 'edit' | 'create' | 'create-s3' | 'create-nfs' | null>(null)
 
@@ -588,7 +591,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
             <div className="mb-4">
               <OverviewCard
                 overview={monitoringOverview}
-                title="Data Sources Overview"
+                title={t("sourcesOverviewTitle", { ns: "pages" })}
                 cacheStats={undefined}
                 showCacheStats={false}
               />

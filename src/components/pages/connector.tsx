@@ -3,6 +3,7 @@
 
 import { NeoInstanceCard } from "@/components/cards/neo-instance-card"
 import { VersioningCard } from "@/components/cards/versioning-card"
+import { useTranslation } from "react-i18next"
 import type {
   HealthResponse,
   LicenseResponse,
@@ -21,6 +22,7 @@ interface ConnectorProps {
 }
 
 export default function Connector({ health, license, version, helmChartVersion, monitoringOverview }: ConnectorProps) {
+  const { t } = useTranslation()
   return (
     <div className="flex flex-1 flex-col">
       <div className="@container/main flex flex-1 flex-col gap-2">
@@ -29,7 +31,7 @@ export default function Connector({ health, license, version, helmChartVersion, 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               <OverviewCard
                 overview={monitoringOverview}
-                title="System Overview"
+                title={t("connectorOverviewTitle", { ns: "pages" })}
                 showCacheStats={false}
               />
               <NeoInstanceCard

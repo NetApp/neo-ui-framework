@@ -9,6 +9,8 @@ import {
   useRef
 } from "react"
 
+import { useTranslation } from "react-i18next"
+
 import {
   Check,
   ChevronsUpDown,
@@ -115,6 +117,7 @@ export default function Files({
   monitoringOverview,
   cacheStats,
 }: FilesProps) {
+  const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const [value, setValue] = useState<string>(NONE_VALUE)
   const [loading, setLoading] = useState(false)
@@ -347,7 +350,7 @@ export default function Files({
             <div className="mb-4">
               <OverviewCard
                 overview={monitoringOverview}
-                title="Data Corpus Overview"
+                title={t("indexOverviewTitle", { ns: "pages" })}
                 variant="files"
                 cacheStats={cacheStats}
                 showCacheStats={false}
