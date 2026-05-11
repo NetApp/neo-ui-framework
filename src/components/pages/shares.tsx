@@ -892,7 +892,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
                     <p className="text-xs text-muted-foreground">Define how Neo connects to your CIFS/SMB source.</p>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="share-path">Share Path*</Label>
+                    <Label htmlFor="share-path">Share Path <span className="text-destructive">*</span></Label>
                     <Input
                       id="share-path"
                       placeholder="\\\\mysmbserver\\myshare"
@@ -903,7 +903,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
                   </div>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-2">
-                      <Label htmlFor="username">Username*</Label>
+                      <Label htmlFor="username">Username <span className="text-destructive">*</span></Label>
                       <Input
                         id="username"
                         placeholder="user@domain"
@@ -913,7 +913,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="password">Password*</Label>
+                      <Label htmlFor="password">Password <span className="text-destructive">*</span></Label>
                       <Input
                         id="password"
                         type="password"
@@ -923,6 +923,15 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
                         placeholder={editingShareId !== null ? "(Unchanged)" : "••••••••"}
                       />
                     </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="smb-mount-options">SMB mount options</Label>
+                    <Input
+                      id="smb-mount-options"
+                      value={smbMountOptions}
+                      onChange={(event) => setSmbMountOptions(event.target.value)}
+                      placeholder="vers=3.1.1,seal,echo_interval=30"
+                    />
                   </div>
                 </div>
 
@@ -941,7 +950,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="rules">Rules (JSON format)*</Label>
+                    <Label htmlFor="rules">Rules (JSON format) <span className="text-destructive">*</span></Label>
                     <Textarea
                       id="rules"
                       value={rulesJson}
@@ -995,15 +1004,6 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
                       onChange={(event) => setResolveOrder(event.target.value)}
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="smb-mount-options">SMB mount options</Label>
-                    <Input
-                      id="smb-mount-options"
-                      value={smbMountOptions}
-                      onChange={(event) => setSmbMountOptions(event.target.value)}
-                      placeholder="vers=3.1.1,seal,echo_interval=30"
-                    />
-                  </div>
                 </div>
 
                 {error ? <p className="text-sm text-destructive rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2">{error}</p> : null}
@@ -1037,7 +1037,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
                     <p className="text-xs text-muted-foreground">Define the S3 source and endpoint details.</p>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="s3-share-path">Share Path (S3 URI)*</Label>
+                    <Label htmlFor="s3-share-path">Share Path (S3 URI) <span className="text-destructive">*</span></Label>
                     <Input
                       id="s3-share-path"
                       placeholder="s3://bucket-name"
@@ -1047,7 +1047,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="s3-bucket">Bucket Name*</Label>
+                    <Label htmlFor="s3-bucket">Bucket Name <span className="text-destructive">*</span></Label>
                     <Input
                       id="s3-bucket"
                       placeholder="bucket-name"
@@ -1057,7 +1057,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="s3-endpoint">Endpoint URL*</Label>
+                    <Label htmlFor="s3-endpoint">Endpoint URL <span className="text-destructive">*</span></Label>
                     <Input
                       id="s3-endpoint"
                       placeholder="http://minio.example.com:9000"
@@ -1068,7 +1068,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
                   </div>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-2">
-                      <Label htmlFor="s3-region">Region*</Label>
+                      <Label htmlFor="s3-region">Region <span className="text-destructive">*</span></Label>
                       <Input
                         id="s3-region"
                         placeholder="us-east-1"
@@ -1109,7 +1109,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
                   </div>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-2">
-                      <Label htmlFor="s3-username">Username*</Label>
+                      <Label htmlFor="s3-username">Username <span className="text-destructive">*</span></Label>
                       <Input
                         id="s3-username"
                         placeholder="admin"
@@ -1119,7 +1119,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="s3-password">Password*</Label>
+                      <Label htmlFor="s3-password">Password <span className="text-destructive">*</span></Label>
                       <Input
                         id="s3-password"
                         type="password"
@@ -1192,7 +1192,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
                     <p className="text-xs text-muted-foreground">Set the NFS export and protocol options.</p>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="nfs-share-path">Share Path (NFS)*</Label>
+                    <Label htmlFor="nfs-share-path">Share Path (NFS) <span className="text-destructive">*</span></Label>
                     <Input
                       id="nfs-share-path"
                       placeholder="nas01:/exports/data"
