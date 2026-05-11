@@ -6,12 +6,12 @@ import type { UserResponse, MeResponse } from "@/services/models"
 export class UsersApiClient extends BaseApiClient {
   getUsers(token: string) {
     appLogger.debug("Fetching users list")
-    return this.requestWithToken<UserResponse[]>("/users/", token)
+    return this.requestApiV1WithToken<UserResponse[]>("/users", token)
   }
 
   getMeUsers(token: string) {
     appLogger.debug("Fetching current user information")
-    return this.requestWithToken<MeResponse>("/users/me", token)
+    return this.requestApiV1WithToken<MeResponse>("/users/me", token)
   }
 
   createUser(
@@ -30,7 +30,7 @@ export class UsersApiClient extends BaseApiClient {
     })
 
     return this.requestWithToken<void>(
-      "/users/",
+      this.buildApiV1Path("/users"),
       token,
       {
         method: "POST",
@@ -48,7 +48,7 @@ export class UsersApiClient extends BaseApiClient {
     appLogger.debug("Sending PATCH request to change password")
 
     return this.requestWithToken<void>(
-      "/users/me/password",
+      this.buildApiV1Path("/users/me/password"),
       token,
       {
         method: "PATCH",

@@ -3,9 +3,12 @@
   "private": true,
   "version": "4.1.0",
   "type": "module",
+  "engines": {
+    "node": "22.x"
+  },
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build --mode production",
+    "build": "./scripts/build-with-node22.sh",
     "lint": "eslint .",
     "preview": "vite preview"
   },

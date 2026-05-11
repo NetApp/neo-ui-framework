@@ -15,26 +15,26 @@ export interface TaskCancelResponse {
 export class TasksApiClient extends BaseApiClient {
   async getTasks(token: string) {
     appLogger.debug("Fetching tasks")
-    const response = await this.requestWithToken<TasksListResponse>("/tasks", token)
+    const response = await this.requestApiV1WithToken<TasksListResponse>("/tasks", token)
     // Return just the tasks array for backwards compatibility
     return response.tasks
   }
 
   getTaskStatistics(token: string) {
     appLogger.debug("Fetching task statistics")
-    return this.requestWithToken<TaskStatisticsResponse>("/tasks/statistics/summary", token)
+    return this.requestApiV1WithToken<TaskStatisticsResponse>("/tasks/statistics/summary", token)
   }
 
   getAclCacheStatistics(token: string) {
     appLogger.debug("Fetching ACL cache statistics")
-    return this.requestWithToken<AclCacheStatisticsResponse>("/tasks/statistics/acl-cache", token)
+    return this.requestApiV1WithToken<AclCacheStatisticsResponse>("/tasks/statistics/acl-cache", token)
   }
 
   deleteTask(token: string, taskId: string) {
     appLogger.debug("Sending DELETE request to cancel task", undefined, { taskId })
 
     return this.requestWithToken<TaskCancelResponse>(
-      `/tasks/${taskId}`,
+      this.buildApiV1Path(`/tasks/${taskId}`),
       token,
       { method: "DELETE" }
     )

@@ -21,11 +21,11 @@ export class FilesApiClient extends BaseApiClient {
       params.append("include_counts", "false")
     }
 
-    let endpoint = `/files?${params}`
+    let endpoint = this.buildApiV1Path(`/files?${params}`)
 
     // If specific share is selected, use the share-specific endpoint
     if (shareId && shareId !== "all" && shareId !== "__none__" && shareId !== "__all__") {
-      endpoint = `/shares/${shareId}/files?${params}`
+      endpoint = this.buildApiV1Path(`/shares/${shareId}/files?${params}`)
     }
 
     appLogger.debug("Fetching files", undefined, { shareId, endpoint })
@@ -59,7 +59,7 @@ export class FilesApiClient extends BaseApiClient {
   getFileMetadata(token: string, shareId: string, fileId: string) {
     appLogger.debug("Fetching file metadata", undefined, { shareId, fileId })
     return this.requestWithToken<FileMetadataResponse>(
-      `/shares/${shareId}/files/metadata?file_id=${encodeURIComponent(fileId)}`,
+      this.buildApiV1Path(`/shares/${shareId}/files/metadata?file_id=${encodeURIComponent(fileId)}`),
       token
     )
   }
@@ -83,7 +83,7 @@ export class FilesApiClient extends BaseApiClient {
     })
 
     const query = searchParams.toString()
-    return this.requestWithToken<FileSearchResponse>(`/files${query ? `?${query}` : ""}`, token)
+    return this.requestWithToken<FileSearchResponse>(this.buildApiV1Path(`/files${query ? `?${query}` : ""}`), token)
   }
 
   getMyDocuments(token: string, page: number = 1, pageSize: number = 100) {
@@ -93,12 +93,12 @@ export class FilesApiClient extends BaseApiClient {
 
     appLogger.debug("Fetching my documents", undefined, { page, pageSize })
     // Using /files endpoint which returns files accessible to the user
-    return this.requestWithToken<FileSearchResponse>(`/files?${params}`, token)
+    return this.requestWithToken<FileSearchResponse>(this.buildApiV1Path(`/files?${params}`), token)
   }
 
   searchContent(token: string, payload: ContentSearchRequest) {
     appLogger.debug("Performing content search", undefined, { query: payload.query })
-    return this.requestWithToken<ContentSearchResponse>("/search", token, {
+    return this.requestApiV1WithToken<ContentSearchResponse>("/search", token, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -109,7 +109,7 @@ export class FilesApiClient extends BaseApiClient {
 
   createDataset(token: string, payload: CreateDatasetRequest) {
     appLogger.debug("Creating dataset", undefined, { name: payload.name, file_count: payload.file_ids.length })
-    return this.requestWithToken<DatasetResponse>("/datasets", token, {
+    return this.requestApiV1WithToken<DatasetResponse>("/datasets", token, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

@@ -6,19 +6,19 @@ import type { SharesResponse, ShareDetailsResponse } from "@/services/models"
 export class SharesApiClient extends BaseApiClient {
   getShares(token: string) {
     appLogger.debug("Fetching shares list")
-    return this.requestWithToken<SharesResponse[]>("/shares", token)
+    return this.requestApiV1WithToken<SharesResponse[]>("/shares", token)
   }
 
   getShareDetails(token: string, shareId: string) {
     appLogger.debug("Fetching share details", undefined, { shareId })
-    return this.requestWithToken<ShareDetailsResponse>(`/shares/${shareId}`, token)
+    return this.requestApiV1WithToken<ShareDetailsResponse>(`/shares/${shareId}`, token)
   }
 
   deleteShare(token: string, shareId: string) {
     appLogger.debug("Sending DELETE request to share", undefined, { shareId })
 
     return this.requestWithToken<void>(
-      `/shares/${shareId}`,
+      this.buildApiV1Path(`/shares/${shareId}`),
       token,
       { method: "DELETE" },
       { parseJson: false }
@@ -50,7 +50,7 @@ export class SharesApiClient extends BaseApiClient {
     })
 
     return this.requestWithToken<void>(
-      "/shares",
+      this.buildApiV1Path("/shares"),
       token,
       {
         method: "POST",
@@ -82,7 +82,7 @@ export class SharesApiClient extends BaseApiClient {
     })
 
     return this.requestWithToken<void>(
-      `/shares/${shareId}`,
+      this.buildApiV1Path(`/shares/${shareId}`),
       token,
       {
         method: "PATCH",
@@ -97,7 +97,7 @@ export class SharesApiClient extends BaseApiClient {
     appLogger.debug("Sending POST request to start share crawl", undefined, { shareId })
 
     return this.requestWithToken<void>(
-      `/shares/${shareId}/crawl`,
+      this.buildApiV1Path(`/shares/${shareId}/crawl`),
       token,
       { method: "POST" },
       { parseJson: false }

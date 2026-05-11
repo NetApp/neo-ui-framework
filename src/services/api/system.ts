@@ -28,12 +28,12 @@ import type {
 export class SystemApiClient extends BaseApiClient {
   getSetupStatus() {
     appLogger.debug("Fetching setup status")
-    return this.request<SetupStatusResponse>("/api/v1/setup/status")
+    return this.requestApiV1<SetupStatusResponse>("/setup/status")
   }
 
   setupLicense(request: SetupLicenseRequest) {
     appLogger.debug("Setting up license")
-    return this.request<SetupLicenseResponse>("/api/v1/setup/license", {
+    return this.requestApiV1<SetupLicenseResponse>("/setup/license", {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -44,7 +44,7 @@ export class SystemApiClient extends BaseApiClient {
 
   setupGraph(request: SetupGraphRequest) {
     appLogger.debug("Setting up graph connection")
-    return this.request<SetupGraphResponse>("/api/v1/setup/graph", {
+    return this.requestApiV1<SetupGraphResponse>("/setup/graph", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -55,14 +55,14 @@ export class SystemApiClient extends BaseApiClient {
 
   getSetupGraph() {
     appLogger.debug("Fetching graph setup configuration")
-    return this.request<SetupGraphConfigResponse>("/api/v1/setup/graph", {
+    return this.requestApiV1<SetupGraphConfigResponse>("/setup/graph", {
       method: "GET",
     })
   }  
 
   setupProxy(request: SetupProxyRequest) {
     appLogger.debug("Configuring proxy settings")
-    return this.request<SetupProxyResponse>("/api/v1/setup/proxy", {
+    return this.requestApiV1<SetupProxyResponse>("/setup/proxy", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -73,28 +73,28 @@ export class SystemApiClient extends BaseApiClient {
 
   getSetupProxy() {
     appLogger.debug("Fetching proxy setup configuration")
-    return this.request<SetupProxyConfigResponse>("/api/v1/setup/proxy", {
+    return this.requestApiV1<SetupProxyConfigResponse>("/setup/proxy", {
       method: "GET",
     })
   }  
 
   getSetupSsl() {
     appLogger.debug("Fetching SSL setup configuration")
-    return this.request<SetupSslConfigResponse>("/api/v1/setup/ssl", {
+    return this.requestApiV1<SetupSslConfigResponse>("/setup/ssl", {
       method: "GET",
     })
   }  
 
   resetSetup() {
     appLogger.debug("Resetting setup state")
-    return this.request<SetupResetResponse>("/api/v1/setup/reset", {
+    return this.requestApiV1<SetupResetResponse>("/setup/reset", {
       method: "POST",
     })
   }
 
   factoryReset(payload: SetupFactoryResetRequest) {
     appLogger.debug("Performing factory reset")
-    return this.request<SetupResetResponse>("/api/v1/setup/factory-reset", {
+    return this.requestApiV1<SetupResetResponse>("/setup/factory-reset", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -105,14 +105,14 @@ export class SystemApiClient extends BaseApiClient {
 
   getInitialCredentials() {
     appLogger.debug("Fetching initial credentials")
-    return this.request<InitialCredentialsResponse>("/api/v1/setup/initial-credentials", {
+    return this.requestApiV1<InitialCredentialsResponse>("/setup/initial-credentials", {
       method: "GET",
     })
   }
 
   completeSetup() {
     appLogger.debug("Completing setup")
-    return this.request<SetupCompleteResponse>("/api/v1/setup/complete", {
+    return this.requestApiV1<SetupCompleteResponse>("/setup/complete", {
       method: "POST",
     })
   }
@@ -120,35 +120,35 @@ export class SystemApiClient extends BaseApiClient {
   getHealth(token?: string) {
     appLogger.debug("Fetching health status")
     if (token) {
-      return this.requestWithToken<HealthResponse>("/health/detailed", token)
+      return this.requestBackendWithToken<HealthResponse>("/health/detailed", token)
     }
-    return this.request<HealthResponse>("/health/detailed")
+    return this.requestBackend<HealthResponse>("/health/detailed")
   }
 
   getLicenseStatus(token?: string) {
     appLogger.debug("Fetching license status")
     if (token) {
-      return this.requestWithToken<LicenseResponse>("/license/status", token)
+      return this.requestApiV1WithToken<LicenseResponse>("/license/status", token)
     }
-    return this.request<LicenseResponse>("/license/status")
+    return this.requestApiV1<LicenseResponse>("/license/status")
   }
 
   getVersion(token?: string) {
     appLogger.debug("Fetching version information")
     if (token) {
-      return this.requestWithToken<VersionResponse>("/version", token)
+      return this.requestBackendWithToken<VersionResponse>("/version", token)
     }
-    return this.request<VersionResponse>("/version")
+    return this.requestBackend<VersionResponse>("/version")
   }
 
   getDatabaseSize(token: string) {
     appLogger.debug("Fetching database size information")
-    return this.requestWithToken<DatabaseSizeResponse>("/database/size", token)
+    return this.requestApiV1WithToken<DatabaseSizeResponse>("/monitoring/database/size", token)
   }
 
 setupOauth(payload: Body_configure_oauth_api_v1_setup_oauth_post) {
   appLogger.debug("Setting up OAuth")
-  return this.request<SetupOAuthResponse>("/api/v1/setup/oauth", {
+  return this.requestApiV1<SetupOAuthResponse>("/setup/oauth", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -159,6 +159,6 @@ setupOauth(payload: Body_configure_oauth_api_v1_setup_oauth_post) {
 
   getMcpInfo(token: string) {
     appLogger.debug("Fetching MCP info")
-    return this.requestWithToken<McpInfoResponse>("/mcp/info", token)
+    return this.requestBackendWithToken<McpInfoResponse>("/mcp/info", token)
   }
 }

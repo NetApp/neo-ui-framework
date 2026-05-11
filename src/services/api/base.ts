@@ -1,6 +1,20 @@
 // Copyright 2025 NetApp, Inc. All Rights Reserved.
 import { appLogger } from "@/services/app-logger"
 
+const DEFAULT_PROXY_PREFIX = "/api"
+const API_V1_PREFIX = "/api/v1"
+
+function joinPath(prefix: string, endpoint: string): string {
+  const normalizedPrefix = prefix.endsWith("/") ? prefix.slice(0, -1) : prefix
+  const normalizedEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`
+
+  if (!normalizedPrefix) {
+    return normalizedEndpoint
+  }
+
+  return `${normalizedPrefix}${normalizedEndpoint}`
+}
+
 interface RequestOptions {
   expectAuth?: boolean
   parseJson?: boolean
@@ -23,8 +37,20 @@ export class AuthorizationError extends Error {
 export class BaseApiClient {
   protected baseUrl: string
 
-  constructor(baseUrl: string = "/api") {
+  constructor(baseUrl: string = DEFAULT_PROXY_PREFIX) {
     this.baseUrl = baseUrl
+  }
+
+  protected buildProxyUrl(endpoint: string): string {
+    return joinPath(this.baseUrl, endpoint)
+  }
+
+  protected buildBackendPath(endpoint: string): string {
+    return joinPath("", endpoint)
+  }
+
+  protected buildApiV1Path(endpoint: string): string {
+    return joinPath(API_V1_PREFIX, endpoint)
   }
 
   protected async request<T>(
@@ -33,7 +59,7 @@ export class BaseApiClient {
     options: RequestOptions = {}
   ): Promise<T> {
     const { expectAuth = false, parseJson = true } = options
-    const url = `${this.baseUrl}${endpoint}`
+    const url = this.buildProxyUrl(endpoint)
     appLogger.debug(`Requesting ${url}`)
 
     try {
@@ -108,5 +134,39 @@ export class BaseApiClient {
         ...options,
       }
     )
+  }
+
+  protected requestBackend<T>(
+    endpoint: string,
+    init: RequestInit = {},
+    options: RequestOptions = {}
+  ): Promise<T> {
+    return this.request<T>(this.buildBackendPath(endpoint), init, options)
+  }
+
+  protected requestBackendWithToken<T>(
+    endpoint: string,
+    token: string,
+    init: RequestInit = {},
+    options: RequestOptions = {}
+  ): Promise<T> {
+    return this.requestWithToken<T>(this.buildBackendPath(endpoint), token, init, options)
+  }
+
+  protected requestApiV1<T>(
+    endpoint: string,
+    init: RequestInit = {},
+    options: RequestOptions = {}
+  ): Promise<T> {
+    return this.request<T>(this.buildApiV1Path(endpoint), init, options)
+  }
+
+  protected requestApiV1WithToken<T>(
+    endpoint: string,
+    token: string,
+    init: RequestInit = {},
+    options: RequestOptions = {}
+  ): Promise<T> {
+    return this.requestWithToken<T>(this.buildApiV1Path(endpoint), token, init, options)
   }
 }

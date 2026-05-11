@@ -17,7 +17,7 @@ export class AuthApiClient extends BaseApiClient {
     appLogger.debug("Attempting authentication", undefined, { username })
 
     try {
-      const response = await fetch(`${this.baseUrl}/token`, {
+      const response = await fetch(this.buildProxyUrl(this.buildBackendPath("/token")), {
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
@@ -79,7 +79,7 @@ export class AuthApiClient extends BaseApiClient {
 
     try {
       await this.requestWithToken<void>(
-        "/logout",
+        this.buildBackendPath("/logout"),
         token,
         { method: "POST" },
         { parseJson: false }
@@ -96,7 +96,7 @@ export class AuthApiClient extends BaseApiClient {
   async initiateOAuthLogin() {
     appLogger.debug("Initiating OAuth login")
     try {
-      const response = await this.request<{ authorization_url: string; state?: string }>("/auth/login")
+      const response = await this.requestBackend<{ authorization_url: string; state?: string }>("/auth/login")
       if (response && response.authorization_url) {
         window.location.href = response.authorization_url
       } else {
@@ -109,27 +109,27 @@ export class AuthApiClient extends BaseApiClient {
   }
 
   getOAuthConfig() {
-    return this.request<OAuthConfigResponse>("/auth/config")
+    return this.requestBackend<OAuthConfigResponse>("/auth/config")
   }
 
   getUserInfo(token: string) {
-    return this.requestWithToken<UserInfoResponse>("/auth/userinfo", token)
+    return this.requestBackendWithToken<UserInfoResponse>("/auth/userinfo", token)
   }
 
   getGroups(token: string) {
-    return this.requestWithToken<GroupsResponse>("/auth/groups", token)
+    return this.requestBackendWithToken<GroupsResponse>("/auth/groups", token)
   }
 
   validateToken(token: string) {
-    return this.requestWithToken<UserInfoResponse>("/auth/validate", token)
+    return this.requestBackendWithToken<UserInfoResponse>("/auth/validate", token)
   }
 
   getWhoAmI(token: string) {
-    return this.requestWithToken<UserInfoResponse>("/auth/whoami", token)
+    return this.requestBackendWithToken<UserInfoResponse>("/auth/whoami", token)
   }
 
   linkEntraIdentity(token: string, payload: EntraLinkRequest) {
-    return this.requestWithToken<EntraLinkResponse>("/auth/link-entra", token, {
+    return this.requestBackendWithToken<EntraLinkResponse>("/auth/link-entra", token, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
@@ -137,7 +137,7 @@ export class AuthApiClient extends BaseApiClient {
   }
 
   unlinkEntraIdentity(token: string, payload: EntraUnlinkRequest) {
-    return this.requestWithToken<EntraUnlinkResponse>("/auth/unlink-entra", token, {
+    return this.requestBackendWithToken<EntraUnlinkResponse>("/auth/unlink-entra", token, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
@@ -145,7 +145,7 @@ export class AuthApiClient extends BaseApiClient {
   }
 
   refreshAccessToken(token: string) {
-    return this.requestWithToken<TokenResponse>("/auth/refresh", token, {
+    return this.requestBackendWithToken<TokenResponse>("/auth/refresh", token, {
       method: "POST"
     })
   }

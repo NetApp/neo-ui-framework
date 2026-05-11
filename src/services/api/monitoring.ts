@@ -12,22 +12,22 @@ import type {
 export class MonitoringApiClient extends BaseApiClient {
   getMonitoringOverview(token: string) {
     appLogger.debug("Fetching monitoring overview")
-    return this.requestWithToken<MonitoringOverviewResponse>("/monitoring/overview", token)
+    return this.requestApiV1WithToken<MonitoringOverviewResponse>("/monitoring/overview", token)
   }
 
   getMonitoringWorkers(token: string) {
     appLogger.debug("Fetching monitoring workers")
-    return this.requestWithToken<MonitoringWorkersResponse>("/monitoring/workers", token)
+    return this.requestApiV1WithToken<MonitoringWorkersResponse>("/monitoring/workers", token)
   }
 
   getMonitoringEnumeration(token: string) {
     appLogger.debug("Fetching monitoring enumeration")
-    return this.requestWithToken<MonitoringEnumerationResponse>("/monitoring/enumeration", token)
+    return this.requestApiV1WithToken<MonitoringEnumerationResponse>("/monitoring/enumeration", token)
   }
 
   getMonitoringGraphRateLimit(token: string) {
     appLogger.debug("Fetching monitoring graph rate limit")
-    return this.requestWithToken<MonitoringGraphRateLimitResponse>(
+    return this.requestApiV1WithToken<MonitoringGraphRateLimitResponse>(
       "/monitoring/graph-rate-limit",
       token
     )
@@ -35,12 +35,12 @@ export class MonitoringApiClient extends BaseApiClient {
 
   getMonitoringFailedItems(token: string) {
     appLogger.debug("Fetching monitoring failed items")
-    return this.requestWithToken<MonitoringFailedItemsResponse>("/monitoring/failed-items", token)
+    return this.requestApiV1WithToken<MonitoringFailedItemsResponse>("/monitoring/failed-items", token)
   }
 
   retryWorkItems(token: string, shareId: string, workItemIds: string[]) {
     appLogger.debug("Retrying failed work items", undefined, { shareId, count: workItemIds.length })
-    return this.requestWithToken<void>("/work-items/retry", token, {
+    return this.requestWithToken<void>(this.buildApiV1Path("/monitoring/work-items/retry"), token, {
       method: "POST",
       body: JSON.stringify({
         share_id: shareId,

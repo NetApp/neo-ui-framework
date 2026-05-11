@@ -6,6 +6,6 @@ import type { OperationResponse } from "@/services/models"
 export class OperationsApiClient extends BaseApiClient {
   getOperations(token: string) {
     appLogger.debug("Fetching operations list")
-    return this.requestWithToken<OperationResponse[]>("/operations/", token)
+    return this.requestApiV1WithToken<OperationResponse[]>("/monitoring/operations", token)
   }
 }

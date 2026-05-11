@@ -66,7 +66,7 @@ export class AnalyticsApiClient extends BaseApiClient {
 
       appLogger.debug(`Fetching files page ${page}`)
       const response = await this.requestWithToken<FileSearchResponse>(
-        `/files?page=${page}&page_size=100&include_counts=false`,
+        this.buildApiV1Path(`/files?page=${page}&page_size=100&include_counts=false`),
         token
       )
 
@@ -145,7 +145,7 @@ export class AnalyticsApiClient extends BaseApiClient {
 
       appLogger.debug(`Fetching files page ${page} for shares analytics`)
       const response = await this.requestWithToken<FileSearchResponse>(
-        `/files?page=${page}&page_size=1000&include_counts=false`,
+        this.buildApiV1Path(`/files?page=${page}&page_size=1000&include_counts=false`),
         token
       )
 
