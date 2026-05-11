@@ -52,6 +52,8 @@ import type {
   Dataset,
   CreateDatasetRequest,
   DatasetItemsResponse,
+  ShareConfigRequest,
+  ShareUpdateRequest,
 } from "@/services/models"
 
 import { useSettings } from "@/context/settings-context"
@@ -440,23 +442,7 @@ export function useNeoApi() {
   )
 
   const handleAddShare = useCallback(
-    async (share: {
-      share_path: string
-      username: string
-      password: string
-      crawl_schedule: string
-      rules: {
-        exclude_patterns: string[]
-        include_patterns: string[]
-        max_file_size: number
-        min_file_size: number
-        persist_file_content: boolean
-      }
-      realm: string
-      use_kerberos: string
-      workgroup: string
-      resolve_order: string
-    }) => {
+    async (share: ShareConfigRequest) => {
       if (!token) {
         appLogger.warn("Share creation attempted without active token")
         throw new AuthenticationError()
@@ -490,20 +476,7 @@ export function useNeoApi() {
   )
 
   const handleUpdateShare = useCallback(
-    async (
-      shareId: string,
-      share: {
-        share_path?: string
-        username?: string
-        password?: string
-        crawl_schedule?: string
-        rules?: Record<string, unknown>
-        realm?: string
-        use_kerberos?: string
-        workgroup?: string
-        resolve_order?: string
-      }
-    ) => {
+    async (shareId: string, share: ShareUpdateRequest) => {
       if (!token) {
         appLogger.warn("Share update attempted without active token")
         throw new AuthenticationError()

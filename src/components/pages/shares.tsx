@@ -31,6 +31,7 @@ import type {
   MonitoringOverviewResponse
 } from "@/services/neo-api"
 import { AuthenticationError } from "@/services/neo-api"
+import type { ShareConfigRequest, ShareUpdateRequest } from "@/services/models"
 import { OverviewCard } from "@/components/cards/overview-card"
 
 import {
@@ -78,43 +79,11 @@ import { ConfirmDialog } from "@/components/dialogs/confirm-dialog"
 import { Spinner } from "@/components/ui/spinner"
 import { Separator } from "@/components/ui/separator"
 
-interface ShareFormValues {
-  share_path: string
-  username: string
-  password: string
-  crawl_schedule: string
-  rules: {
-    exclude_patterns: string[]
-    include_patterns: string[]
-    max_file_size: number
-    min_file_size: number
-    persist_file_content: boolean
-    enable_copilot_upload: boolean
-  }
-  realm: string
-  use_kerberos: string
-  workgroup: string
-  resolve_order: string
-}
-
 interface SharesProps {
   shares: SharesResponse[] | null
   onDeleteShare: (shareId: string) => Promise<void>
-  onAddShare: (share: ShareFormValues) => Promise<void>
-  onUpdateShare: (
-    shareId: string,
-    share: {
-      share_path?: string
-      username?: string
-      password?: string
-      crawl_schedule?: string
-      rules?: Record<string, unknown>
-      realm?: string
-      use_kerberos?: string
-      workgroup?: string
-      resolve_order?: string
-    }
-  ) => Promise<void>
+  onAddShare: (share: ShareConfigRequest) => Promise<void>
+  onUpdateShare: (shareId: string, share: ShareUpdateRequest) => Promise<void>
   onStartCrawl: (shareId: string) => Promise<boolean>
   onFetchShareDetails: (shareId: string) => Promise<ShareDetailsResponse>
   onRefresh: () => Promise<void>
@@ -177,7 +146,6 @@ function getStatusBadge(status: string) {
     </Badge>
   )
 }
-
 export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShare, onStartCrawl, onFetchShareDetails, onRefresh, monitoringOverview, isAdmin }: SharesProps) {
   const { t } = useTranslation()
   const [sheetOpen, setSheetOpen] = useState(false)
@@ -196,12 +164,14 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
   const [useKerberos, setUseKerberos] = useState("required")
   const [workgroup, setWorkgroup] = useState("")
   const [resolveOrder, setResolveOrder] = useState("host")
+  const [smbMountOptions, setSmbMountOptions] = useState("")
 
   // S3 fields
   const [s3SharePath, setS3SharePath] = useState("")
   const [s3Bucket, setS3Bucket] = useState("")
   const [s3EndpointUrl, setS3EndpointUrl] = useState("")
   const [s3Region, setS3Region] = useState("us-east-1")
+  const [s3Prefix, setS3Prefix] = useState("")
   const [s3UseSsl, setS3UseSsl] = useState(false)
   const [s3CrawlSchedule, setS3CrawlSchedule] = useState("-")
   const [s3RulesJson, setS3RulesJson] = useState(DEFAULT_RULES_JSON)
@@ -237,11 +207,13 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
     setUseKerberos("required")
     setWorkgroup("")
     setResolveOrder("host")
+    setSmbMountOptions("")
 
     setS3SharePath("")
     setS3Bucket("")
     setS3EndpointUrl("")
     setS3Region("us-east-1")
+    setS3Prefix("")
     setS3UseSsl(false)
     setS3CrawlSchedule("-")
     setS3RulesJson(DEFAULT_RULES_JSON)
@@ -259,7 +231,6 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
 
     setEditingShareId(null)
     setError(null)
-    setSelectedProtocol("smb")
   }, [])
 
   const parseRules = useCallback((jsonString: string) => {
@@ -284,14 +255,14 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
         if (sheetMode === "create-nfs") {
           if (editingShareId != null) {
             const parsedRules = parseRules(nfsRulesJson)
-            const nfsUpdatePayload: Parameters<SharesProps["onUpdateShare"]>[1] = {
+            const nfsUpdatePayload: ShareUpdateRequest = {
               share_path: nfsSharePath,
               crawl_schedule: nfsCrawlSchedule,
               rules: parsedRules,
               nfs_version: nfsVersion,
               nfs_security: nfsSecurity,
               nfs_mount_options: nfsMountOptions,
-            } as unknown as Parameters<SharesProps["onUpdateShare"]>[1]
+            }
 
             if (nfsUsername.trim() !== "") {
               nfsUpdatePayload.username = nfsUsername
@@ -317,21 +288,22 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
               password: nfsPassword,
               crawl_schedule: nfsCrawlSchedule,
               rules: parsedRules,
-            } as unknown as ShareFormValues)
+            })
 
             setSheetOpen(false)
             resetForm()
           }
         } else if (sheetMode === "create-s3") {
           if (editingShareId != null) {
-            const s3UpdatePayload: Parameters<SharesProps["onUpdateShare"]>[1] = {
+            const s3UpdatePayload: ShareUpdateRequest = {
               share_path: s3SharePath,
               crawl_schedule: s3CrawlSchedule,
               s3_bucket: s3Bucket,
               s3_endpoint_url: s3EndpointUrl,
               s3_region: s3Region,
+              s3_prefix: s3Prefix,
               s3_use_ssl: s3UseSsl,
-            } as unknown as Parameters<SharesProps["onUpdateShare"]>[1]
+            }
 
             if (s3Username.trim() !== "") {
               s3UpdatePayload.username = s3Username
@@ -361,8 +333,9 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
               s3_bucket: s3Bucket,
               s3_endpoint_url: s3EndpointUrl,
               s3_region: s3Region,
+              s3_prefix: s3Prefix,
               s3_use_ssl: s3UseSsl,
-            } as unknown as ShareFormValues)
+            })
 
             setSheetOpen(false)
             resetForm()
@@ -371,7 +344,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
           const parsedRules = parseRules(rulesJson)
 
           if (editingShareId != null) {
-            const smbUpdatePayload: Parameters<SharesProps["onUpdateShare"]>[1] = {
+            const smbUpdatePayload: ShareUpdateRequest = {
               share_path: sharePath,
               crawl_schedule: crawlSchedule,
               rules: parsedRules,
@@ -379,6 +352,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
               use_kerberos: useKerberos,
               workgroup,
               resolve_order: resolveOrder,
+              smb_mount_options: smbMountOptions,
             }
 
             if (username.trim() !== "") {
@@ -396,6 +370,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
             setSheetMode('details') // Switch back to details view
           } else {
             await onAddShare({
+              protocol: "smb",
               share_path: sharePath,
               username,
               password,
@@ -405,6 +380,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
               use_kerberos: useKerberos,
               workgroup,
               resolve_order: resolveOrder,
+              smb_mount_options: smbMountOptions,
             })
             setSheetOpen(false)
             resetForm()
@@ -416,7 +392,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
         setSubmitting(false)
       }
     },
-    [onAddShare, onUpdateShare, password, resetForm, sharePath, username, crawlSchedule, rulesJson, realm, useKerberos, workgroup, resolveOrder, editingShareId, parseRules, onFetchShareDetails, sheetMode, s3SharePath, s3Bucket, s3EndpointUrl, s3Region, s3UseSsl, s3CrawlSchedule, s3RulesJson, s3Username, s3Password, nfsSharePath, nfsVersion, nfsSecurity, nfsMountOptions, nfsCrawlSchedule, nfsRulesJson, nfsUsername, nfsPassword]
+    [onAddShare, onUpdateShare, password, resetForm, sharePath, username, crawlSchedule, rulesJson, realm, useKerberos, workgroup, resolveOrder, smbMountOptions, editingShareId, parseRules, onFetchShareDetails, sheetMode, s3SharePath, s3Bucket, s3EndpointUrl, s3Region, s3Prefix, s3UseSsl, s3CrawlSchedule, s3RulesJson, s3Username, s3Password, nfsSharePath, nfsVersion, nfsSecurity, nfsMountOptions, nfsCrawlSchedule, nfsRulesJson, nfsUsername, nfsPassword]
   )
 
   const handleCrawl = useCallback(
@@ -475,6 +451,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
     setUseKerberos(details.use_kerberos ?? "required")
     setWorkgroup(details.workgroup ?? "")
     setResolveOrder(details.resolve_order ?? "host")
+    setSmbMountOptions(details.smb_mount_options ?? "")
 
   }, [])
 
@@ -483,6 +460,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
     setS3Bucket((details as ShareDetailsResponse & { s3_bucket?: string }).s3_bucket ?? "")
     setS3EndpointUrl((details as ShareDetailsResponse & { s3_endpoint_url?: string }).s3_endpoint_url ?? "")
     setS3Region((details as ShareDetailsResponse & { s3_region?: string }).s3_region ?? "us-east-1")
+    setS3Prefix((details as ShareDetailsResponse & { s3_prefix?: string }).s3_prefix ?? "")
     setS3UseSsl((details as ShareDetailsResponse & { s3_use_ssl?: boolean }).s3_use_ssl ?? false)
     setS3CrawlSchedule(details.crawl_schedule ?? "-")
     try {
@@ -533,22 +511,23 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
     setSheetMode('create')
     setEditingShareId(null)
     resetForm()
+    setSelectedProtocol("smb")
     setSheetOpen(true)
   }, [resetForm])
 
   const handleAddS3Click = useCallback(() => {
     setSheetMode('create-s3')
-    setSelectedProtocol('s3')
     setEditingShareId(null)
     resetForm()
+    setSelectedProtocol('s3')
     setSheetOpen(true)
   }, [resetForm])
 
   const handleAddNFSClick = useCallback(() => {
     setSheetMode('create-nfs')
-    setSelectedProtocol('nfs')
     setEditingShareId(null)
     resetForm()
+    setSelectedProtocol('nfs')
     setSheetOpen(true)
   }, [resetForm])
 
@@ -778,6 +757,10 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
                           <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{(selectedShareDetails as ShareDetailsResponse & { s3_region?: string }).s3_region || "N/A"}</pre></dd>
                         </div>
                         <div>
+                          <dt className="font-medium text-foreground">Prefix</dt>
+                          <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{(selectedShareDetails as ShareDetailsResponse & { s3_prefix?: string }).s3_prefix || "N/A"}</pre></dd>
+                        </div>
+                        <div>
                           <dt className="font-medium text-foreground">Use SSL</dt>
                           <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{String((selectedShareDetails as ShareDetailsResponse & { s3_use_ssl?: boolean }).s3_use_ssl ?? false)}</pre></dd>
                         </div>
@@ -875,6 +858,10 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
                         <div>
                           <dt className="font-medium text-foreground">Realm</dt>
                           <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{selectedShareDetails.realm || "N/A"}</pre></dd>
+                        </div>
+                        <div>
+                          <dt className="font-medium text-foreground">SMB mount options</dt>
+                          <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{selectedShareDetails.smb_mount_options || "N/A"}</pre></dd>
                         </div>
                         <div className="sm:col-span-3">
                           <dt className="font-medium text-foreground">Resolve order</dt>
@@ -1008,6 +995,15 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
                       onChange={(event) => setResolveOrder(event.target.value)}
                     />
                   </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="smb-mount-options">SMB mount options</Label>
+                    <Input
+                      id="smb-mount-options"
+                      value={smbMountOptions}
+                      onChange={(event) => setSmbMountOptions(event.target.value)}
+                      placeholder="vers=3.1.1,seal,echo_interval=30"
+                    />
+                  </div>
                 </div>
 
                 {error ? <p className="text-sm text-destructive rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2">{error}</p> : null}
@@ -1079,6 +1075,15 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
                         value={s3Region}
                         onChange={(event) => setS3Region(event.target.value)}
                         required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="s3-prefix">Prefix</Label>
+                      <Input
+                        id="s3-prefix"
+                        placeholder="optional/path/prefix"
+                        value={s3Prefix}
+                        onChange={(event) => setS3Prefix(event.target.value)}
                       />
                     </div>
                     <div className="space-y-2">
