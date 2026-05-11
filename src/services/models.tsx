@@ -140,12 +140,21 @@ export interface HealthResponse {
   components?: Record<string, string>
 }
 
+export interface LicenseDetails {
+  days_remaining?: number | null
+  expiry_date?: string | null
+}
+
 export interface LicenseResponse {
+  license_configured?: boolean
+  license_valid?: boolean
+  connector_id?: string
+  error_message?: string | null
+  in_reconfiguration_mode?: boolean
   message: string
-  details: {
-    connection_id: string
-    days_remaining: number
-  } | null
+  days_remaining?: number | null
+  expiry_date?: string | null
+  details?: LicenseDetails | null
 }
 
 export interface VersionResponse {
@@ -201,40 +210,86 @@ export interface DatabaseSizeResponse { // only for v3
 // Shares Page Models
 export interface SharesResponse {
   id: string
-  share_path: string
-  username: string
-  status: string
-  last_crawled: string
-  last_crawl_file_count: number
   protocol?: "smb" | "nfs" | "s3"
-}
-
-export interface ShareDetailsResponse {
-  id: string
   share_path: string
   username: string
   created_at: string
-  last_crawled: string
-  last_crawl_duration_ms: number
-  last_crawl_file_count: number
+  last_crawled: string | null
+  last_crawl_duration_ms: number | null
+  last_crawl_file_count: number | null
   crawl_schedule: string
   rules: Record<string, unknown>
   status: string
-  error_message: string
-  last_connection_attempt: string
-  realm: string
-  use_kerberos: string
-  workgroup: string
-  resolve_order: string
-  // S3 fields
-  s3_bucket?: string
-  s3_endpoint_url?: string
-  s3_region?: string
+  error_message: string | null
+  last_connection_attempt: string | null
+  realm?: string | null
+  use_kerberos?: string | null
+  workgroup?: string | null
+  resolve_order?: string | null
+  nfs_version?: string | null
+  nfs_security?: string | null
+  nfs_mount_options?: string | null
+  smb_mount_options?: string | null
+  s3_endpoint_url?: string | null
+  s3_region?: string | null
+  s3_bucket?: string | null
+  s3_prefix?: string | null
+  s3_use_ssl?: boolean | null
+}
+
+export interface ShareDetailsResponse extends SharesResponse {}
+
+export interface ShareRules {
+  exclude_patterns?: string[]
+  include_patterns?: string[]
+  max_file_size?: number
+  min_file_size?: number
+  persist_file_content?: boolean
+  [key: string]: unknown
+}
+
+export interface ShareConfigRequest {
+  id?: string | null
+  protocol?: "smb" | "nfs" | "s3"
+  share_path: string
+  username?: string
+  password?: string
+  crawl_schedule?: string
+  rules?: ShareRules
+  realm?: string | null
+  use_kerberos?: string
+  workgroup?: string | null
+  resolve_order?: string
+  nfs_version?: string | null
+  nfs_security?: string | null
+  nfs_mount_options?: string | null
+  smb_mount_options?: string | null
+  s3_endpoint_url?: string | null
+  s3_region?: string | null
+  s3_bucket?: string | null
+  s3_prefix?: string | null
   s3_use_ssl?: boolean
-  // NFS fields
-  nfs_version?: string
-  nfs_security?: string
-  nfs_mount_options?: string
+}
+
+export interface ShareUpdateRequest {
+  share_path?: string | null
+  username?: string | null
+  password?: string | null
+  crawl_schedule?: string | null
+  rules?: Record<string, unknown> | null
+  realm?: string | null
+  use_kerberos?: string | null
+  workgroup?: string | null
+  resolve_order?: string | null
+  nfs_version?: string | null
+  nfs_security?: string | null
+  nfs_mount_options?: string | null
+  smb_mount_options?: string | null
+  s3_endpoint_url?: string | null
+  s3_region?: string | null
+  s3_bucket?: string | null
+  s3_prefix?: string | null
+  s3_use_ssl?: boolean | null
 }
 
 export interface NFSShareCreateRequest {
@@ -261,21 +316,23 @@ export interface FilesResponse {
   total_pages: number | null
   has_next: boolean
   has_previous: boolean
+  next_cursor?: string | null
+  content_truncated?: boolean | null
+  truncated_file_count?: number | null
+  max_content_length_applied?: number | null
+  response_size_warning?: string | null
 }
 
 export interface FileSearchParams {
   path?: string
   filename?: string
   file_type?: string
-  accessed_at_after?: string
-  accessed_at_before?: string
-  modified_time_after?: string
-  modified_time_before?: string
-  created_at_after?: string
-  created_at_before?: string
-  size_min?: number
-  size_max?: number
-  sort_by?: "modified_time" | "created_at" | "accessed_at" | "filename" | "size" | "share_name"
+  fields?: string
+  field_set?: "minimal" | "standard" | "metadata" | "security" | "full"
+  include_content?: boolean
+  include_counts?: boolean
+  after_modified_time?: string
+  sort_by?: "relevance" | "modified_time" | "created_at" | "accessed_at" | "filename" | "size" | "share_name"
   sort_order?: "asc" | "desc"
   page?: number
   page_size?: number
@@ -294,10 +351,17 @@ export interface FileEntry {
   accessed_at: string
   is_directory: boolean
   file_type: string
+  content?: string | null
+  content_chunks?: string[] | null
+  conversion_duration_ms?: number | null
+  extractor_used?: string | null
   indexed_at: string
+  acl_principals?: string[] | null
+  resolved_principals?: Record<string, unknown>[] | null
   share_id?: string
-  share_name?: string
-  share_path?: string
+  share_name?: string | null
+  share_path?: string | null
+  [key: string]: unknown
 }
 
 export interface FileSearchResponse {
@@ -309,26 +373,20 @@ export interface FileSearchResponse {
   total_pages: number | null
   has_next: boolean
   has_previous: boolean
+  next_cursor?: string | null
+  content_truncated?: boolean | null
+  truncated_file_count?: number | null
+  max_content_length_applied?: number | null
+  response_size_warning?: string | null
 }
 
-export interface FileMetadataResponse {
-  id: string
-  file_path: string
-  unc_path: string
-  filename: string
-  size: number
-  created_at: string
-  modified_time: string
-  accessed_at: string
-  is_directory: boolean
-  file_type: string
-  content: string
-  content_chunks: string[]
-  conversion_duration_ms: number
-  extractor_used: string
-  indexed_at: string
-  acl_principals: string[]
-  resolved_principals: Record<string, unknown>[]
+export interface FileMetadataResponse extends FileEntry {
+  content?: string | null
+  content_chunks?: string[] | null
+  conversion_duration_ms?: number | null
+  extractor_used?: string | null
+  acl_principals?: string[] | null
+  resolved_principals?: Record<string, unknown>[] | null
 }
 
 // Operations Page Models
@@ -338,38 +396,32 @@ export interface OperationResponse {
   status: string
   details: string
   timestamp: string
+  metadata?: Record<string, unknown>
+  user_id?: number | null
   // user_id not included to avoid looking up user info separately
-  username: string
+  username: string | null
 }
 
 
 // Monitoring Page Models
 export interface MonitoringOverviewResponse { // only for v3
   work_queue: {
-    total_items?: number
-    pending_items?: number
-    claimed_items?: number
-    processing_items?: number
-    failed_items?: number
-    abandoned_items?: number
+    total_items: number
+    pending_items: number
+    claimed_items: number
+    processing_items: number
+    completed_items?: number
+    failed_items: number
+    abandoned_items: number
     total_pending?: number
     total_claimed?: number
     total_processing?: number
-    total_completed?: number
     total_failed?: number
     total_abandoned?: number
-    average_processing_time_ms?: number | null
-    oldest_pending_age_seconds?: number | null
   }
-  ennumeration: {
-    active_enumerations: Array<{
-      additionalProp1: Record<string, unknown>
-    }>
-    enumeration_queue_depth: {
-      additionalProp1: number
-      additionalProp2: number
-      additionalProp3: number
-    }
+  enumeration: {
+    active_enumerations: Record<string, unknown>[]
+    enumeration_queue_depth: Record<string, number>
     completed_enumerations_last_24h: number
     avg_enumeration_duration_seconds: number
   }
@@ -378,18 +430,16 @@ export interface MonitoringOverviewResponse { // only for v3
     active_workers: number
     stopping_workers: number
     stopped_workers: number
-    workers: {
-      additionalProp1: Record<string, unknown>
-    }
+    workers: Record<string, unknown>[]
   }
   graph_rate_limit: {
     requests_made: number
     requests_remaining: number
-    reset_time: string
+    reset_time: string | null
     rate_limited: boolean
-    backoff_until: string
+    backoff_until: string | null
   }
-  timestamp: string
+  timestamp?: string
 }
 
 export interface MonitoringWorkerResponse { // only for v3
@@ -403,14 +453,8 @@ export interface MonitoringWorkerResponse { // only for v3
 }
 
 export interface MonitoringEnumerationResponse {  // only for v3
-  active_enumerations: Array<{
-    additionalProp1: Record<string, unknown>
-  }>
-  enumeration_queue_depth: {
-    additionalProp1: number
-    additionalProp2: number
-    additionalProp3: number
-  }
+  active_enumerations: Record<string, unknown>[]
+  enumeration_queue_depth: Record<string, number>
   completed_enumerations_last_24h: number
   avg_enumeration_duration_seconds: number
 }
@@ -419,22 +463,17 @@ export interface MonitoringWorkersResponse { // only for v3
   total_workers: number
   active_workers: number
   stale_workers?: number
-  stopping_workers?: number
-  stopped_workers?: number
-  workers: Array<{
-    instance_id?: string
-    hostname?: string
-    last_heartbeat?: string
-    status?: string
-  }>
+  stopping_workers: number
+  stopped_workers: number
+  workers: Record<string, unknown>[]
 }
 
 export interface MonitoringGraphRateLimitResponse { // only for v3
   requests_made: number
   requests_remaining: number
-  reset_time: string
+  reset_time: string | null
   rate_limited: boolean
-  backoff_until: string
+  backoff_until: string | null
 }
 
 export interface MonitoringFailedItemsResponse { // only for v3
@@ -442,35 +481,29 @@ export interface MonitoringFailedItemsResponse { // only for v3
   failed_items: {
     id: string
     share_id: string
-    file_inventory_id: string
-    work_type: string
-    priority: number
-    retry_count: number
-    max_retries: number
-    error_message: string
-    created_at: string
-    started_at: string
-    completed_at: string
-    claimed_by: string
-    file_path: string
-    filename: string
+    file_inventory_id?: string
+    work_type?: string
+    priority?: number
+    retry_count?: number
+    max_retries?: number
+    error_message?: string
+    created_at?: string
+    started_at?: string | null
+    completed_at?: string | null
+    claimed_by?: string | null
+    file_path?: string
+    filename?: string
   }[]
-  failure_summary: {
-    additionalProp1: number
-    additionalProp2: number
-    additionalProp3: number
-  }
-  retry_summary: {
-    additionalProp1: number
-    additionalProp2: number
-    additionalProp3: number
-  }
+  failure_summary?: Record<string, number>
+  retry_summary?: Record<string, number>
+  [key: string]: unknown
 }
 
 export interface TasksResponse { // only for v3
   id: string
   name: string
   status: string
+  task_type?: string | null
   created_at: string
   started_at: string | null
   completed_at: string | null
@@ -493,8 +526,8 @@ export interface TasksResponse { // only for v3
 
 export interface TasksListResponse { // only for v3
   tasks: TasksResponse[]
-  count: number
-  filter: {
+  count?: number
+  filter?: {
     status: string | null
     limit: number
   }
@@ -502,14 +535,8 @@ export interface TasksListResponse { // only for v3
 
 export interface TaskStatisticsResponse { // only for v3
   total_tasks: number
-  by_status: {
-    pending: number
-    running: number
-    completed: number
-    failed: number
-    cancelled: number
-  }
-  running_task_ids: number[]
+  by_status: Record<string, number>
+  running_task_ids: number[] | string[]
 }
 
 export interface AclCacheStatisticsResponse {
@@ -535,6 +562,12 @@ export interface UserResponse {
   created_at: string
   last_login: string | null
   entra_object_id?: string | null
+  entra_tenant_id?: string | null
+  entra_display_name?: string | null
+  entra_linked_at?: string | null
+}
+
+export interface MeResponse extends UserResponse {
   entra_display_name?: string | null
 }
 
@@ -583,18 +616,28 @@ export interface CreateDatasetRequest {
   name: string
   description?: string
   file_ids: string[]
+  source_query?: Record<string, unknown> | null
   is_public?: boolean
   acl_override_enabled?: boolean
+  expires_at?: string | null
 }
 
 export interface DatasetResponse {
   id: string
   name: string
-  description?: string
-  file_ids: string[]
+  description?: string | null
+  owner_id?: number
+  owner_username?: string
   is_public: boolean
   acl_override_enabled: boolean
+  item_count?: number
   created_at: string
+  updated_at?: string
+  expires_at?: string | null
+  expires_in_hours?: number | null
+  source_query?: Record<string, unknown> | null
+  user_permission?: string
+  metadata?: Record<string, unknown> | null
 }
 
 export interface DatasetItem {
@@ -627,7 +670,7 @@ export interface DatasetItemsResponse {
 export interface DatasetListItem {
   id: string
   name: string
-  description?: string
+  description?: string | null
   owner_id: number
   owner_username: string
   is_public: boolean
@@ -635,11 +678,11 @@ export interface DatasetListItem {
   item_count: number
   created_at: string
   updated_at: string
-  expires_at: string
-  expires_in_hours: number
-  source_query: Record<string, unknown>
+  expires_at: string | null
+  expires_in_hours: number | null
+  source_query: Record<string, unknown> | null
   user_permission: string
-  metadata: Record<string, unknown>
+  metadata?: Record<string, unknown> | null
 }
 
 export interface DatasetListResponse {
@@ -655,7 +698,7 @@ export interface DatasetListResponse {
 export interface Dataset {
   id: string
   name: string
-  description?: string
+  description?: string | null
   owner_id?: number
   owner_username?: string
   is_public: boolean
@@ -663,22 +706,10 @@ export interface Dataset {
   item_count?: number
   files: FileEntry[]
   createdAt: string
-  updatedAt?: string
-  expiresAt?: string
-  expiresInHours?: number
+  updatedAt?: string | null
+  expiresAt?: string | null
+  expiresInHours?: number | null
   userPermission?: string
-}
-
-export interface MeResponse {
-  id: number
-  username: string
-  email: string | null
-  is_active: boolean
-  is_admin: boolean
-  created_at: string
-  last_login: string | null
-  entra_object_id?: string | null
-  entra_display_name?: string | null
 }
 
 export interface Body_configure_oauth_api_v1_setup_oauth_post {
@@ -694,12 +725,13 @@ export interface EntraLinkRequest {
 }
 
 export interface EntraLinkResponse {
-  success: boolean
-  message: string
-  user_id: number
-  username: string
-  entra_object_id: string
+  success?: boolean
+  message?: string
+  user_id?: number
+  username?: string
+  entra_object_id?: string
   entra_display_name?: string
+  [key: string]: unknown
 }
 
 export interface EntraUnlinkRequest {
@@ -707,9 +739,18 @@ export interface EntraUnlinkRequest {
 }
 
 export interface EntraUnlinkResponse {
-  success: boolean
-  message: string
-  user_id: number
+  success?: boolean
+  message?: string
+  user_id?: number
+  [key: string]: unknown
+}
+
+export interface AuthProviderResponse {
+  [key: string]: unknown
+}
+
+export interface AuthProvidersResponse {
+  providers: AuthProviderResponse[]
 }
 
 export interface GroupsResponse {
@@ -719,27 +760,33 @@ export interface GroupsResponse {
 }
 
 export interface OAuthConfigResponse {
-  enabled: boolean
+  enabled?: boolean
   provider?: string
   tenant_id?: string
   client_id?: string
   audience?: string
   authorization_endpoint?: string
   token_endpoint?: string
+  providers?: AuthProviderResponse[]
 }
 
 export interface SetupOAuthResponse {
-  success: boolean
-  message: string
+  success?: boolean
+  message?: string
+  [key: string]: unknown
 }
 
 export interface UserInfoResponse {
-  object_id: string
-  tenant_id: string
+  sub?: string
+  object_id?: string
+  tenant_id?: string
   display_name?: string
+  name?: string
   email?: string
   upn?: string
+  preferred_username?: string
   groups_count?: number
+  [key: string]: unknown
 }
 
 export interface McpInfoResponse {

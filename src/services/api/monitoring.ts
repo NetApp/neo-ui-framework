@@ -40,12 +40,17 @@ export class MonitoringApiClient extends BaseApiClient {
 
   retryWorkItems(token: string, shareId: string, workItemIds: string[]) {
     appLogger.debug("Retrying failed work items", undefined, { shareId, count: workItemIds.length })
-    return this.requestWithToken<void>(this.buildApiV1Path("/monitoring/work-items/retry"), token, {
+    const params = new URLSearchParams()
+    if (shareId) {
+      params.append("share_id", shareId)
+    }
+
+    const formData = new FormData()
+    workItemIds.forEach((workItemId) => formData.append("work_item_ids", workItemId))
+
+    return this.requestWithToken<void>(`${this.buildApiV1Path("/monitoring/work-items/retry")}?${params}`, token, {
       method: "POST",
-      body: JSON.stringify({
-        share_id: shareId,
-        work_item_ids: workItemIds.join(","),
-      }),
+      body: formData,
     })
   }
 }

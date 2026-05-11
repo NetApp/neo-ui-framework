@@ -25,32 +25,47 @@ import type {
   SetupOAuthResponse,
 } from "@/services/models"
 
+function withSuccessMessage<T extends { success?: boolean; message?: string }>(
+  response: T | undefined,
+  defaultMessage: string
+): T {
+  return {
+    ...response,
+    success: response?.success ?? true,
+    message: response?.message ?? defaultMessage,
+  } as T
+}
+
 export class SystemApiClient extends BaseApiClient {
   getSetupStatus() {
     appLogger.debug("Fetching setup status")
     return this.requestApiV1<SetupStatusResponse>("/setup/status")
   }
 
-  setupLicense(request: SetupLicenseRequest) {
+  async setupLicense(request: SetupLicenseRequest) {
     appLogger.debug("Setting up license")
-    return this.requestApiV1<SetupLicenseResponse>("/setup/license", {
+    const response = await this.requestApiV1<SetupLicenseResponse>("/setup/license", {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(request)
     })
+
+    return withSuccessMessage(response, "License configured successfully.")
   }
 
-  setupGraph(request: SetupGraphRequest) {
+  async setupGraph(request: SetupGraphRequest) {
     appLogger.debug("Setting up graph connection")
-    return this.requestApiV1<SetupGraphResponse>("/setup/graph", {
+    const response = await this.requestApiV1<SetupGraphResponse>("/setup/graph", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(request),
     })
+
+    return withSuccessMessage(response, "Graph configuration saved successfully.")
   }
 
   getSetupGraph() {
@@ -60,15 +75,17 @@ export class SystemApiClient extends BaseApiClient {
     })
   }  
 
-  setupProxy(request: SetupProxyRequest) {
+  async setupProxy(request: SetupProxyRequest) {
     appLogger.debug("Configuring proxy settings")
-    return this.requestApiV1<SetupProxyResponse>("/setup/proxy", {
+    const response = await this.requestApiV1<SetupProxyResponse>("/setup/proxy", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(request),
     })
+
+    return withSuccessMessage(response, "Proxy settings saved successfully.")
   }
 
   getSetupProxy() {
@@ -85,22 +102,26 @@ export class SystemApiClient extends BaseApiClient {
     })
   }  
 
-  resetSetup() {
+  async resetSetup() {
     appLogger.debug("Resetting setup state")
-    return this.requestApiV1<SetupResetResponse>("/setup/reset", {
+    const response = await this.requestApiV1<SetupResetResponse>("/setup/reset", {
       method: "POST",
     })
+
+    return withSuccessMessage(response, "Setup state reset successfully.")
   }
 
-  factoryReset(payload: SetupFactoryResetRequest) {
+  async factoryReset(payload: SetupFactoryResetRequest) {
     appLogger.debug("Performing factory reset")
-    return this.requestApiV1<SetupResetResponse>("/setup/factory-reset", {
+    const response = await this.requestApiV1<SetupResetResponse>("/setup/factory-reset", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(payload),
     })
+
+    return withSuccessMessage(response, "Factory reset completed successfully.")
   }
 
   getInitialCredentials() {
@@ -110,11 +131,13 @@ export class SystemApiClient extends BaseApiClient {
     })
   }
 
-  completeSetup() {
+  async completeSetup() {
     appLogger.debug("Completing setup")
-    return this.requestApiV1<SetupCompleteResponse>("/setup/complete", {
+    const response = await this.requestApiV1<SetupCompleteResponse>("/setup/complete", {
       method: "POST",
     })
+
+    return withSuccessMessage(response, "Setup completed successfully.")
   }
 
   getHealth(token?: string) {
@@ -146,16 +169,18 @@ export class SystemApiClient extends BaseApiClient {
     return this.requestApiV1WithToken<DatabaseSizeResponse>("/monitoring/database/size", token)
   }
 
-setupOauth(payload: Body_configure_oauth_api_v1_setup_oauth_post) {
-  appLogger.debug("Setting up OAuth")
-  return this.requestApiV1<SetupOAuthResponse>("/setup/oauth", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload)
-  })
-}
+  async setupOauth(payload: Body_configure_oauth_api_v1_setup_oauth_post) {
+    appLogger.debug("Setting up MCP OAuth")
+    const response = await this.requestApiV1<SetupOAuthResponse>("/setup/mcp", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload)
+    })
+
+    return withSuccessMessage(response, "MCP OAuth configured successfully.")
+  }
 
   getMcpInfo(token: string) {
     appLogger.debug("Fetching MCP info")

@@ -1,7 +1,12 @@
 // Copyright 2025 NetApp, Inc. All Rights Reserved.
 import { appLogger } from "@/services/app-logger"
 import { BaseApiClient } from "./base"
-import type { SharesResponse, ShareDetailsResponse } from "@/services/models"
+import type {
+  ShareConfigRequest,
+  ShareDetailsResponse,
+  SharesResponse,
+  ShareUpdateRequest,
+} from "@/services/models"
 
 export class SharesApiClient extends BaseApiClient {
   getShares(token: string) {
@@ -27,23 +32,7 @@ export class SharesApiClient extends BaseApiClient {
 
   createShare(
     token: string,
-    payload: {
-      share_path: string
-      username: string
-      password: string
-      crawl_schedule: string
-      rules: {
-        exclude_patterns: string[]
-        include_patterns: string[]
-        max_file_size: number
-        min_file_size: number
-        persist_file_content: boolean
-      }
-      realm: string
-      use_kerberos: string
-      workgroup: string
-      resolve_order: string
-    }
+    payload: ShareConfigRequest
   ) {
     appLogger.debug("Sending POST request to create share", undefined, {
       share_path: payload.share_path,
@@ -64,17 +53,7 @@ export class SharesApiClient extends BaseApiClient {
   updateShare(
     token: string,
     shareId: string,
-    payload: {
-      share_path?: string
-      username?: string
-      password?: string
-      crawl_schedule?: string
-      rules?: Record<string, unknown>
-      realm?: string
-      use_kerberos?: string
-      workgroup?: string
-      resolve_order?: string
-    }
+    payload: ShareUpdateRequest
   ) {
     appLogger.debug("Sending PATCH request to update share", undefined, {
       shareId,

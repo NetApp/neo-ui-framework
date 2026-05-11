@@ -2,6 +2,7 @@
 import { appLogger } from "@/services/app-logger"
 import { AuthenticationError, BaseApiClient } from "./base"
 import type {
+  AuthProvidersResponse,
   TokenResponse,
   OAuthConfigResponse,
   UserInfoResponse,
@@ -109,11 +110,14 @@ export class AuthApiClient extends BaseApiClient {
   }
 
   getOAuthConfig() {
-    return this.requestBackend<OAuthConfigResponse>("/auth/config")
+    return this.requestApiV1<AuthProvidersResponse>("/auth/providers").then((response) => ({
+      enabled: response.providers.length > 0,
+      providers: response.providers,
+    } satisfies OAuthConfigResponse))
   }
 
   getUserInfo(token: string) {
-    return this.requestBackendWithToken<UserInfoResponse>("/auth/userinfo", token)
+    return this.requestBackendWithToken<UserInfoResponse>("/userinfo", token)
   }
 
   getGroups(token: string) {
@@ -121,11 +125,11 @@ export class AuthApiClient extends BaseApiClient {
   }
 
   validateToken(token: string) {
-    return this.requestBackendWithToken<UserInfoResponse>("/auth/validate", token)
+    return this.getUserInfo(token)
   }
 
   getWhoAmI(token: string) {
-    return this.requestBackendWithToken<UserInfoResponse>("/auth/whoami", token)
+    return this.getUserInfo(token)
   }
 
   linkEntraIdentity(token: string, payload: EntraLinkRequest) {
