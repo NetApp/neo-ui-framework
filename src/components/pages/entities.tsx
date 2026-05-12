@@ -20,12 +20,14 @@ import {
 } from "@/components/ui/select"
 import { Spinner } from "@/components/ui/spinner"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle, DrawerFooter } from "@/components/ui/drawer"
+import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@/components/ui/drawer"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
 import { AlertTriangle, RefreshCw } from "lucide-react"
 import type { SharesResponse } from "@/services/models"
+
+const ALL_ENTITY_TYPES_VALUE = "__all__"
 
 interface EntityAggregate {
   value: string
@@ -57,7 +59,7 @@ export default function EntitiesPage() {
   const [stats, setStats] = useState<NERStats | null>(null)
   const [entities, setEntities] = useState<EntityAggregate[]>([])
   const [searchQuery, setSearchQuery] = useState("")
-  const [selectedEntityType, setSelectedEntityType] = useState<string>("")
+  const [selectedEntityType, setSelectedEntityType] = useState<string>(ALL_ENTITY_TYPES_VALUE)
   const [entityTypes, setEntityTypes] = useState<string[]>([])
   const [searchResults, setSearchResults] = useState<EntityAggregate[]>([])
   const [searching, setSearching] = useState(false)
@@ -111,10 +113,17 @@ export default function EntitiesPage() {
       try {
         setLoadingShares(true)
         const sharesData = await api.getShares(token)
-        setShares(Array.isArray(sharesData) ? sharesData : [])
-        // Auto-select first share if available
-        if (Array.isArray(sharesData) && sharesData.length > 0 && !selectedShareId) {
-          setSelectedShareId(sharesData[0].id)
+        const allShares = Array.isArray(sharesData) ? sharesData : []
+        const nerEnabledShares = allShares.filter((share) => {
+          const rules = share.rules as { enable_ner_analysis?: unknown } | undefined
+          return rules?.enable_ner_analysis === true
+        })
+
+        setShares(nerEnabledShares)
+
+        // Keep selected share only if still valid, otherwise select first NER-enabled share.
+        if (!nerEnabledShares.some((share) => share.id === selectedShareId)) {
+          setSelectedShareId(nerEnabledShares[0]?.id ?? "")
         }
       } catch (err) {
         console.error("Error fetching shares:", err)
@@ -133,7 +142,7 @@ export default function EntitiesPage() {
     try {
       setSearching(true)
       const results = await api.searchEntities(token, searchQuery, {
-        entityType: selectedEntityType || undefined,
+        entityType: selectedEntityType === ALL_ENTITY_TYPES_VALUE ? undefined : selectedEntityType,
         matchMode: "substring",
         limit: 50,
       })
@@ -342,7 +351,7 @@ export default function EntitiesPage() {
                   <SelectValue placeholder="Filter by entity type (optional)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Types</SelectItem>
+                  <SelectItem value={ALL_ENTITY_TYPES_VALUE}>All Types</SelectItem>
                   {entityTypes.map((type) => (
                     <SelectItem key={type} value={type}>
                       {type} ({stats?.entity_types[type] || 0})
@@ -431,12 +440,43 @@ export default function EntitiesPage() {
       <Drawer open={isAnalyzeDrawerOpen} onOpenChange={setIsAnalyzeDrawerOpen}>
         <DrawerContent>
           <DrawerHeader>
-            <DrawerTitle>
-              {t("analyzeShareTitle", { ns: "entities", defaultValue: "Analyze Share" })}
-            </DrawerTitle>
-            <DrawerDescription>
-              {t("analyzeShareDescription", { ns: "entities", defaultValue: "Trigger NER analysis for a specific share" })}
-            </DrawerDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <DrawerTitle>
+                  {t("analyzeShareTitle", { ns: "entities", defaultValue: "Analyze Share" })}
+                </DrawerTitle>
+                <DrawerDescription>
+                  {t("analyzeShareDescription", { ns: "entities", defaultValue: "Trigger NER analysis for a specific share" })}
+                </DrawerDescription>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={handleAnalyzeShare}
+                  disabled={isAnalyzing || !selectedShareId || loadingShares}
+                  size="sm"
+                >
+                  {isAnalyzing ? (
+                    <>
+                      <Spinner className="mr-2 h-4 w-4" />
+                      {t("analyzing", { ns: "entities", defaultValue: "Analyzing..." })}
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="mr-2 h-4 w-4" />
+                      {t("analyze", { ns: "entities", defaultValue: "Analyze" })}
+                    </>
+                  )}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsAnalyzeDrawerOpen(false)}
+                  disabled={isAnalyzing}
+                  size="sm"
+                >
+                  {t("cancel", { ns: "entities", defaultValue: "Cancel" })}
+                </Button>
+              </div>
+            </div>
           </DrawerHeader>
 
           <div className="px-4 py-6 space-y-6">
@@ -474,6 +514,11 @@ export default function EntitiesPage() {
                       ))}
                     </SelectContent>
                   </Select>
+                  {!loadingShares && shares.length === 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      {t("noNerEnabledShares", { ns: "entities", defaultValue: "No NER-enabled shares found. Enable NER in share rules to analyze files." })}
+                    </p>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-3 p-4 bg-muted rounded-lg">
@@ -494,32 +539,6 @@ export default function EntitiesPage() {
               </div>
             )}
           </div>
-
-          <DrawerFooter>
-            <Button
-              onClick={handleAnalyzeShare}
-              disabled={isAnalyzing || !selectedShareId || loadingShares}
-            >
-              {isAnalyzing ? (
-                <>
-                  <Spinner className="mr-2 h-4 w-4" />
-                  {t("analyzing", { ns: "entities", defaultValue: "Analyzing..." })}
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                  {t("startAnalysis", { ns: "entities", defaultValue: "Start Analysis" })}
-                </>
-              )}
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => setIsAnalyzeDrawerOpen(false)}
-              disabled={isAnalyzing}
-            >
-              {t("cancel", { ns: "entities", defaultValue: "Cancel" })}
-            </Button>
-          </DrawerFooter>
         </DrawerContent>
       </Drawer>
     </div>

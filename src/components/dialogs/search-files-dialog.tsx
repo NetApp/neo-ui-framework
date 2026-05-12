@@ -158,7 +158,7 @@ export function SearchFilesDialog({ open, onOpenChange, onSearch, allowContentVi
         }
         onOpenChange(nextOpen)
       }}
-      direction="bottom"
+        direction="top"
     >
       <DrawerContent>
         <div className="mx-auto w-full max-w-2xl">

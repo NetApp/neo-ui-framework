@@ -5,9 +5,10 @@ import { Drawer as DrawerPrimitive } from "vaul"
 import { cn } from "@/lib/utils"
 
 function Drawer({
+  direction = "top",
   ...props
 }: React.ComponentProps<typeof DrawerPrimitive.Root>) {
-  return <DrawerPrimitive.Root data-slot="drawer" {...props} />
+  return <DrawerPrimitive.Root data-slot="drawer" direction={direction} {...props} />
 }
 
 function DrawerTrigger({

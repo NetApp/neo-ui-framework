@@ -1419,9 +1419,9 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
                                                                     <SelectValue placeholder={t("selectDevice", { ns: "settings" })} />
                                                                 </SelectTrigger>
                                                                 <SelectContent>
+                                                                    <SelectItem value="auto">Auto</SelectItem>
                                                                     <SelectItem value="cpu">CPU</SelectItem>
                                                                     <SelectItem value="cuda">CUDA (NVIDIA GPU)</SelectItem>
-                                                                    <SelectItem value="mps">MPS (Apple Silicon)</SelectItem>
                                                                 </SelectContent>
                                                             </Select>
                                                             <p className="text-sm text-muted-foreground">

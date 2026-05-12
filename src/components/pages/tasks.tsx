@@ -14,7 +14,6 @@ import {
   SheetHeader,
   SheetTitle,
   SheetDescription,
-  SheetFooter,
   SheetClose,
 } from "@/components/ui/sheet"
 import { Separator } from "@/components/ui/separator"
@@ -150,7 +149,7 @@ export default function Tasks({ tasks, taskStats, aclCacheStats, onFetchTasks, o
       </div>
 
       <Sheet open={!!selectedTask} onOpenChange={(open) => !open && setSelectedTask(null)}>
-        <SheetContent side="bottom" className="max-h-[95vh] flex flex-col p-0 gap-0">
+        <SheetContent side="top" hideCloseButton className="max-h-[95vh] flex flex-col p-0 gap-0">
           <div className="flex-1 overflow-y-auto p-6 flex flex-col">
             <SheetHeader className="mb-4 p-0">
               <div className="flex items-center justify-between gap-4">
@@ -161,7 +160,7 @@ export default function Tasks({ tasks, taskStats, aclCacheStats, onFetchTasks, o
                   </SheetDescription>
                 </div>
                 {selectedTask && (
-                  <div className="pr-10">
+                  <div className="flex gap-2">
                     <Button
                       variant={canCancelTask(selectedTask.status) ? "destructive" : "outline"}
                       size="sm"
@@ -171,6 +170,9 @@ export default function Tasks({ tasks, taskStats, aclCacheStats, onFetchTasks, o
                       <IconTrash className="mr-2 size-4" />
                       {t("cancelTask", { ns: "tasks" })}
                     </Button>
+                    <SheetClose asChild>
+                      <Button variant="outline" size="sm">{t("closeButton", { ns: "tasks" })}</Button>
+                    </SheetClose>
                   </div>
                 )}
               </div>
@@ -272,11 +274,6 @@ export default function Tasks({ tasks, taskStats, aclCacheStats, onFetchTasks, o
               </div>
             ) : null}
           </div>
-          <SheetFooter className="p-4 border-t gap-2 sm:gap-0">
-            <SheetClose asChild>
-              <Button variant="outline">{t("closeButton", { ns: "tasks" })}</Button>
-            </SheetClose>
-          </SheetFooter>
         </SheetContent>
       </Sheet>
 

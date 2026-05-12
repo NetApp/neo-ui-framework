@@ -1,7 +1,7 @@
 // Copyright 2025 NetApp, Inc. All Rights Reserved.
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import {
   IconAlertTriangle,
@@ -26,6 +26,8 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
+import { NeoApiService } from "@/services/neo-api"
+import { useNeoApi } from "@/hooks/useNeoApi"
 import type {
   MonitoringOverviewResponse,
   MonitoringWorkersResponse,
@@ -88,6 +90,8 @@ export function MonitoringChart({
   cacheStats
 }: MonitoringChartProps) {
   const { t } = useTranslation()
+  const { state } = useNeoApi()
+  const token = state.token
   const {
     overview,
     workers,
@@ -120,6 +124,35 @@ export function MonitoringChart({
 
   const handleRetryWorkItems = onRetryWorkItems
   const [isRetrying, setIsRetrying] = useState(false)
+  const [isLoadingNerStatus, setIsLoadingNerStatus] = useState(false)
+  const [nerStatusError, setNerStatusError] = useState<string | null>(null)
+  const [nerStatus, setNerStatus] = useState<Record<string, unknown> | null>(null)
+
+  const normalizedNerStatus = useMemo(() => {
+    if (!nerStatus) return null
+
+    const statusValue = typeof nerStatus.status === "string"
+      ? nerStatus.status.toLowerCase()
+      : undefined
+    const runningValue = typeof nerStatus.running === "boolean"
+      ? nerStatus.running
+      : undefined
+    const healthyValue = typeof nerStatus.healthy === "boolean"
+      ? nerStatus.healthy
+      : undefined
+
+    const isRunning = runningValue
+      ?? healthyValue
+      ?? (statusValue ? ["ok", "healthy", "running", "active", "up", "ready"].includes(statusValue) : false)
+
+    return {
+      isRunning,
+      statusValue,
+      device: typeof nerStatus.device === "string" ? nerStatus.device : null,
+      model: typeof nerStatus.model === "string" ? nerStatus.model : null,
+      message: typeof nerStatus.message === "string" ? nerStatus.message : null,
+    }
+  }, [nerStatus])
 
   const handleRetry = async () => {
     if (!failedItems?.failed_items || failedItems.failed_items.length === 0) return
@@ -161,6 +194,31 @@ export function MonitoringChart({
 
     return () => clearInterval(interval)
   }, [onRefreshMonitoring])
+
+  useEffect(() => {
+    const fetchNerStatus = async () => {
+      if (!token) return
+
+      setIsLoadingNerStatus(true)
+      setNerStatusError(null)
+      try {
+        const api = new NeoApiService()
+        const statusResponse = await api.getNERStatus(token)
+        setNerStatus(statusResponse)
+      } catch (error) {
+        const message = error instanceof Error
+          ? error.message
+          : t("refreshFailed", { ns: "monitoring" })
+        setNerStatusError(message)
+      } finally {
+        setIsLoadingNerStatus(false)
+      }
+    }
+
+    fetchNerStatus()
+    const interval = window.setInterval(fetchNerStatus, 60000)
+    return () => window.clearInterval(interval)
+  }, [token, t])
 
   return (
     <Tabs defaultValue="neo" className="w-full">
@@ -433,11 +491,38 @@ export function MonitoringChart({
             <CardContent>
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <Badge variant="default" className="bg-green-600">
-                    {t("activeStatus", { ns: "monitoring" })}
-                  </Badge>
+                  {isLoadingNerStatus ? (
+                    <Badge variant="outline">
+                      {t("checking", { ns: "monitoring", defaultValue: "Checking..." })}
+                    </Badge>
+                  ) : nerStatusError ? (
+                    <Badge variant="destructive">
+                      {t("notConnected", { ns: "monitoring", defaultValue: "Not connected" })}
+                    </Badge>
+                  ) : (
+                    <Badge
+                      variant="default"
+                      className={normalizedNerStatus?.isRunning ? "bg-green-600" : "bg-amber-600"}
+                    >
+                      {normalizedNerStatus?.isRunning
+                        ? t("activeStatus", { ns: "monitoring" })
+                        : t("unknown", { ns: "monitoring", defaultValue: "Unknown" })}
+                    </Badge>
+                  )}
                 </div>
-                <p className="text-xs text-muted-foreground">{t("nerServiceRunning", { ns: "monitoring" })}</p>
+                {nerStatusError ? (
+                  <p className="text-xs text-muted-foreground">{nerStatusError}</p>
+                ) : normalizedNerStatus?.message ? (
+                  <p className="text-xs text-muted-foreground">{normalizedNerStatus.message}</p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">{t("nerServiceRunning", { ns: "monitoring" })}</p>
+                )}
+                {normalizedNerStatus?.device && (
+                  <p className="text-xs text-muted-foreground">{t("nerDeviceLabel", { ns: "monitoring" })}: {normalizedNerStatus.device}</p>
+                )}
+                {normalizedNerStatus?.model && (
+                  <p className="text-xs text-muted-foreground">{t("nerModelLabel", { ns: "monitoring" })}: {normalizedNerStatus.model}</p>
+                )}
               </div>
             </CardContent>
           </Card>

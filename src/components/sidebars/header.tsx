@@ -80,6 +80,8 @@ export function SiteHeader({ onConnect, onRefresh, isConnected, cacheStats }: Si
     titleKey = "dataCorpus"
   } else if (location.pathname.startsWith("/my-datasets/content-search")) {
     titleKey = "contentSearch"
+  } else if (location.pathname.startsWith("/my-datasets/entities")) {
+    titleKey = "nameRecognitionEntities"
   } else if (location.pathname.startsWith("/my-datasets")) {
     titleKey = "myDatasets"
   } else if (location.pathname.startsWith("/logs")) {

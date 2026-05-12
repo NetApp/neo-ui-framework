@@ -78,7 +78,7 @@ export function CreateDatasetDialog({
     }
 
     return (
-        <Drawer open={open} onOpenChange={onOpenChange} direction="bottom">
+        <Drawer open={open} onOpenChange={onOpenChange} direction="top">
             <DrawerContent>
                 <div className="mx-auto w-full max-w-lg">
                     <DrawerHeader>

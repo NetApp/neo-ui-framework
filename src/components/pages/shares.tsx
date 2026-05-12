@@ -96,6 +96,7 @@ const DEFAULT_RULES_JSON = `{
   "min_file_size": 0,
   "exclude_patterns": [],
   "include_patterns": [],
+  "enable_ner_analysis": false,
   "persist_file_content": true,
   "enable_copilot_upload": false
 }`
@@ -236,12 +237,23 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
   const parseRules = useCallback((jsonString: string) => {
     try {
       const parsed = JSON.parse(jsonString)
-      return parsed
+
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+        throw new Error("Rules must be a JSON object")
+      }
+
+      // Backend expects a valid schema when NER is enabled; default to "default" for compatibility.
+      const normalized = { ...parsed } as Record<string, unknown>
+      if (normalized.enable_ner_analysis === true && typeof normalized.ner_schema !== "string") {
+        normalized.ner_schema = "default"
+      }
+
+      return normalized
     } catch (error) {
       if (error instanceof SyntaxError) {
         throw new Error(`Invalid JSON format in rules field: ${error.message}`)
       }
-      throw new Error("Invalid JSON format in rules field")
+      throw error instanceof Error ? error : new Error("Invalid JSON format in rules field")
     }
   }, [])
 
@@ -352,7 +364,10 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
               use_kerberos: useKerberos,
               workgroup,
               resolve_order: resolveOrder,
-              smb_mount_options: smbMountOptions,
+            }
+
+            if (smbMountOptions.trim() !== "") {
+              smbUpdatePayload.smb_mount_options = smbMountOptions
             }
 
             if (username.trim() !== "") {
@@ -369,7 +384,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
             setSelectedShareDetails(details)
             setSheetMode('details') // Switch back to details view
           } else {
-            await onAddShare({
+            const smbCreatePayload: ShareConfigRequest = {
               protocol: "smb",
               share_path: sharePath,
               username,
@@ -380,8 +395,13 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
               use_kerberos: useKerberos,
               workgroup,
               resolve_order: resolveOrder,
-              smb_mount_options: smbMountOptions,
-            })
+            }
+
+            if (smbMountOptions.trim() !== "") {
+              smbCreatePayload.smb_mount_options = smbMountOptions
+            }
+
+            await onAddShare(smbCreatePayload)
             setSheetOpen(false)
             resetForm()
           }
@@ -612,7 +632,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
           setSheetMode(null)
         }
       }}>
-        <SheetContent side="bottom" className="max-h-[95vh] flex flex-col p-0 gap-0">
+        <SheetContent side="top" hideCloseButton className="max-h-[95vh] flex flex-col p-0 gap-0">
           <div className="flex-1 overflow-y-auto p-6 flex flex-col">
             <SheetHeader className="mb-4 p-0">
               <div className="flex items-center justify-between">
@@ -628,35 +648,54 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
                   </SheetDescription>
                 </div>
                 {sheetMode === 'details' && (
-                  <div className="pr-10">
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => editingShareId && handleCrawl(editingShareId)}
-                      >
-                        <IconDatabaseExport className="mr-2 size-4" />
-                        Crawl
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleModifyClick}
-                        disabled={!isAdmin}
-                      >
-                        <IconEdit className="mr-2 size-4" />
-                        Modify
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={handleDeleteClick}
-                        disabled={!isAdmin}
-                      >
-                        <IconTrash className="mr-2 size-4" />
-                        Delete
-                      </Button>
-                    </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => editingShareId && handleCrawl(editingShareId)}
+                    >
+                      <IconDatabaseExport className="mr-2 size-4" />
+                      Crawl
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleModifyClick}
+                      disabled={!isAdmin}
+                    >
+                      <IconEdit className="mr-2 size-4" />
+                      Modify
+                    </Button>
+                    <SheetClose asChild>
+                      <Button variant="outline" size="sm">Close</Button>
+                    </SheetClose>
+                  </div>
+                )}
+                {(sheetMode === 'create' || sheetMode === 'create-s3' || sheetMode === 'create-nfs') && (
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="submit"
+                      form={sheetMode === 'create' ? 'cifs-form' : sheetMode === 'create-s3' ? 's3-form' : 'nfs-form'}
+                      size="sm"
+                      disabled={submitting}
+                    >
+                      {submitting ? (editingShareId != null ? "Saving…" : "Creating…") : editingShareId != null ? "Save changes" : sheetMode === 'create' ? "Create share" : sheetMode === 'create-s3' ? "Create S3 bucket" : "Create NFS export"}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        if (editingShareId != null) {
+                          setSheetMode('details')
+                        } else {
+                          setSheetOpen(false)
+                        }
+                      }}
+                      disabled={submitting}
+                    >
+                      Cancel
+                    </Button>
                   </div>
                 )}
               </div>
@@ -902,7 +941,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
             )}
 
             {sheetMode === 'create' && (
-              <form className="space-y-6" onSubmit={handleSubmit}>
+              <form id="cifs-form" className="space-y-6" onSubmit={handleSubmit}>
                 <div className="rounded-lg border bg-muted/20 p-4 space-y-4">
                   <div>
                     <p className="text-sm font-semibold">Connection</p>
@@ -1024,30 +1063,11 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
                 </div>
 
                 {error ? <p className="text-sm text-destructive rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2">{error}</p> : null}
-                <SheetFooter className="gap-2">
-                  <Button type="submit" disabled={submitting}>
-                    {submitting ? (editingShareId != null ? "Saving…" : "Creating…") : editingShareId != null ? "Save changes" : "Create share"}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      if (editingShareId != null) {
-                        setSheetMode('details')
-                      } else {
-                        setSheetOpen(false)
-                      }
-                    }}
-                    disabled={submitting}
-                  >
-                    Cancel
-                  </Button>
-                </SheetFooter>
               </form>
             )}
 
             {sheetMode === 'create-s3' && (
-              <form className="space-y-6" onSubmit={handleSubmit}>
+              <form id="s3-form" className="space-y-6" onSubmit={handleSubmit}>
                 <div className="rounded-lg border bg-muted/20 p-4 space-y-4">
                   <div>
                     <p className="text-sm font-semibold">Connection</p>
@@ -1179,30 +1199,11 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
                 </div>
 
                 {error ? <p className="text-sm text-destructive rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2">{error}</p> : null}
-                <SheetFooter className="gap-2">
-                  <Button type="submit" disabled={submitting}>
-                    {submitting ? (editingShareId != null ? "Saving…" : "Creating…") : editingShareId != null ? "Save changes" : "Create S3 bucket"}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      if (editingShareId != null) {
-                        setSheetMode('details')
-                      } else {
-                        setSheetOpen(false)
-                      }
-                    }}
-                    disabled={submitting}
-                  >
-                    Cancel
-                  </Button>
-                </SheetFooter>
               </form>
             )}
 
             {sheetMode === 'create-nfs' && (
-              <form className="space-y-6" onSubmit={handleSubmit}>
+              <form id="nfs-form" className="space-y-6" onSubmit={handleSubmit}>
                 <div className="rounded-lg border bg-muted/20 p-4 space-y-4">
                   <div>
                     <p className="text-sm font-semibold">Connection</p>
@@ -1301,33 +1302,19 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
                 </div>
 
                 {error ? <p className="text-sm text-destructive rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2">{error}</p> : null}
-                <SheetFooter className="gap-2">
-                  <Button type="submit" disabled={submitting}>
-                    {submitting ? (editingShareId != null ? "Saving…" : "Creating…") : editingShareId != null ? "Save changes" : "Create NFS export"}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      if (editingShareId != null) {
-                        setSheetMode('details')
-                      } else {
-                        setSheetOpen(false)
-                      }
-                    }}
-                    disabled={submitting}
-                  >
-                    Cancel
-                  </Button>
-                </SheetFooter>
               </form>
             )}
           </div>
           {sheetMode === 'details' && (
             <SheetFooter className="p-4 border-t gap-2 sm:gap-0">
-              <SheetClose asChild>
-                <Button variant="outline">Close</Button>
-              </SheetClose>
+              <Button
+                variant="destructive"
+                onClick={handleDeleteClick}
+                disabled={!isAdmin}
+              >
+                <IconTrash className="mr-2 size-4" />
+                Delete Share
+              </Button>
             </SheetFooter>
           )}
         </SheetContent>

@@ -105,7 +105,7 @@ export function AppSidebarContent({ ...props }: React.ComponentProps<typeof Side
       <NavMain items={data.navMain} />
       <NavMain items={data.navDataEstate} labelKey="dataEstate" labelNamespace="nav" />
       <NavMain items={data.navDiscovery} labelKey="discovery" labelNamespace="nav" />
-      <NavMain items={data.navDatasets} labelKey="datasets" labelNamespace="nav" />
+      <NavMain items={data.navDatasets} labelKey="collections" labelNamespace="nav" />
       <NavMain items={data.navSecondary} className="mt-auto" />
     </SidebarContent>
   )
