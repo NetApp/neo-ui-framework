@@ -690,6 +690,88 @@ export interface DatasetListResponse {
   has_previous: boolean
 }
 
+export interface UpdateDatasetRequest {
+  name?: string | null
+  description?: string | null
+  is_public?: boolean | null
+  acl_override_enabled?: boolean | null
+  expires_at?: string | null
+}
+
+export interface DatasetExpirationResponse {
+  datasets: DatasetResponse[]
+  total_expiring: number
+}
+
+export interface DatasetSearchRequest {
+  query: string
+  file_types?: string[] | null
+  page?: number
+  page_size?: number
+  sort_by?: "relevance" | "modified_time" | "filename" | "size"
+  sort_order?: "asc" | "desc"
+}
+
+export interface DatasetSearchResponse {
+  results: ContentSearchResult[]
+  total_count: number
+  page: number
+  page_size: number
+  total_pages: number
+  has_next: boolean
+  has_previous: boolean
+  query: string
+  search_time_ms: number
+}
+
+export interface DatasetNerSearchRequest {
+  q: string
+  entity_type?: string | null
+  match_mode?: "substring" | "exact" | "prefix"
+  limit?: number
+  cursor?: string | null
+}
+
+export interface DatasetNerSearchResponse {
+  items?: Array<Record<string, unknown>>
+  next_cursor?: string | null
+  [key: string]: unknown
+}
+
+export interface CreateSubsetRequest {
+  name: string
+  description?: string | null
+  file_ids: string[]
+  acl_override_enabled?: boolean
+  expires_at?: string | null
+}
+
+export type DatasetPermission = "read" | "write" | "admin"
+
+export interface ShareDatasetRequest {
+  user_id?: number | null
+  username?: string | null
+  entra_user_id?: string | null
+  entra_user_email?: string | null
+  entra_group_id?: string | null
+  entra_group_name?: string | null
+  permission?: DatasetPermission
+  expires_at?: string | null
+}
+
+export interface DatasetShareResponse {
+  id: string
+  user_id?: number | null
+  username?: string | null
+  entra_user_id?: string | null
+  entra_group_id?: string | null
+  permission: DatasetPermission
+  shared_by_id: number
+  shared_by_username: string
+  shared_at: string
+  expires_at?: string | null
+}
+
 export interface Dataset {
   id: string
   name: string

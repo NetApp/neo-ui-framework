@@ -23,6 +23,7 @@ import {
   type FileSearchResponse,
   type ContentSearchRequest,
   type ContentSearchResponse,
+  type CreateSubsetRequest,
   type SetupLicenseRequest,
   type MonitoringOverviewResponse,
   type MonitoringWorkersResponse,
@@ -43,6 +44,16 @@ import {
   type SetupSslConfigResponse,
   type SetupFactoryResetRequest,
   type Body_configure_oauth_api_v1_setup_oauth_post,
+  type DatasetResponse,
+  type UpdateDatasetRequest,
+  type DatasetExpirationResponse,
+  type DatasetSearchRequest,
+  type DatasetSearchResponse,
+  type DatasetNerSearchRequest,
+  type DatasetNerSearchResponse,
+  type ShareDatasetRequest,
+  type DatasetShareResponse,
+  type DatasetPermission,
 } from "@/services/neo-api"
 
 
@@ -901,6 +912,190 @@ export function useNeoApi() {
     }
   }, [token, clearSystemData])
 
+  const handleFetchDataset = useCallback(async (datasetId: string): Promise<DatasetResponse> => {
+    if (!token) {
+      appLogger.warn("Fetch dataset attempted without active token")
+      throw new AuthenticationError()
+    }
+
+    const api = apiRef.current
+    appLogger.debug("Fetching dataset", undefined, { datasetId })
+    return api.getDataset(token, datasetId)
+  }, [token])
+
+  const handleUpdateDataset = useCallback(async (datasetId: string, payload: UpdateDatasetRequest): Promise<DatasetResponse> => {
+    if (!token) {
+      appLogger.warn("Dataset update attempted without active token")
+      throw new AuthenticationError()
+    }
+
+    const api = apiRef.current
+    try {
+      const updated = await api.updateDataset(token, datasetId, payload)
+      setDatasets(prev => prev.map(dataset => (
+        dataset.id === datasetId
+          ? {
+              ...dataset,
+              name: updated.name,
+              description: updated.description,
+              is_public: updated.is_public,
+              acl_override_enabled: updated.acl_override_enabled,
+              owner_id: updated.owner_id,
+              owner_username: updated.owner_username,
+              item_count: updated.item_count,
+              updatedAt: updated.updated_at,
+              expiresAt: updated.expires_at,
+              expiresInHours: updated.expires_in_hours,
+              userPermission: updated.user_permission,
+            }
+          : dataset
+      )))
+      appLogger.info("Dataset updated", undefined, { datasetId })
+      return updated
+    } catch (error) {
+      if (error instanceof AuthenticationError) {
+        clearSystemData()
+        setToken(null)
+      }
+      appLogger.error("Dataset update failed", error instanceof Error ? error.message : "Unknown error", { datasetId })
+      throw error
+    }
+  }, [token, clearSystemData])
+
+  const handleFetchExpiringDatasets = useCallback(async (): Promise<DatasetExpirationResponse> => {
+    if (!token) {
+      appLogger.warn("Fetch expiring datasets attempted without active token")
+      throw new AuthenticationError()
+    }
+
+    const api = apiRef.current
+    appLogger.debug("Fetching expiring datasets")
+    return api.getExpiringDatasets(token)
+  }, [token])
+
+  const handleSearchDataset = useCallback(async (
+    datasetId: string,
+    payload: DatasetSearchRequest
+  ): Promise<DatasetSearchResponse> => {
+    if (!token) {
+      appLogger.warn("Dataset search attempted without active token")
+      throw new AuthenticationError()
+    }
+
+    const api = apiRef.current
+    appLogger.debug("Searching dataset", undefined, { datasetId, query: payload.query })
+    return api.searchDataset(token, datasetId, payload)
+  }, [token])
+
+  const handleNerSearchDataset = useCallback(async (
+    datasetId: string,
+    payload: DatasetNerSearchRequest
+  ): Promise<DatasetNerSearchResponse> => {
+    if (!token) {
+      appLogger.warn("Dataset NER search attempted without active token")
+      throw new AuthenticationError()
+    }
+
+    const api = apiRef.current
+    appLogger.debug("NER searching dataset", undefined, { datasetId, q: payload.q })
+    return api.nerSearchDataset(token, datasetId, payload)
+  }, [token])
+
+  const handleCreateDatasetSubset = useCallback(async (
+    datasetId: string,
+    payload: CreateSubsetRequest
+  ): Promise<DatasetResponse> => {
+    if (!token) {
+      appLogger.warn("Create subset attempted without active token")
+      throw new AuthenticationError()
+    }
+
+    const api = apiRef.current
+    try {
+      const created = await api.createSubset(token, datasetId, payload)
+      setDatasets(prev => ([
+        ...prev,
+        {
+          id: created.id,
+          name: created.name,
+          description: created.description,
+          owner_id: created.owner_id,
+          owner_username: created.owner_username,
+          is_public: created.is_public,
+          acl_override_enabled: created.acl_override_enabled,
+          item_count: created.item_count,
+          files: [],
+          createdAt: created.created_at,
+          updatedAt: created.updated_at,
+          expiresAt: created.expires_at,
+          expiresInHours: created.expires_in_hours,
+          userPermission: created.user_permission,
+        },
+      ]))
+      appLogger.info("Dataset subset created", undefined, { datasetId, createdId: created.id })
+      return created
+    } catch (error) {
+      if (error instanceof AuthenticationError) {
+        clearSystemData()
+        setToken(null)
+      }
+      appLogger.error("Create subset failed", error instanceof Error ? error.message : "Unknown error", { datasetId })
+      throw error
+    }
+  }, [token, clearSystemData])
+
+  const handleShareDataset = useCallback(async (
+    datasetId: string,
+    payload: ShareDatasetRequest
+  ): Promise<DatasetShareResponse> => {
+    if (!token) {
+      appLogger.warn("Share dataset attempted without active token")
+      throw new AuthenticationError()
+    }
+
+    const api = apiRef.current
+    appLogger.debug("Sharing dataset", undefined, { datasetId, permission: payload.permission })
+    return api.shareDataset(token, datasetId, payload)
+  }, [token])
+
+  const handleListDatasetShares = useCallback(async (datasetId: string): Promise<DatasetShareResponse[]> => {
+    if (!token) {
+      appLogger.warn("List dataset shares attempted without active token")
+      throw new AuthenticationError()
+    }
+
+    const api = apiRef.current
+    appLogger.debug("Listing dataset shares", undefined, { datasetId })
+    return api.listDatasetShares(token, datasetId)
+  }, [token])
+
+  const handleUpdateDatasetShare = useCallback(async (
+    datasetId: string,
+    shareId: string,
+    permission?: DatasetPermission | null,
+    expiresAt?: string | null
+  ): Promise<DatasetShareResponse> => {
+    if (!token) {
+      appLogger.warn("Update dataset share attempted without active token")
+      throw new AuthenticationError()
+    }
+
+    const api = apiRef.current
+    appLogger.debug("Updating dataset share", undefined, { datasetId, shareId, permission, expiresAt })
+    return api.updateDatasetShare(token, datasetId, shareId, permission, expiresAt)
+  }, [token])
+
+  const handleRevokeDatasetShare = useCallback(async (datasetId: string, shareId: string): Promise<void> => {
+    if (!token) {
+      appLogger.warn("Revoke dataset share attempted without active token")
+      throw new AuthenticationError()
+    }
+
+    const api = apiRef.current
+    appLogger.debug("Revoking dataset share", undefined, { datasetId, shareId })
+    return api.revokeDatasetShare(token, datasetId, shareId)
+  }, [token])
+
   const handleDeleteDataset = useCallback(async (id: string) => {
     if (!token) {
       appLogger.warn("Dataset deletion attempted without active token")
@@ -1212,10 +1407,20 @@ export function useNeoApi() {
       handleFetchMyDocuments,
       handleCreateDataset,
       handleDeleteDataset,
+      handleFetchDataset,
+      handleUpdateDataset,
+      handleFetchExpiringDatasets,
       handleDeleteDatasetItems,
       handleAddDatasetItems,
       handleFetchDatasets,
       handleFetchDatasetItems,
+      handleSearchDataset,
+      handleNerSearchDataset,
+      handleCreateDatasetSubset,
+      handleShareDataset,
+      handleListDatasetShares,
+      handleUpdateDatasetShare,
+      handleRevokeDatasetShare,
       handleContentSearch,
       handleRetryWorkItems,
       clearCache: useCallback(() => apiRef.current.clearCache(), []),

@@ -165,6 +165,7 @@ function App() {
                       onFetchFileMetadata={handlers.handleFetchFileMetadata}
                       onDeleteDataset={handlers.handleDeleteDataset}
                       onFetchDatasets={handlers.handleFetchDatasets}
+                      onFetchExpiringDatasets={handlers.handleFetchExpiringDatasets}
                       monitoringOverview={state.monitoring.overview}
                       cacheStats={state.cacheStats}
                     />
@@ -198,6 +199,14 @@ function App() {
                       onDeleteDataset={handlers.handleDeleteDataset}
                       onDeleteDatasetItems={handlers.handleDeleteDatasetItems}
                       onFetchDatasetItems={handlers.handleFetchDatasetItems}
+                      onUpdateDataset={handlers.handleUpdateDataset}
+                      onSearchDataset={handlers.handleSearchDataset}
+                      onNerSearchDataset={handlers.handleNerSearchDataset}
+                      onCreateSubset={handlers.handleCreateDatasetSubset}
+                      onListDatasetShares={handlers.handleListDatasetShares}
+                      onShareDataset={handlers.handleShareDataset}
+                      onUpdateDatasetShare={handlers.handleUpdateDatasetShare}
+                      onRevokeDatasetShare={handlers.handleRevokeDatasetShare}
                     />
                   }
                 />

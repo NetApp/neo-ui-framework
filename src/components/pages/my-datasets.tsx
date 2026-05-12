@@ -18,7 +18,7 @@ import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { IconTrash, IconDatabase, IconRefresh } from "@tabler/icons-react"
 import { OverviewCard } from "@/components/cards/overview-card"
-import type { Dataset, FileMetadataResponse } from "@/services/models"
+import type { Dataset, DatasetExpirationResponse, FileMetadataResponse } from "@/services/models"
 import type { MonitoringOverviewResponse } from "@/services/neo-api"
 import { ConfirmDialog } from "@/components/dialogs/confirm-dialog"
 import { toast } from "sonner"
@@ -27,6 +27,7 @@ interface MyDatasetsProps {
     datasets: Dataset[]
     onDeleteDataset: (id: string) => Promise<void>
     onFetchDatasets: () => Promise<void>
+    onFetchExpiringDatasets: () => Promise<DatasetExpirationResponse>
     onFetchFileMetadata: (shareId: string, fileId: string) => Promise<FileMetadataResponse>
     monitoringOverview: MonitoringOverviewResponse | null
     cacheStats?: {
@@ -39,6 +40,7 @@ export default function MyDatasets({
     datasets,
     onDeleteDataset,
     onFetchDatasets,
+    onFetchExpiringDatasets,
     onFetchFileMetadata,
     monitoringOverview,
     // cacheStats,
@@ -49,6 +51,7 @@ export default function MyDatasets({
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
     const [isWarmingUp, setIsWarmingUp] = useState(false)
     const [isFetching, setIsFetching] = useState(false)
+    const [isLoadingExpiring, setIsLoadingExpiring] = useState(false)
 
     useEffect(() => {
         const load = async () => {
@@ -143,6 +146,26 @@ export default function MyDatasets({
         }
     }
 
+    const handleLoadExpiring = async () => {
+        setIsLoadingExpiring(true)
+        try {
+            const response = await onFetchExpiringDatasets()
+            if (response.total_expiring === 0) {
+                toast.success("No datasets are nearing expiration")
+                return
+            }
+
+            const names = response.datasets.slice(0, 3).map(d => d.name)
+            const moreCount = Math.max(0, response.total_expiring - names.length)
+            const suffix = moreCount > 0 ? ` and ${moreCount} more` : ""
+            toast.info(`${response.total_expiring} dataset(s) nearing expiration: ${names.join(", ")}${suffix}`)
+        } catch {
+            toast.error("Failed to load expiring datasets")
+        } finally {
+            setIsLoadingExpiring(false)
+        }
+    }
+
     return (
         <div className="flex flex-1 flex-col">
             <div className="@container/main flex flex-1 flex-col gap-2">
@@ -189,6 +212,13 @@ export default function MyDatasets({
                                     aria-label="Refresh datasets"
                                 >
                                     <IconRefresh className={`size-4 ${isFetching ? "animate-spin" : ""}`} />
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    onClick={handleLoadExpiring}
+                                    disabled={isLoadingExpiring}
+                                >
+                                    {isLoadingExpiring ? "Checking..." : "Expiring"}
                                 </Button>
                             </div>
                         </div>

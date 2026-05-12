@@ -30,12 +30,22 @@ import type {
   ContentSearchRequest,
   ContentSearchResponse,
   CreateDatasetRequest,
+  CreateSubsetRequest,
+  DatasetExpirationResponse,
+  DatasetNerSearchRequest,
+  DatasetNerSearchResponse,
+  DatasetPermission,
   DatasetResponse,
+  DatasetSearchRequest,
+  DatasetSearchResponse,
+  DatasetShareResponse,
   DatasetListResponse,
+  ShareDatasetRequest,
   SetupLicenseRequest,
   SetupLicenseResponse,
   SetupStatusResponse,
-    DatasetItemsResponse,
+  DatasetItemsResponse,
+  UpdateDatasetRequest,
   SetupGraphRequest,
   SetupGraphConfigResponse,
   SetupGraphResponse,
@@ -100,9 +110,19 @@ export type {
   ContentSearchRequest,
   ContentSearchResponse,
   CreateDatasetRequest,
+  CreateSubsetRequest,
+  DatasetExpirationResponse,
+  DatasetNerSearchRequest,
+  DatasetNerSearchResponse,
+  DatasetPermission,
   DatasetResponse,
+  DatasetSearchRequest,
+  DatasetSearchResponse,
+  DatasetShareResponse,
   DatasetListResponse,
   DatasetItemsResponse,
+  ShareDatasetRequest,
+  UpdateDatasetRequest,
   SetupLicenseRequest,
   SetupLicenseResponse,
   SetupGraphRequest,
@@ -381,6 +401,18 @@ export class NeoApiService extends BaseApiClient {
     return this.datasetsClient.getDatasetItems(token, datasetId, page, pageSize)
   }
 
+  getDataset(token: string, datasetId: string): Promise<DatasetResponse> {
+    return this.datasetsClient.getDataset(token, datasetId)
+  }
+
+  updateDataset(token: string, datasetId: string, payload: UpdateDatasetRequest): Promise<DatasetResponse> {
+    return this.datasetsClient.updateDataset(token, datasetId, payload)
+  }
+
+  getExpiringDatasets(token: string): Promise<DatasetExpirationResponse> {
+    return this.datasetsClient.getExpiringDatasets(token)
+  }
+
   deleteDataset(token: string, datasetId: string): Promise<void> {
     return this.datasetsClient.deleteDataset(token, datasetId)
   }
@@ -391,6 +423,40 @@ export class NeoApiService extends BaseApiClient {
 
   addDatasetItems(token: string, datasetId: string, fileIds: string[], notes?: string): Promise<void> {
     return this.datasetsClient.addDatasetItems(token, datasetId, fileIds, notes)
+  }
+
+  searchDataset(token: string, datasetId: string, payload: DatasetSearchRequest): Promise<DatasetSearchResponse> {
+    return this.datasetsClient.searchDataset(token, datasetId, payload)
+  }
+
+  nerSearchDataset(token: string, datasetId: string, payload: DatasetNerSearchRequest): Promise<DatasetNerSearchResponse> {
+    return this.datasetsClient.nerSearchDataset(token, datasetId, payload)
+  }
+
+  createSubset(token: string, datasetId: string, payload: CreateSubsetRequest): Promise<DatasetResponse> {
+    return this.datasetsClient.createSubset(token, datasetId, payload)
+  }
+
+  shareDataset(token: string, datasetId: string, payload: ShareDatasetRequest): Promise<DatasetShareResponse> {
+    return this.datasetsClient.shareDataset(token, datasetId, payload)
+  }
+
+  listDatasetShares(token: string, datasetId: string): Promise<DatasetShareResponse[]> {
+    return this.datasetsClient.listDatasetShares(token, datasetId)
+  }
+
+  updateDatasetShare(
+    token: string,
+    datasetId: string,
+    shareId: string,
+    permission?: DatasetPermission | null,
+    expiresAt?: string | null
+  ): Promise<DatasetShareResponse> {
+    return this.datasetsClient.updateDatasetShare(token, datasetId, shareId, permission, expiresAt)
+  }
+
+  revokeDatasetShare(token: string, datasetId: string, shareId: string): Promise<void> {
+    return this.datasetsClient.revokeDatasetShare(token, datasetId, shareId)
   }
 
   getMyDocuments(token: string, page: number = 1, pageSize: number = 100, includeContent: boolean = false) {
