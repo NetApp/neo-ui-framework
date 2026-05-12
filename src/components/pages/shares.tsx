@@ -189,6 +189,9 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
   const [nfsUsername, setNfsUsername] = useState("")
   const [nfsPassword, setNfsPassword] = useState("")
 
+  const [showAdvancedCifs, setShowAdvancedCifs] = useState(false)
+  const [showAdvancedNfs, setShowAdvancedNfs] = useState(false)
+
   const [editingShareId, setEditingShareId] = useState<string | null>(null)
 
   const [detailsLoading, setDetailsLoading] = useState(false)
@@ -980,22 +983,73 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
                       />
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="smb-mount-options">SMB mount options</Label>
-                    <Input
-                      id="smb-mount-options"
-                      value={smbMountOptions}
-                      onChange={(event) => setSmbMountOptions(event.target.value)}
-                      placeholder="vers=3.1.1,seal,echo_interval=30"
-                    />
-                  </div>
                 </div>
 
                 <div className="rounded-lg border bg-muted/20 p-4 space-y-4">
-                  <div>
-                    <p className="text-sm font-semibold">Crawling & Rules</p>
-                    <p className="text-xs text-muted-foreground">Control schedule and filtering behavior.</p>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium">Advanced options</p>
+                      <p className="text-xs text-muted-foreground">
+                        Directory resolution and mount options.
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowAdvancedCifs((prev) => !prev)}
+                    >
+                      {showAdvancedCifs ? "Hide" : "Show"}
+                    </Button>
                   </div>
+
+                  {showAdvancedCifs ? (
+                    <div className="space-y-4 border-t pt-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="smb-mount-options">SMB mount options</Label>
+                        <Input
+                          id="smb-mount-options"
+                          value={smbMountOptions}
+                          onChange={(event) => setSmbMountOptions(event.target.value)}
+                          placeholder="vers=3.1.1,seal,echo_interval=30"
+                        />
+                      </div>
+                      <div className="grid gap-4 sm:grid-cols-3">
+                        <div className="space-y-2">
+                          <Label htmlFor="realm">Realm</Label>
+                          <Input
+                            id="realm"
+                            value={realm}
+                            onChange={(event) => setRealm(event.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="workgroup">Workgroup</Label>
+                          <Input
+                            id="workgroup"
+                            value={workgroup}
+                            onChange={(event) => setWorkgroup(event.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="use-kerberos">Use Kerberos</Label>
+                          <Input
+                            id="use-kerberos"
+                            value={useKerberos}
+                            onChange={(event) => setUseKerberos(event.target.value)}
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="resolve-order">Resolve order</Label>
+                        <Input
+                          id="resolve-order"
+                          value={resolveOrder}
+                          onChange={(event) => setResolveOrder(event.target.value)}
+                        />
+                      </div>
+                    </div>
+                  ) : null}
                   <div className="space-y-2">
                     <Label htmlFor="crawl-schedule">Crawl schedule</Label>
                     <Input
@@ -1018,47 +1072,6 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
                     <p className="text-xs text-muted-foreground">
                       Use valid JSON only. Avoid trailing commas after the last property.
                     </p>
-                  </div>
-                </div>
-
-                <div className="rounded-lg border bg-muted/20 p-4 space-y-4">
-                  <div>
-                    <p className="text-sm font-semibold">Directory Resolution</p>
-                    <p className="text-xs text-muted-foreground">Optional SMB and Kerberos tuning values.</p>
-                  </div>
-                  <div className="grid gap-4 sm:grid-cols-3">
-                    <div className="space-y-2">
-                      <Label htmlFor="realm">Realm</Label>
-                      <Input
-                        id="realm"
-                        value={realm}
-                        onChange={(event) => setRealm(event.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="workgroup">Workgroup</Label>
-                      <Input
-                        id="workgroup"
-                        value={workgroup}
-                        onChange={(event) => setWorkgroup(event.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="use-kerberos">Use Kerberos</Label>
-                      <Input
-                        id="use-kerberos"
-                        value={useKerberos}
-                        onChange={(event) => setUseKerberos(event.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="resolve-order">Resolve order</Label>
-                    <Input
-                      id="resolve-order"
-                      value={resolveOrder}
-                      onChange={(event) => setResolveOrder(event.target.value)}
-                    />
                   </div>
                 </div>
 
@@ -1240,42 +1253,59 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
                       />
                     </div>
                   </div>
-                  <div className="grid gap-4 sm:grid-cols-3">
-                    <div className="space-y-2">
-                      <Label htmlFor="nfs-version">NFS Version</Label>
-                      <Input
-                        id="nfs-version"
-                        placeholder="4"
-                        value={nfsVersion}
-                        onChange={(event) => setNfsVersion(event.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="nfs-security">Security</Label>
-                      <Input
-                        id="nfs-security"
-                        placeholder="sys"
-                        value={nfsSecurity}
-                        onChange={(event) => setNfsSecurity(event.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="nfs-mount-options">Mount Options</Label>
-                      <Input
-                        id="nfs-mount-options"
-                        placeholder="soft,intr,timeo=30,retrans=2"
-                        value={nfsMountOptions}
-                        onChange={(event) => setNfsMountOptions(event.target.value)}
-                      />
-                    </div>
-                  </div>
                 </div>
 
                 <div className="rounded-lg border bg-muted/20 p-4 space-y-4">
-                  <div>
-                    <p className="text-sm font-semibold">Crawling & Rules</p>
-                    <p className="text-xs text-muted-foreground">Control schedule and filtering behavior.</p>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium">Advanced options</p>
+                      <p className="text-xs text-muted-foreground">
+                        NFS protocol and mount configuration.
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowAdvancedNfs((prev) => !prev)}
+                    >
+                      {showAdvancedNfs ? "Hide" : "Show"}
+                    </Button>
                   </div>
+
+                  {showAdvancedNfs ? (
+                    <div className="space-y-4 border-t pt-4">
+                      <div className="grid gap-4 sm:grid-cols-3">
+                        <div className="space-y-2">
+                          <Label htmlFor="nfs-version">NFS Version</Label>
+                          <Input
+                            id="nfs-version"
+                            placeholder="4"
+                            value={nfsVersion}
+                            onChange={(event) => setNfsVersion(event.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="nfs-security">Security</Label>
+                          <Input
+                            id="nfs-security"
+                            placeholder="sys"
+                            value={nfsSecurity}
+                            onChange={(event) => setNfsSecurity(event.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="nfs-mount-options">Mount Options</Label>
+                          <Input
+                            id="nfs-mount-options"
+                            placeholder="soft,intr,timeo=30,retrans=2"
+                            value={nfsMountOptions}
+                            onChange={(event) => setNfsMountOptions(event.target.value)}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
                   <div className="space-y-2">
                     <Label htmlFor="nfs-crawl-schedule">Crawl Schedule</Label>
                     <Input
