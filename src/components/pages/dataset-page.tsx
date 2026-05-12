@@ -257,9 +257,9 @@ export default function DatasetPage({
                         </div>
 
                         {/* Custom items table with selection */}
-                        <div className="rounded-lg border overflow-hidden">
+                        <div className="overflow-hidden rounded-lg border">
                             <Table>
-                                <TableHeader>
+                                <TableHeader className="bg-muted">
                                     <TableRow>
                                         <TableHead className="w-12">
                                             <Checkbox
