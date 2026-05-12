@@ -38,6 +38,13 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
+import {
     Dialog,
     DialogContent,
     DialogDescription,
@@ -89,6 +96,73 @@ function datasetItemToFileEntry(item: DatasetItem): FileEntry {
         accessed_at: item.added_at,
         indexed_at: item.added_at,
     }
+}
+
+type ShareTargetType =
+    | "username"
+    | "user_id"
+    | "entra_user_id"
+    | "entra_user_email"
+    | "entra_group_id"
+    | "entra_group_name"
+
+interface NerTableRow {
+    id: string
+    entity: string
+    entityType: string
+    occurrences: string
+    source: string
+    confidence: string
+}
+
+function asRecordArray(value: unknown): Record<string, unknown>[] {
+    if (!Array.isArray(value)) return []
+    return value.filter((item): item is Record<string, unknown> => !!item && typeof item === "object")
+}
+
+function getStringValue(row: Record<string, unknown>, keys: string[]): string {
+    for (const key of keys) {
+        const value = row[key]
+        if (typeof value === "string" && value.trim()) return value
+        if (typeof value === "number") return String(value)
+    }
+    return "-"
+}
+
+function getNumberValue(row: Record<string, unknown>, keys: string[]): string {
+    for (const key of keys) {
+        const value = row[key]
+        if (typeof value === "number") return value.toString()
+        if (typeof value === "string" && value.trim()) return value
+    }
+    return "-"
+}
+
+function extractNerRows(response: DatasetNerSearchResponse | null): NerTableRow[] {
+    if (!response) return []
+
+    const candidates = [
+        response.items,
+        response.results,
+        response.entities,
+        response.matches,
+        response.data,
+    ]
+
+    const rows = candidates
+        .map(asRecordArray)
+        .find((arr) => arr.length > 0) ?? []
+
+    return rows.map((row, index) => ({
+        id: getStringValue(row, ["id", "entity_id", "key"]) !== "-"
+            ? getStringValue(row, ["id", "entity_id", "key"])
+            : `ner-row-${index}`,
+        entity: getStringValue(row, ["entity", "value", "text", "name", "term", "entity_value"]),
+        entityType: getStringValue(row, ["entity_type", "type", "label", "category"]),
+        occurrences: getNumberValue(row, ["occurrence_count", "count", "frequency", "occurrences"]),
+        source: getStringValue(row, ["filename", "file_name", "file", "file_path", "source", "share_name"]),
+        confidence: getNumberValue(row, ["confidence", "score", "confidence_score"]),
+    }))
 }
 
 export default function DatasetPage({
@@ -248,6 +322,7 @@ export default function DatasetPage({
     const [nerQuery, setNerQuery] = useState("")
     const [nerResults, setNerResults] = useState<DatasetNerSearchResponse | null>(null)
     const [nerLoading, setNerLoading] = useState(false)
+    const nerRows = useMemo(() => extractNerRows(nerResults), [nerResults])
 
     const handleDatasetNerSearch = async () => {
         if (!dataset || !nerQuery.trim()) return
@@ -294,10 +369,20 @@ export default function DatasetPage({
 
     const [isShareDialogOpen, setIsShareDialogOpen] = useState(false)
     const [shares, setShares] = useState<DatasetShareResponse[]>([])
+    const [shareTargetType, setShareTargetType] = useState<ShareTargetType>("username")
     const [shareTarget, setShareTarget] = useState("")
     const [sharePermission, setSharePermission] = useState<DatasetPermission>("read")
     const [shareExpiresAt, setShareExpiresAt] = useState("")
     const [sharesLoading, setSharesLoading] = useState(false)
+
+    const shareTargetMeta: Record<ShareTargetType, { label: string; placeholder: string }> = {
+        username: { label: "Username", placeholder: "jane.doe" },
+        user_id: { label: "Local User ID", placeholder: "42" },
+        entra_user_id: { label: "Entra User Object ID", placeholder: "00000000-0000-0000-0000-000000000000" },
+        entra_user_email: { label: "Entra User Email", placeholder: "user@company.com" },
+        entra_group_id: { label: "Entra Group Object ID", placeholder: "00000000-0000-0000-0000-000000000000" },
+        entra_group_name: { label: "Entra Group Name", placeholder: "Finance-Readers" },
+    }
 
     const loadShares = useCallback(async () => {
         if (!dataset) return
@@ -320,15 +405,28 @@ export default function DatasetPage({
     const handleAddShare = async () => {
         if (!dataset) return
         if (!shareTarget.trim()) {
-            toast.error("Username is required")
+            toast.error(`${shareTargetMeta[shareTargetType].label} is required`)
             return
         }
+
+        const payload: ShareDatasetRequest = {
+            permission: sharePermission,
+            expires_at: shareExpiresAt ? new Date(shareExpiresAt).toISOString() : undefined,
+        }
+
+        if (shareTargetType === "user_id") {
+            const parsed = Number.parseInt(shareTarget.trim(), 10)
+            if (Number.isNaN(parsed)) {
+                toast.error("Local User ID must be a valid integer")
+                return
+            }
+            payload.user_id = parsed
+        } else {
+            payload[shareTargetType] = shareTarget.trim()
+        }
+
         try {
-            await onShareDataset(dataset.id, {
-                username: shareTarget.trim(),
-                permission: sharePermission,
-                expires_at: shareExpiresAt ? new Date(shareExpiresAt).toISOString() : undefined,
-            })
+            await onShareDataset(dataset.id, payload)
             setShareTarget("")
             setShareExpiresAt("")
             await loadShares()
@@ -810,10 +908,37 @@ export default function DatasetPage({
                                 {nerLoading ? "Searching..." : "Search"}
                             </Button>
                         </div>
-                        <div className="rounded-md border p-3 max-h-72 overflow-auto">
-                            <pre className="text-xs whitespace-pre-wrap">
-                                {nerResults ? JSON.stringify(nerResults, null, 2) : "No results"}
-                            </pre>
+                        <div className="rounded-md border max-h-80 overflow-auto">
+                            <Table>
+                                <TableHeader className="bg-muted">
+                                    <TableRow>
+                                        <TableHead>Entity</TableHead>
+                                        <TableHead>Type</TableHead>
+                                        <TableHead>Mentions</TableHead>
+                                        <TableHead>Source</TableHead>
+                                        <TableHead>Confidence</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {nerRows.length > 0 ? (
+                                        nerRows.map((row) => (
+                                            <TableRow key={row.id}>
+                                                <TableCell className="font-medium">{row.entity}</TableCell>
+                                                <TableCell>{row.entityType}</TableCell>
+                                                <TableCell>{row.occurrences}</TableCell>
+                                                <TableCell className="text-xs text-muted-foreground truncate max-w-[220px]">{row.source}</TableCell>
+                                                <TableCell>{row.confidence}</TableCell>
+                                            </TableRow>
+                                        ))
+                                    ) : (
+                                        <TableRow>
+                                            <TableCell colSpan={5} className="text-center text-muted-foreground py-6">
+                                                {nerLoading ? "Searching..." : (nerResults ? "No structured NER rows returned" : "No results")}
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
                         </div>
                     </div>
                 </DialogContent>
@@ -851,23 +976,44 @@ export default function DatasetPage({
                         <DialogDescription>Grant, update, or revoke access to this dataset.</DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4">
-                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                            <div className="sm:col-span-1">
-                                <Label htmlFor="share-target">Username</Label>
-                                <Input id="share-target" value={shareTarget} onChange={(e) => setShareTarget(e.target.value)} />
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
+                            <div>
+                                <Label htmlFor="share-target-type">Target Type</Label>
+                                <Select value={shareTargetType} onValueChange={(value) => setShareTargetType(value as ShareTargetType)}>
+                                    <SelectTrigger id="share-target-type" className="w-full">
+                                        <SelectValue placeholder="Target Type" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="username">Username</SelectItem>
+                                        <SelectItem value="user_id">Local User ID</SelectItem>
+                                        <SelectItem value="entra_user_id">Entra User ID</SelectItem>
+                                        <SelectItem value="entra_user_email">Entra User Email</SelectItem>
+                                        <SelectItem value="entra_group_id">Entra Group ID</SelectItem>
+                                        <SelectItem value="entra_group_name">Entra Group Name</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div>
+                                <Label htmlFor="share-target">{shareTargetMeta[shareTargetType].label}</Label>
+                                <Input
+                                    id="share-target"
+                                    value={shareTarget}
+                                    placeholder={shareTargetMeta[shareTargetType].placeholder}
+                                    onChange={(e) => setShareTarget(e.target.value)}
+                                />
                             </div>
                             <div>
                                 <Label htmlFor="share-permission">Permission</Label>
-                                <select
-                                    id="share-permission"
-                                    className="w-full h-9 rounded-md border bg-background px-3 text-sm"
-                                    value={sharePermission}
-                                    onChange={(e) => setSharePermission(e.target.value as DatasetPermission)}
-                                >
-                                    <option value="read">read</option>
-                                    <option value="write">write</option>
-                                    <option value="admin">admin</option>
-                                </select>
+                                <Select value={sharePermission} onValueChange={(value) => setSharePermission(value as DatasetPermission)}>
+                                    <SelectTrigger id="share-permission" className="w-full">
+                                        <SelectValue placeholder="Permission" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="read">read</SelectItem>
+                                        <SelectItem value="write">write</SelectItem>
+                                        <SelectItem value="admin">admin</SelectItem>
+                                    </SelectContent>
+                                </Select>
                             </div>
                             <div>
                                 <Label htmlFor="share-expires">Expires At</Label>
