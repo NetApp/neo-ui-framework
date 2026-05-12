@@ -20,8 +20,12 @@ import {
 } from "@/components/ui/select"
 import { Spinner } from "@/components/ui/spinner"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle, DrawerFooter } from "@/components/ui/drawer"
+import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
 import { AlertTriangle, RefreshCw } from "lucide-react"
+import type { SharesResponse } from "@/services/models"
 
 interface EntityAggregate {
   value: string
@@ -35,6 +39,11 @@ interface NERStats {
   total_files_processed: number
   entity_types: Record<string, number>
   processing_enabled: boolean
+}
+
+interface AnalyzeResult {
+  success: boolean
+  message: string
 }
 
 export default function EntitiesPage() {
@@ -52,6 +61,15 @@ export default function EntitiesPage() {
   const [entityTypes, setEntityTypes] = useState<string[]>([])
   const [searchResults, setSearchResults] = useState<EntityAggregate[]>([])
   const [searching, setSearching] = useState(false)
+
+  // Analyze drawer state
+  const [isAnalyzeDrawerOpen, setIsAnalyzeDrawerOpen] = useState(false)
+  const [shares, setShares] = useState<SharesResponse[]>([])
+  const [selectedShareId, setSelectedShareId] = useState<string>("")
+  const [forceReanalyze, setForceReanalyze] = useState(false)
+  const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [analyzeResult, setAnalyzeResult] = useState<AnalyzeResult | null>(null)
+  const [loadingShares, setLoadingShares] = useState(false)
 
   // Fetch NER stats on mount
   useEffect(() => {
@@ -85,6 +103,29 @@ export default function EntitiesPage() {
     fetchStats()
   }, [token])
 
+  // Fetch shares when drawer opens
+  useEffect(() => {
+    const fetchShares = async () => {
+      if (!token || !isAnalyzeDrawerOpen) return
+
+      try {
+        setLoadingShares(true)
+        const sharesData = await api.getShares(token)
+        setShares(Array.isArray(sharesData) ? sharesData : [])
+        // Auto-select first share if available
+        if (Array.isArray(sharesData) && sharesData.length > 0 && !selectedShareId) {
+          setSelectedShareId(sharesData[0].id)
+        }
+      } catch (err) {
+        console.error("Error fetching shares:", err)
+      } finally {
+        setLoadingShares(false)
+      }
+    }
+
+    fetchShares()
+  }, [token, isAnalyzeDrawerOpen])
+
   // Handle entity search
   const handleSearch = async () => {
     if (!token || !api || !searchQuery.trim()) return
@@ -104,6 +145,38 @@ export default function EntitiesPage() {
       console.error("Error searching entities:", err)
     } finally {
       setSearching(false)
+    }
+  }
+
+  // Handle share reanalysis
+  const handleAnalyzeShare = async () => {
+    if (!token || !selectedShareId) return
+
+    try {
+      setIsAnalyzing(true)
+      setAnalyzeResult(null)
+      await api.triggerShareReanalysis(token, selectedShareId, forceReanalyze)
+      setAnalyzeResult({
+        success: true,
+        message: t("analyzeShareSuccess", { ns: "entities", defaultValue: "Share analysis started successfully" }),
+      })
+      // Close drawer after success
+      setTimeout(() => {
+        setIsAnalyzeDrawerOpen(false)
+        setSelectedShareId("")
+        setForceReanalyze(false)
+        setAnalyzeResult(null)
+      }, 2000)
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : t("analyzeShareError", { ns: "entities", defaultValue: "Failed to start share analysis" })
+      setAnalyzeResult({
+        success: false,
+        message,
+      })
+      console.error("Error analyzing share:", err)
+    } finally {
+      setIsAnalyzing(false)
     }
   }
 
@@ -132,13 +205,22 @@ export default function EntitiesPage() {
   return (
     <div className="flex-1 overflow-y-auto p-6">
       <div className="mb-8">
-        <div className="flex items-center gap-3 mb-2">
-          <h1 className="text-3xl font-bold tracking-tight">
-            {t("entitiesTitle", { defaultValue: "Entities" })}
-          </h1>
-          <span className="inline-flex items-center rounded-full border border-amber-400 bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-700 dark:border-amber-500 dark:bg-amber-950 dark:text-amber-400">
-            Tech Preview
-          </span>
+        <div className="flex items-center justify-between gap-3 mb-2">
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold tracking-tight">
+              {t("entitiesTitle", { defaultValue: "Entities" })}
+            </h1>
+            <span className="inline-flex items-center rounded-full border border-amber-400 bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-700 dark:border-amber-500 dark:bg-amber-950 dark:text-amber-400">
+              Tech Preview
+            </span>
+          </div>
+          <Button
+            onClick={() => setIsAnalyzeDrawerOpen(true)}
+            variant="default"
+          >
+            <RefreshCw className="mr-2 h-4 w-4" />
+            {t("analyzeButton", { ns: "entities", defaultValue: "Analyze" })}
+          </Button>
         </div>
         <p className="text-muted-foreground">
           {t("entitiesDescription", {
@@ -344,6 +426,102 @@ export default function EntitiesPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Analyze Drawer */}
+      <Drawer open={isAnalyzeDrawerOpen} onOpenChange={setIsAnalyzeDrawerOpen}>
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>
+              {t("analyzeShareTitle", { ns: "entities", defaultValue: "Analyze Share" })}
+            </DrawerTitle>
+            <DrawerDescription>
+              {t("analyzeShareDescription", { ns: "entities", defaultValue: "Trigger NER analysis for a specific share" })}
+            </DrawerDescription>
+          </DrawerHeader>
+
+          <div className="px-4 py-6 space-y-6">
+            {analyzeResult && (
+              <Alert variant={analyzeResult.success ? "default" : "destructive"}>
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>
+                  {analyzeResult.success
+                    ? t("success", { ns: "entities", defaultValue: "Success" })
+                    : t("error", { ns: "entities", defaultValue: "Error" })}
+                </AlertTitle>
+                <AlertDescription>{analyzeResult.message}</AlertDescription>
+              </Alert>
+            )}
+
+            {loadingShares ? (
+              <div className="flex items-center justify-center py-8">
+                <Spinner className="h-5 w-5" />
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="share-select">
+                    {t("selectShare", { ns: "entities", defaultValue: "Select Share" })}
+                  </Label>
+                  <Select value={selectedShareId} onValueChange={setSelectedShareId}>
+                    <SelectTrigger id="share-select">
+                      <SelectValue placeholder={t("selectSharePlaceholder", { ns: "entities", defaultValue: "Choose a share..." })} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {shares.map((share) => (
+                        <SelectItem key={share.id} value={share.id}>
+                          {share.share_path || share.id}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex items-center gap-3 p-4 bg-muted rounded-lg">
+                  <Switch
+                    id="force-reanalyze"
+                    checked={forceReanalyze}
+                    onCheckedChange={setForceReanalyze}
+                  />
+                  <div className="flex-1">
+                    <Label htmlFor="force-reanalyze" className="text-sm font-medium cursor-pointer">
+                      {t("forceReanalyze", { ns: "entities", defaultValue: "Force Reanalysis" })}
+                    </Label>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {t("forceReanalyzeDescription", { ns: "entities", defaultValue: "Reanalyze all files, even if they have existing NER results" })}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <DrawerFooter>
+            <Button
+              onClick={handleAnalyzeShare}
+              disabled={isAnalyzing || !selectedShareId || loadingShares}
+            >
+              {isAnalyzing ? (
+                <>
+                  <Spinner className="mr-2 h-4 w-4" />
+                  {t("analyzing", { ns: "entities", defaultValue: "Analyzing..." })}
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  {t("startAnalysis", { ns: "entities", defaultValue: "Start Analysis" })}
+                </>
+              )}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setIsAnalyzeDrawerOpen(false)}
+              disabled={isAnalyzing}
+            >
+              {t("cancel", { ns: "entities", defaultValue: "Cancel" })}
+            </Button>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
     </div>
   )
 }

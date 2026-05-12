@@ -119,6 +119,7 @@ export class BaseApiClient {
   ): Promise<T> {
     const headers: HeadersInit = {
       Accept: "application/json",
+      "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
       ...(init.headers ?? {}),
     }

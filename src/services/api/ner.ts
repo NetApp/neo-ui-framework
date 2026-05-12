@@ -52,10 +52,10 @@ export interface NERSchemaConfig {
 
 export interface NERSettings {
   enabled?: boolean
-  model?: string
+  model?: string | null
   batch_size?: number
   confidence_threshold?: number
-  device?: string
+  device?: string | null
 }
 
 export interface EntityAggregateItem {

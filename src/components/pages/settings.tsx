@@ -507,12 +507,13 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
         setNerSaveResult(null)
         try {
             const api = new NeoApiService()
+            // Only include fields with actual values, send null for empty strings
             const settings = {
                 enabled: nerEnabled,
-                model: nerModel,
+                model: nerModel.trim() || null,
                 batch_size: nerBatchSize,
                 confidence_threshold: nerConfidenceThreshold,
-                device: nerDevice,
+                device: nerDevice.trim() || null,
             }
             await api.updateNERSettings(state.token, settings)
             setNerSaveResult({ success: true, message: t("nerSettingsSaved", { ns: "settings" }) })
