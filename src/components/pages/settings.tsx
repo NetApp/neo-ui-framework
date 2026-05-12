@@ -72,7 +72,8 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
     const getSetupGraph = handlers.getSetupGraph
     const getSetupProxy = handlers.getSetupProxy
     const getSetupSsl = handlers.getSetupSsl
-    const getMcpInfo = handlers.getMcpInfo  // Add this line
+    const getMcpInfo = handlers.getMcpInfo
+    const getSetupMcpOauth = handlers.getSetupMcpOauth
 
     const [searchParams, setSearchParams] = useSearchParams()
 
@@ -157,6 +158,35 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
     }, [monitoringTtl, filesTtl, cacheMaxSize, logLevel, locale, contentVisibilityEnabled])
 
     const [mcpInfo, setMcpInfo] = useState<McpInfoResponse | null>(null)
+    const [mcpOauthConfigured, setMcpOauthConfigured] = useState(false)
+    const [mcpOauthTenantId, setMcpOauthTenantId] = useState("")
+    const [mcpOauthClientId, setMcpOauthClientId] = useState("")
+    const [mcpOauthClientSecret, setMcpOauthClientSecret] = useState("")
+    const [mcpOauthAudience, setMcpOauthAudience] = useState("")
+    const [mcpOauthClientSecretSet, setMcpOauthClientSecretSet] = useState(false)
+    const [isRefreshingMcpOauth, setIsRefreshingMcpOauth] = useState(false)
+    const [mcpOauthSaveResult, setMcpOauthSaveResult] = useState<{ success: boolean; message: string } | null>(null)
+
+    const loadMcpOauthSettings = async () => {
+        setIsRefreshingMcpOauth(true)
+        try {
+            const response = await getSetupMcpOauth()
+
+            setMcpOauthConfigured(Boolean(response.mcp_oauth_configured))
+            setMcpOauthTenantId(response.tenant_id ?? "")
+            setMcpOauthClientId(response.client_id ?? "")
+            setMcpOauthAudience(response.audience ?? "")
+            setMcpOauthClientSecret("")
+            setMcpOauthClientSecretSet(Boolean(response.client_secret_set))
+            return true
+        } catch {
+            setMcpOauthConfigured(false)
+            setMcpOauthClientSecretSet(false)
+            return false
+        } finally {
+            setIsRefreshingMcpOauth(false)
+        }
+    }
 
     useEffect(() => {
         let isCancelled = false
@@ -276,7 +306,6 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
         const fetchMcpInfo = async () => {
             try {
                 const info = await getMcpInfo()
-                console.log("Successfully fetched MCP Info:", info)
                 setMcpInfo(info)
             } catch (error) {
                 console.error("Failed to fetch MCP Info. Error:", error)
@@ -286,6 +315,23 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
             fetchMcpInfo()
         }
     }, [state.token, getMcpInfo])
+
+    useEffect(() => {
+        let isCancelled = false
+
+        const loadInitialMcpOauthSettings = async () => {
+            const loaded = await loadMcpOauthSettings()
+            if (isCancelled || loaded) return
+            setMcpOauthConfigured(false)
+            setMcpOauthClientSecretSet(false)
+        }
+
+        loadInitialMcpOauthSettings()
+
+        return () => {
+            isCancelled = true
+        }
+    }, [getSetupMcpOauth])
 
     const handleSave = () => {
         updateSettings({
@@ -520,6 +566,50 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
         } catch (error) {
             const message = getErrorMessage(error, t("failedSaveNERSettings", { ns: "settings" }))
             setNerSaveResult({ success: false, message })
+        }
+    }
+
+    const handleSaveMcpOauth = async () => {
+        setMcpOauthSaveResult(null)
+
+        if (!mcpOauthTenantId.trim() || !mcpOauthClientId.trim() || !mcpOauthClientSecret.trim()) {
+            setMcpOauthSaveResult({
+                success: false,
+                message: "Tenant ID, Client ID, and Client Secret are required.",
+            })
+            return
+        }
+
+        const payload = {
+            tenant_id: mcpOauthTenantId.trim(),
+            client_id: mcpOauthClientId.trim(),
+            client_secret: mcpOauthClientSecret,
+            audience: mcpOauthAudience.trim() || null,
+        }
+
+        try {
+            const response = await handlers.setupMcpOauth(payload)
+            if (response.success) {
+                setMcpOauthSaveResult({
+                    success: true,
+                    message: response.message || "MCP OAuth configured successfully.",
+                })
+                const refreshed = await loadMcpOauthSettings()
+                if (!refreshed) {
+                    setMcpOauthClientSecret("")
+                    setMcpOauthClientSecretSet(true)
+                }
+            } else {
+                setMcpOauthSaveResult({
+                    success: false,
+                    message: response.message || "Failed to configure MCP OAuth.",
+                })
+            }
+        } catch (error) {
+            setMcpOauthSaveResult({
+                success: false,
+                message: getErrorMessage(error, "Failed to configure MCP OAuth."),
+            })
         }
     }
 
@@ -1073,6 +1163,90 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
                                                 </CardDescription>
                                             </CardHeader>
                                             <CardContent className="space-y-6">
+                                                <div className="space-y-4 rounded-lg border p-4">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className={`h-2.5 w-2.5 rounded-full ${mcpOauthConfigured ? "bg-green-500" : "bg-red-500"}`} />
+                                                        <h4 className="text-sm font-medium">MCP OAuth Configuration</h4>
+                                                    </div>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        Configure OAuth credentials for MCP clients. This uses the setup endpoint /api/v1/setup/mcp.
+                                                    </p>
+
+                                                    {mcpOauthSaveResult && (
+                                                        <Alert
+                                                            variant={mcpOauthSaveResult.success ? "default" : "destructive"}
+                                                            className={mcpOauthSaveResult.success ? "border-green-500 text-green-600 dark:border-green-500 dark:text-green-500" : ""}
+                                                        >
+                                                            {mcpOauthSaveResult.success ? <IconCheck className="h-4 w-4" /> : <IconAlertTriangle className="h-4 w-4" />}
+                                                            <AlertTitle>{mcpOauthSaveResult.success ? t("successTitle", { ns: "settings" }) : t("errorTitle", { ns: "settings" })}</AlertTitle>
+                                                            <AlertDescription>{mcpOauthSaveResult.message}</AlertDescription>
+                                                        </Alert>
+                                                    )}
+
+                                                    <div className="grid gap-4 md:grid-cols-2">
+                                                        <div className="grid gap-2">
+                                                            <Label htmlFor="mcp-oauth-tenant-id">Tenant ID</Label>
+                                                            <Input
+                                                                id="mcp-oauth-tenant-id"
+                                                                value={mcpOauthTenantId}
+                                                                onChange={(e) => setMcpOauthTenantId(e.target.value)}
+                                                                placeholder="your-tenant-id"
+                                                            />
+                                                        </div>
+                                                        <div className="grid gap-2">
+                                                            <Label htmlFor="mcp-oauth-client-id">Client ID</Label>
+                                                            <Input
+                                                                id="mcp-oauth-client-id"
+                                                                value={mcpOauthClientId}
+                                                                onChange={(e) => setMcpOauthClientId(e.target.value)}
+                                                                placeholder="your-mcp-client-id"
+                                                            />
+                                                        </div>
+                                                        <div className="grid gap-2">
+                                                            <Label htmlFor="mcp-oauth-client-secret">Client Secret</Label>
+                                                            <Input
+                                                                id="mcp-oauth-client-secret"
+                                                                type="password"
+                                                                value={mcpOauthClientSecret}
+                                                                onChange={(e) => setMcpOauthClientSecret(e.target.value)}
+                                                                placeholder="Enter client secret"
+                                                            />
+                                                            {mcpOauthClientSecretSet && (
+                                                                <p className="text-xs text-muted-foreground">
+                                                                    A client secret is already configured. Enter a new one only if you want to rotate it.
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                        <div className="grid gap-2">
+                                                            <Label htmlFor="mcp-oauth-audience">Audience (Optional)</Label>
+                                                            <Input
+                                                                id="mcp-oauth-audience"
+                                                                value={mcpOauthAudience}
+                                                                onChange={(e) => setMcpOauthAudience(e.target.value)}
+                                                                placeholder="api://your-mcp-client-id"
+                                                            />
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex justify-end">
+                                                        <div className="flex items-center gap-2">
+                                                            <Button
+                                                                type="button"
+                                                                variant="outline"
+                                                                onClick={() => {
+                                                                    void loadMcpOauthSettings()
+                                                                }}
+                                                                disabled={isRefreshingMcpOauth}
+                                                            >
+                                                                {isRefreshingMcpOauth ? "Refreshing..." : "Refresh"}
+                                                            </Button>
+                                                            <Button onClick={handleSaveMcpOauth}>Save MCP OAuth Settings</Button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <Separator />
+
                                                 {mcpInfo ? (
                                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                         <div className="space-y-4">

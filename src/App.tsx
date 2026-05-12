@@ -24,6 +24,7 @@ const Entities = React.lazy(() => import("@/components/pages/entities"))
 
 
 import LoginPage from "@/components/pages/login-page"
+import OAuthCallbackPage from "@/components/pages/oauth-callback"
 import { useNeoApi } from "@/hooks/useNeoApi"
 import { SetupWizardDialog } from "@/components/dialogs/setup-wizard-dialog"
 
@@ -41,10 +42,21 @@ function App() {
   if (!state.token) {
     return (
       <ThemeProvider>
-        <LoginPage
-          onConnect={handlers.handleConnect}
-          onOAuthLogin={handlers.handleOAuthLogin}
-        />
+        <HashRouter>
+          <Routes>
+            <Route path="/auth/callback" element={<OAuthCallbackPage />} />
+            <Route
+              path="*"
+              element={
+                <LoginPage
+                  onConnect={handlers.handleConnect}
+                  onOAuthLogin={handlers.handleOAuthLogin}
+                  onEntraIdLogin={handlers.handleEntraIdLogin}
+                />
+              }
+            />
+          </Routes>
+        </HashRouter>
         <SetupWizardDialog
           open={state.setupStatus?.setup_complete === false}
           onOpenChange={() => { }} // Controlled by state

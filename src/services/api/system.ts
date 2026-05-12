@@ -22,6 +22,8 @@ import type {
   InitialCredentialsResponse,
   McpInfoResponse,
   Body_configure_oauth_api_v1_setup_oauth_post,
+  Body_configure_mcp_oauth_api_v1_setup_mcp_post,
+  MCPOAuthSettingsResponse,
   SetupOAuthResponse,
 } from "@/services/models"
 
@@ -177,6 +179,26 @@ export class SystemApiClient extends BaseApiClient {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(payload)
+    })
+
+    return withSuccessMessage(response, "MCP OAuth configured successfully.")
+  }
+
+  getSetupMcpOauth() {
+    appLogger.debug("Fetching MCP OAuth setup configuration")
+    return this.requestApiV1<MCPOAuthSettingsResponse>("/setup/mcp", {
+      method: "GET",
+    })
+  }
+
+  async setupMcpOauth(payload: Body_configure_mcp_oauth_api_v1_setup_mcp_post) {
+    appLogger.debug("Configuring MCP OAuth setup")
+    const response = await this.requestApiV1<SetupOAuthResponse>("/setup/mcp", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
     })
 
     return withSuccessMessage(response, "MCP OAuth configured successfully.")

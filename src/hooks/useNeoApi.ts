@@ -44,6 +44,8 @@ import {
   type SetupSslConfigResponse,
   type SetupFactoryResetRequest,
   type Body_configure_oauth_api_v1_setup_oauth_post,
+  type Body_configure_mcp_oauth_api_v1_setup_mcp_post,
+  type MCPOAuthSettingsResponse,
   type DatasetResponse,
   type UpdateDatasetRequest,
   type DatasetExpirationResponse,
@@ -1367,6 +1369,58 @@ export function useNeoApi() {
     appLogger.info("User logged out successfully")
   }, [clearSystemData, me?.username, token])
 
+  const handleEntraIdLogin = useCallback(
+    async (entraAccessToken: string) => {
+      if (!entraAccessToken) {
+        throw new Error("Entra ID access token is missing")
+      }
+
+      appLogger.info("Exchanging Entra ID OAuth token for Neo API session")
+
+      clearSystemData()
+      apiRef.current.clearCache()
+      setToken(null)
+
+      try {
+        const api = apiRef.current
+        const data = await api.fetchSystemData(entraAccessToken)
+
+        applySystemData(data)
+        setToken(entraAccessToken)
+        setCacheStats(api.getCacheStats())
+
+        if (data.me) {
+          toast.success(`Welcome, ${data.me.username}`)
+        } else {
+          toast.success("Welcome")
+        }
+
+        appLogger.info("Successfully logged in with Entra ID", undefined, {
+          userId: data.me?.id,
+          username: data.me?.username,
+        })
+      } catch (error) {
+        clearSystemData()
+        setToken(null)
+
+        if (error instanceof AuthenticationError) {
+          toast.error(error.message)
+        } else if (error instanceof Error) {
+          toast.error(`Entra ID login failed: ${error.message}`)
+        } else {
+          toast.error("Entra ID login failed. Please try again")
+        }
+
+        appLogger.error(
+          "Entra ID login failed",
+          error instanceof Error ? error.message : "Unknown error"
+        )
+        throw error
+      }
+    },
+    [applySystemData, clearSystemData]
+  )
+
   return {
     state: {
       health,
@@ -1403,6 +1457,7 @@ export function useNeoApi() {
       handleFetchTasks,
       handleDeleteTask,
       handleLogout,
+      handleEntraIdLogin,
       handleFilesPageChange,
       handleFetchMyDocuments,
       handleCreateDataset,
@@ -1454,6 +1509,15 @@ export function useNeoApi() {
         },
         []
       ),
+      setupMcpOauth: useCallback(
+        async (request: Body_configure_mcp_oauth_api_v1_setup_mcp_post) => {
+          return apiRef.current.setupMcpOauth(request)
+        },
+        []
+      ),
+      getSetupMcpOauth: useCallback(async (): Promise<MCPOAuthSettingsResponse> => {
+        return apiRef.current.getSetupMcpOauth()
+      }, []),
       resetSetup: useCallback(async () => {
         return apiRef.current.resetSetup()
       }, []),

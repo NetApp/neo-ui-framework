@@ -797,6 +797,22 @@ export interface Body_configure_oauth_api_v1_setup_oauth_post {
   enabled?: boolean
 }
 
+export interface Body_configure_mcp_oauth_api_v1_setup_mcp_post {
+  tenant_id: string
+  client_id: string
+  client_secret: string
+  audience?: string | null
+}
+
+export interface MCPOAuthSettingsResponse {
+  mcp_oauth_configured: boolean
+  tenant_id: string | null
+  client_id: string | null
+  client_secret_set: boolean
+  audience: string | null
+  message: string
+}
+
 export interface EntraLinkRequest {
   user_id: number
 }

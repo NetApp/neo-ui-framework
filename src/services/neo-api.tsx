@@ -58,6 +58,8 @@ import type {
   SetupCompleteResponse,
   InitialCredentialsResponse,
   Body_configure_oauth_api_v1_setup_oauth_post,
+  Body_configure_mcp_oauth_api_v1_setup_mcp_post,
+  MCPOAuthSettingsResponse,
   EntraLinkRequest,
   EntraUnlinkRequest,
 } from "./models"
@@ -137,6 +139,8 @@ export type {
   SetupCompleteResponse,
   InitialCredentialsResponse,
   Body_configure_oauth_api_v1_setup_oauth_post,
+  Body_configure_mcp_oauth_api_v1_setup_mcp_post,
+  MCPOAuthSettingsResponse,
 }
 export { AuthenticationError, AuthorizationError }
 function normalizeCacheKeyValue(value: unknown): unknown {
@@ -214,6 +218,14 @@ export class NeoApiService extends BaseApiClient {
 
   async setupOauth(payload: Body_configure_oauth_api_v1_setup_oauth_post) {
     return this.system.setupOauth(payload)
+  }
+
+  async setupMcpOauth(payload: Body_configure_mcp_oauth_api_v1_setup_mcp_post) {
+    return this.system.setupMcpOauth(payload)
+  }
+
+  async getSetupMcpOauth(): Promise<MCPOAuthSettingsResponse> {
+    return this.system.getSetupMcpOauth()
   }
 
   async setupGraph(request: SetupGraphRequest): Promise<SetupGraphResponse> {
