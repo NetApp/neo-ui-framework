@@ -522,7 +522,7 @@ export default function Files({
           setMetadataLoading(false)
         }
       }}>
-        <SheetContent className="w-[90vw] sm:w-[85vw] sm:max-w-[85vw] flex flex-col p-0 gap-0">
+        <SheetContent side="bottom" className="max-h-[95vh] flex flex-col p-0 gap-0">
           <div className="flex-1 overflow-y-auto p-6 flex flex-col">
             <SheetHeader className="mb-4 p-0">
               <SheetTitle>File details</SheetTitle>

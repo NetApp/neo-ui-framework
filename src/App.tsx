@@ -20,6 +20,7 @@ const Settings = React.lazy(() => import("@/components/pages/settings"))
 const MyDatasets = React.lazy(() => import("@/components/pages/my-datasets"))
 const ContentSearch = React.lazy(() => import("@/components/pages/content-search"))
 const DatasetPage = React.lazy(() => import("@/components/pages/dataset-page"))
+const Entities = React.lazy(() => import("@/components/pages/entities"))
 
 
 import LoginPage from "@/components/pages/login-page"
@@ -183,6 +184,10 @@ function App() {
                       version={state.version}
                     />
                   }
+                />
+                <Route
+                  path="/my-datasets/entities"
+                  element={<Entities />}
                 />
                 <Route
                   path="/my-datasets/:datasetId"

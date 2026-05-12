@@ -63,6 +63,7 @@ import { TasksApiClient, type TaskCancelResponse } from "./api/tasks"
 import { AnalyticsApiClient } from "./api/analytics"
 import { HelmApiClient } from "./api/helm"
 import { DatasetsApiClient } from "./api/datasets"
+import { NERApiClient } from "./api/ner"
 import { DataLoader } from "./data-loader"
 
 
@@ -151,6 +152,7 @@ export class NeoApiService extends BaseApiClient {
   private analytics: AnalyticsApiClient
   private helm: HelmApiClient
   private datasetsClient: DatasetsApiClient
+  private nerClient: NERApiClient
   private dataLoader: DataLoader
   private monitoringTtl: number = 10 * 60 * 1000
   private filesTtl: number = 10 * 60 * 1000
@@ -168,6 +170,7 @@ export class NeoApiService extends BaseApiClient {
     this.analytics = new AnalyticsApiClient(baseUrl)
     this.helm = new HelmApiClient()
     this.datasetsClient = new DatasetsApiClient(baseUrl)
+    this.nerClient = new NERApiClient(baseUrl)
     this.dataLoader = new DataLoader(30000) // 30 seconds default TTL
   }
 
@@ -587,6 +590,87 @@ export class NeoApiService extends BaseApiClient {
       )
       throw error
     }
+  }
+
+  // NER API methods
+  async getNERStats(token: string) {
+    return this.nerClient.getNERStats(token)
+  }
+
+  async getShareNERStats(token: string, shareId: string) {
+    return this.nerClient.getShareNERStats(token, shareId)
+  }
+
+  async getNERSchemas(token: string) {
+    return this.nerClient.getNERSchemas(token)
+  }
+
+  async searchEntities(
+    token: string,
+    query: string,
+    options?: {
+      entityType?: string
+      shareId?: string
+      shareIds?: string
+      matchMode?: "substring" | "exact" | "prefix"
+      limit?: number
+      cursor?: string
+    }
+  ) {
+    return this.nerClient.searchEntities(token, query, options)
+  }
+
+  async getEntityAggregates(
+    token: string,
+    options?: {
+      entityType?: string
+      shareId?: string
+      shareIds?: string
+      limit?: number
+    }
+  ) {
+    return this.nerClient.getEntityAggregates(token, options)
+  }
+
+  async countEntityMentions(
+    token: string,
+    query: string,
+    options?: {
+      entityType?: string
+      shareId?: string
+      shareIds?: string
+      matchMode?: "exact" | "prefix" | "substring"
+    }
+  ) {
+    return this.nerClient.countEntityMentions(token, query, options)
+  }
+
+  async getFileNERResults(token: string, fileId: string) {
+    return this.nerClient.getFileNERResults(token, fileId)
+  }
+
+  async getShareNERResults(
+    token: string,
+    shareId: string,
+    page: number = 1,
+    pageSize: number = 100,
+    entityType?: string
+  ) {
+    return this.nerClient.getShareNERResults(token, shareId, page, pageSize, entityType)
+  }
+
+  async getPendingNER(
+    token: string,
+    options?: {
+      shareId?: string
+      limit?: number
+    }
+  ) {
+    return this.nerClient.getPendingNER(token, options)
+  }
+
+  async triggerShareReanalysis(token: string, shareId: string, force: boolean = false) {
+    return this.nerClient.triggerShareReanalysis(token, shareId, force)
   }
 
 }

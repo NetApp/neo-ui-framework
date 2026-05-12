@@ -30,6 +30,7 @@ const navEn = {
   volumes: "Volumes",
   files: "Files",
   contentSearch: "Search",
+  entities: "Entities",
   myDatasets: "Datasets",
   myCollections: "Collections",
   users: "Users",
@@ -320,6 +321,8 @@ const pagesEn = {
   collectionsOverviewTitle: "Datasets",
   sourcesOverviewTitle: "Sources Overview",
   indexOverviewTitle: "Index Overview",
+  entitiesTitle: "Entities",
+  entitiesDescription: "Discover named entities and relationships in your documents",
 }
 
 export const resources: Resource = {

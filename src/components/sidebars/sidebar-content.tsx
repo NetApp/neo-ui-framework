@@ -9,10 +9,12 @@ import {
   IconActivity,
   IconSettings,
   IconFileSearch,
+  IconBrandGraphql,
+  IconListSearch,
   IconFolders,
   // IconArrowsJoin,
   IconFolderShare,
-  IconFiles,
+  // IconFiles,
 } from "@tabler/icons-react"
 
 import {
@@ -53,12 +55,17 @@ const data = {
     {
       nameKey: "dataCorpus",
       url: "#/my-datasets/data-corpus",
-      icon: IconFiles,
+      icon: IconFileSearch,
     },
     {
       nameKey: "contentSearch",
       url: "#/my-datasets/content-search",
-      icon: IconFileSearch,
+      icon: IconListSearch,
+    },
+    {
+      nameKey: "entities",
+      url: "#/my-datasets/entities",
+      icon: IconBrandGraphql,
     },
   ],
   navDatasets: [
@@ -98,7 +105,7 @@ export function AppSidebarContent({ ...props }: React.ComponentProps<typeof Side
       <NavMain items={data.navMain} />
       <NavMain items={data.navDataEstate} labelKey="dataEstate" labelNamespace="nav" />
       <NavMain items={data.navDiscovery} labelKey="discovery" labelNamespace="nav" />
-      <NavMain items={data.navDatasets} labelKey="collections" labelNamespace="nav" />
+      <NavMain items={data.navDatasets} labelKey="datasets" labelNamespace="nav" />
       <NavMain items={data.navSecondary} className="mt-auto" />
     </SidebarContent>
   )
