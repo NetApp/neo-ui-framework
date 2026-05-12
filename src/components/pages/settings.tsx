@@ -48,6 +48,7 @@ import {
 import { toast } from "sonner"
 import { Save } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Spinner } from "@/components/ui/spinner"
 import type { LogLevel } from "@/services/app-logger"
 import type { MonitoringOverviewResponse } from "@/services/neo-api"
 import type { McpInfoResponse } from "@/services/models"
@@ -128,6 +129,15 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
     const [allowLegacyCertificates, setAllowLegacyCertificates] = useState(false)
     const [customCaCertConfigured, setCustomCaCertConfigured] = useState(false)    
     const [sslSaveResult, setSslSaveResult] = useState<{ success: boolean; message: string } | null>(null)
+
+    // NER Settings State
+    const [nerEnabled, setNerEnabled] = useState(false)
+    const [nerModel, setNerModel] = useState("")
+    const [nerBatchSize, setNerBatchSize] = useState(32)
+    const [nerConfidenceThreshold, setNerConfidenceThreshold] = useState(0.7)
+    const [nerDevice, setNerDevice] = useState("")
+    const [nerSaveResult, setNerSaveResult] = useState<{ success: boolean; message: string } | null>(null)
+    const [isLoadingNerSettings, setIsLoadingNerSettings] = useState(true)
 
     const getErrorMessage = (error: unknown, fallback: string) => {
         if (error instanceof Error && error.message) {
@@ -230,6 +240,37 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
             isCancelled = true
         }
     }, [getSetupSsl])
+
+    useEffect(() => {
+        let isCancelled = false
+
+        const loadNERSettings = async () => {
+            if (!state.token) return
+            try {
+                setIsLoadingNerSettings(true)
+                const api = new NeoApiService()
+                const settings = await api.getNERSettings(state.token)
+                if (isCancelled) return
+
+                setNerEnabled(settings.enabled ?? false)
+                setNerModel(settings.model ?? "")
+                setNerBatchSize(settings.batch_size ?? 32)
+                setNerConfidenceThreshold(settings.confidence_threshold ?? 0.7)
+                setNerDevice(settings.device ?? "")
+            } catch (error) {
+                if (isCancelled) return
+                console.error("Failed to load NER settings:", error)
+            } finally {
+                setIsLoadingNerSettings(false)
+            }
+        }
+
+        loadNERSettings()
+
+        return () => {
+            isCancelled = true
+        }
+    }, [state.token])
 
     useEffect(() => {
         const fetchMcpInfo = async () => {
@@ -458,6 +499,29 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
         }, 1500)
     }
 
+    const handleSaveNERSettings = async () => {
+        if (!state.token) {
+            setNerSaveResult({ success: false, message: "Authentication token not available" })
+            return
+        }
+        setNerSaveResult(null)
+        try {
+            const api = new NeoApiService()
+            const settings = {
+                enabled: nerEnabled,
+                model: nerModel,
+                batch_size: nerBatchSize,
+                confidence_threshold: nerConfidenceThreshold,
+                device: nerDevice,
+            }
+            await api.updateNERSettings(state.token, settings)
+            setNerSaveResult({ success: true, message: t("nerSettingsSaved", { ns: "settings" }) })
+        } catch (error) {
+            const message = getErrorMessage(error, t("failedSaveNERSettings", { ns: "settings" }))
+            setNerSaveResult({ success: false, message })
+        }
+    }
+
     const currentTab = searchParams.get("tab") || "neo-core"
 
     // Derive Steps for Status View
@@ -489,6 +553,7 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
                                     <TabsTrigger value="cache">{t("cacheTab", { ns: "settings" })}</TabsTrigger>
                                     <TabsTrigger value="languages">{t("languagesTab", { ns: "settings" })}</TabsTrigger>
                                     <TabsTrigger value="logging">{t("loggingTab", { ns: "settings" })}</TabsTrigger>
+                                    <TabsTrigger value="ner">{t("nerTab", { ns: "settings" })}</TabsTrigger>
                                 </TabsList>
                                 <TabsContent value="neo-core">
                                     <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
@@ -1255,6 +1320,118 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
                                             </CardContent>
                                             <div className="border-t p-6 flex justify-end">
                                                 <Button onClick={handleSave}>
+                                                    <Save className="mr-2 size-4" />
+                                                    {t("saveChanges", { ns: "settings" })}
+                                                </Button>
+                                            </div>
+                                        </Card>
+                                    </div>
+                                </TabsContent>
+                                <TabsContent value="ner">
+                                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
+                                        <Card className="col-span-1 lg:col-span-3">
+                                            <CardHeader>
+                                                <CardTitle>{t("nerSettingsTitle", { ns: "settings" })}</CardTitle>
+                                                <CardDescription>
+                                                    {t("nerSettingsDescription", { ns: "settings" })}
+                                                </CardDescription>
+                                            </CardHeader>
+                                            {nerSaveResult && (
+                                                <CardContent className="pt-4">
+                                                    <Alert variant={nerSaveResult.success ? "default" : "destructive"}>
+                                                        {nerSaveResult.success ? (
+                                                            <CheckCircle2 className="h-4 w-4" />
+                                                        ) : (
+                                                            <AlertTriangle className="h-4 w-4" />
+                                                        )}
+                                                        <AlertTitle>
+                                                            {nerSaveResult.success ? t("success", { ns: "settings" }) : t("error", { ns: "settings" })}
+                                                        </AlertTitle>
+                                                        <AlertDescription>{nerSaveResult.message}</AlertDescription>
+                                                    </Alert>
+                                                </CardContent>
+                                            )}
+                                            <CardContent className="space-y-6">
+                                                {isLoadingNerSettings ? (
+                                                    <div className="flex items-center justify-center py-8">
+                                                        <Spinner className="h-5 w-5" />
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        <div className="flex items-center gap-4">
+                                                            <Label htmlFor="ner-enabled">{t("nerEnabled", { ns: "settings" })}</Label>
+                                                            <Switch
+                                                                id="ner-enabled"
+                                                                checked={nerEnabled}
+                                                                onCheckedChange={setNerEnabled}
+                                                            />
+                                                        </div>
+
+                                                        <div className="space-y-2">
+                                                            <Label htmlFor="ner-model">{t("nerModel", { ns: "settings" })}</Label>
+                                                            <Input
+                                                                id="ner-model"
+                                                                placeholder="e.g., en_core_web_sm"
+                                                                value={nerModel}
+                                                                onChange={(e) => setNerModel(e.target.value)}
+                                                            />
+                                                            <p className="text-sm text-muted-foreground">
+                                                                {t("nerModelDescription", { ns: "settings" })}
+                                                            </p>
+                                                        </div>
+
+                                                        <div className="space-y-2">
+                                                            <Label htmlFor="ner-batch-size">{t("nerBatchSize", { ns: "settings" })}</Label>
+                                                            <Input
+                                                                id="ner-batch-size"
+                                                                type="number"
+                                                                min="1"
+                                                                max="512"
+                                                                value={nerBatchSize}
+                                                                onChange={(e) => setNerBatchSize(Number(e.target.value))}
+                                                            />
+                                                            <p className="text-sm text-muted-foreground">
+                                                                {t("nerBatchSizeDescription", { ns: "settings" })}
+                                                            </p>
+                                                        </div>
+
+                                                        <div className="space-y-2">
+                                                            <Label htmlFor="ner-confidence">{t("nerConfidenceThreshold", { ns: "settings" })}</Label>
+                                                            <Input
+                                                                id="ner-confidence"
+                                                                type="number"
+                                                                min="0"
+                                                                max="1"
+                                                                step="0.01"
+                                                                value={nerConfidenceThreshold}
+                                                                onChange={(e) => setNerConfidenceThreshold(Number(e.target.value))}
+                                                            />
+                                                            <p className="text-sm text-muted-foreground">
+                                                                {t("nerConfidenceDescription", { ns: "settings" })}
+                                                            </p>
+                                                        </div>
+
+                                                        <div className="space-y-2">
+                                                            <Label htmlFor="ner-device">{t("nerDevice", { ns: "settings" })}</Label>
+                                                            <Select value={nerDevice} onValueChange={setNerDevice}>
+                                                                <SelectTrigger id="ner-device">
+                                                                    <SelectValue placeholder={t("selectDevice", { ns: "settings" })} />
+                                                                </SelectTrigger>
+                                                                <SelectContent>
+                                                                    <SelectItem value="cpu">CPU</SelectItem>
+                                                                    <SelectItem value="cuda">CUDA (NVIDIA GPU)</SelectItem>
+                                                                    <SelectItem value="mps">MPS (Apple Silicon)</SelectItem>
+                                                                </SelectContent>
+                                                            </Select>
+                                                            <p className="text-sm text-muted-foreground">
+                                                                {t("nerDeviceDescription", { ns: "settings" })}
+                                                            </p>
+                                                        </div>
+                                                    </>
+                                                )}
+                                            </CardContent>
+                                            <div className="border-t p-6 flex justify-end">
+                                                <Button onClick={handleSaveNERSettings} disabled={isLoadingNerSettings}>
                                                     <Save className="mr-2 size-4" />
                                                     {t("saveChanges", { ns: "settings" })}
                                                 </Button>

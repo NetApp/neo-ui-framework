@@ -169,6 +169,7 @@ export function MonitoringChart({
         <TabsTrigger value="data-corpus">{t("dataCorpusTab", { ns: "monitoring" })}</TabsTrigger>
         <TabsTrigger value="crawling">{t("crawlingTab", { ns: "monitoring" })}</TabsTrigger>
         <TabsTrigger value="tasks">{t("tasksTab", { ns: "monitoring" })}</TabsTrigger>
+        <TabsTrigger value="ner">{t("nerTab", { ns: "monitoring" })}</TabsTrigger>
       </TabsList>
 
       {/* Neo Tab */}
@@ -418,6 +419,28 @@ export function MonitoringChart({
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <TasksSummaryCard stats={taskStats} className="md:col-span-1 lg:col-span-1" />
           <AclCacheCard stats={monitoring.aclCacheStats} className="md:col-span-1 lg:col-span-1" />
+        </div>
+      </TabsContent>
+
+      {/* NER Tab */}
+      <TabsContent value="ner">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <Card className="md:col-span-1 lg:col-span-1">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">{t("nerStatus", { ns: "monitoring" })}</CardTitle>
+              <IconActivity className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Badge variant="default" className="bg-green-600">
+                    {t("activeStatus", { ns: "monitoring" })}
+                  </Badge>
+                </div>
+                <p className="text-xs text-muted-foreground">{t("nerServiceRunning", { ns: "monitoring" })}</p>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </TabsContent>
     </Tabs>

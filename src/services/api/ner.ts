@@ -50,6 +50,14 @@ export interface NERSchemaConfig {
   updated_at: string
 }
 
+export interface NERSettings {
+  enabled?: boolean
+  model?: string
+  batch_size?: number
+  confidence_threshold?: number
+  device?: string
+}
+
 export interface EntityAggregateItem {
   value: string
   entity_type: string
@@ -136,6 +144,18 @@ export class NERApiClient extends BaseApiClient {
       )
     } catch (error) {
       appLogger.error("NERApiClient.getShareNERStats", error instanceof Error ? error.message : String(error))
+      throw error
+    }
+  }
+
+  async getNERStatus(token: string): Promise<Record<string, unknown>> {
+    try {
+      return await this.requestWithToken<Record<string, unknown>>(
+        this.buildApiV1Path(`/ner/status`),
+        token
+      )
+    } catch (error) {
+      appLogger.error("NERApiClient.getNERStatus", error instanceof Error ? error.message : String(error))
       throw error
     }
   }
@@ -318,6 +338,34 @@ export class NERApiClient extends BaseApiClient {
       )
     } catch (error) {
       appLogger.error("NERApiClient.triggerShareReanalysis", error instanceof Error ? error.message : String(error))
+      throw error
+    }
+  }
+
+  async getNERSettings(token: string): Promise<NERSettings> {
+    try {
+      return await this.requestWithToken<NERSettings>(
+        this.buildApiV1Path(`/ner/settings`),
+        token
+      )
+    } catch (error) {
+      appLogger.error("NERApiClient.getNERSettings", error instanceof Error ? error.message : String(error))
+      throw error
+    }
+  }
+
+  async updateNERSettings(token: string, settings: NERSettings): Promise<NERSettings> {
+    try {
+      return await this.requestWithToken<NERSettings>(
+        this.buildApiV1Path(`/ner/settings`),
+        token,
+        {
+          method: "PUT",
+          body: JSON.stringify(settings),
+        }
+      )
+    } catch (error) {
+      appLogger.error("NERApiClient.updateNERSettings", error instanceof Error ? error.message : String(error))
       throw error
     }
   }

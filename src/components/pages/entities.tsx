@@ -132,14 +132,26 @@ export default function EntitiesPage() {
   return (
     <div className="flex-1 overflow-y-auto p-6">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight mb-2">
-          {t("entitiesTitle", { defaultValue: "Entities" })}
-        </h1>
+        <div className="flex items-center gap-3 mb-2">
+          <h1 className="text-3xl font-bold tracking-tight">
+            {t("entitiesTitle", { defaultValue: "Entities" })}
+          </h1>
+          <span className="inline-flex items-center rounded-full border border-amber-400 bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-700 dark:border-amber-500 dark:bg-amber-950 dark:text-amber-400">
+            Tech Preview
+          </span>
+        </div>
         <p className="text-muted-foreground">
           {t("entitiesDescription", {
             defaultValue: "Discover named entities and relationships in your documents",
           })}
         </p>
+        <Alert className="mt-4 border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-300">
+          <AlertTriangle className="h-4 w-4 !text-amber-500" />
+          <AlertTitle className="text-amber-800 dark:text-amber-300">Tech Preview</AlertTitle>
+          <AlertDescription className="text-amber-700 dark:text-amber-400">
+            Named Entity Recognition is an early-access feature. Results may be incomplete or change in future releases.
+          </AlertDescription>
+        </Alert>
       </div>
 
       {/* Stats Cards */}

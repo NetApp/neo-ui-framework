@@ -601,6 +601,10 @@ export class NeoApiService extends BaseApiClient {
     return this.nerClient.getShareNERStats(token, shareId)
   }
 
+  async getNERStatus(token: string) {
+    return this.nerClient.getNERStatus(token)
+  }
+
   async getNERSchemas(token: string) {
     return this.nerClient.getNERSchemas(token)
   }
@@ -671,6 +675,14 @@ export class NeoApiService extends BaseApiClient {
 
   async triggerShareReanalysis(token: string, shareId: string, force: boolean = false) {
     return this.nerClient.triggerShareReanalysis(token, shareId, force)
+  }
+
+  async getNERSettings(token: string) {
+    return this.nerClient.getNERSettings(token)
+  }
+
+  async updateNERSettings(token: string, settings: any) {
+    return this.nerClient.updateNERSettings(token, settings)
   }
 
 }
