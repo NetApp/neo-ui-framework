@@ -954,7 +954,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
                     <Label htmlFor="share-path">Share Path <span className="text-destructive">*</span></Label>
                     <Input
                       id="share-path"
-                      placeholder="\\\\mysmbserver\\myshare"
+                      placeholder="\\mysmbserver\myshare"
                       value={sharePath}
                       onChange={(event) => setSharePath(event.target.value)}
                       required
