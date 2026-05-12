@@ -17,7 +17,7 @@ import { appLogger } from "@/services/app-logger"
 interface LoginPageProps {
     onConnect: (credentials: ConnectionCredentials) => Promise<void>
     onOAuthLogin?: () => Promise<void> | void
-    onEntraIdLogin?: (token: string) => Promise<void>
+    onEntraIdLogin?: (token: { access_token: string; id_token?: string }) => Promise<void>
 }
 
 export default function LoginPage({ onConnect, onOAuthLogin, onEntraIdLogin }: LoginPageProps) {
@@ -31,8 +31,11 @@ export default function LoginPage({ onConnect, onOAuthLogin, onEntraIdLogin }: L
         isLoading: entraLoading,
         error: entraError,
         initiateLogin: initiateEntraLogin,
-        isConfigured: entraConfigured,
+        isCheckingMcpOauth,
+        isMcpOauthConfigured,
     } = useEntraIdAuth()
+
+    const isEntraDisabled = entraLoading || isLoading || isCheckingMcpOauth || !isMcpOauthConfigured
 
     useEffect(() => {
         if (!entraToken?.access_token || !onEntraIdLogin) return
@@ -43,7 +46,10 @@ export default function LoginPage({ onConnect, onOAuthLogin, onEntraIdLogin }: L
             setError(null)
             try {
                 appLogger.debug("Exchanging Entra ID OAuth token for API token")
-                await onEntraIdLogin(entraToken.access_token)
+                await onEntraIdLogin({
+                    access_token: entraToken.access_token,
+                    id_token: entraToken.id_token,
+                })
                 exchangedEntraTokenRef.current = entraToken.access_token
             } catch (err) {
                 const errorMsg = err instanceof Error ? err.message : "Failed to exchange Entra ID token"
@@ -134,15 +140,23 @@ export default function LoginPage({ onConnect, onOAuthLogin, onEntraIdLogin }: L
                             {isLoading ? "Logging in..." : "Login"}
                         </Button>
 
-                        {entraConfigured && (
-                            <Button
-                                type="button"
-                                className="w-full rounded-lg bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700"
-                                onClick={handleEntraLogin}
-                                disabled={entraLoading || isLoading}
-                            >
-                                {entraLoading ? "Signing in with Entra ID..." : "Sign in with Entra ID"}
-                            </Button>
+                        <Button
+                            type="button"
+                            className="w-full rounded-lg bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700"
+                            onClick={handleEntraLogin}
+                            disabled={isEntraDisabled}
+                        >
+                            {entraLoading
+                                ? "Signing in with Entra ID..."
+                                : isCheckingMcpOauth
+                                    ? "Checking Entra ID setup..."
+                                    : "Sign in with Entra ID"}
+                        </Button>
+
+                        {!isCheckingMcpOauth && !isMcpOauthConfigured && (
+                            <div className="text-xs text-neutral-400">
+                                Entra ID Login requires MCP OAuth
+                            </div>
                         )}
 
                         {onOAuthLogin && (

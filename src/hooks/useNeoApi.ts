@@ -349,13 +349,12 @@ export function useNeoApi() {
       return data
     } catch (error) {
       if (error instanceof AuthenticationError) {
-        clearSystemData()
-        setToken(null)
+        appLogger.warn("System data fetch returned authentication error; keeping current session")
       }
       appLogger.error("Failed to fetch system data", error instanceof Error ? error.message : "Unknown error")
       throw error
     }
-  }, [token, applySystemData, clearSystemData])
+  }, [token, applySystemData])
 
   const handleFetchMonitoring = useCallback(async (force?: boolean) => {
     if (!token) {
@@ -382,13 +381,12 @@ export function useNeoApi() {
       appLogger.info("Monitoring data fetched successfully")
     } catch (error) {
       if (error instanceof AuthenticationError) {
-        clearSystemData()
-        setToken(null)
+        appLogger.warn("Monitoring fetch returned authentication error; keeping current session")
       }
       appLogger.error("Failed to fetch monitoring data", error instanceof Error ? error.message : "Unknown error")
       throw error
     }
-  }, [token, clearSystemData])
+  }, [token])
 
   const handleRefresh = useCallback(async (): Promise<void> => {
     if (!token) {
@@ -1370,12 +1368,12 @@ export function useNeoApi() {
   }, [clearSystemData, me?.username, token])
 
   const handleEntraIdLogin = useCallback(
-    async (entraAccessToken: string) => {
-      if (!entraAccessToken) {
+    async (entraToken: { access_token: string; id_token?: string }) => {
+      if (!entraToken.access_token) {
         throw new Error("Entra ID access token is missing")
       }
 
-      appLogger.info("Exchanging Entra ID OAuth token for Neo API session")
+      appLogger.info("Processing Entra ID login with user provisioning")
 
       clearSystemData()
       apiRef.current.clearCache()
@@ -1383,10 +1381,117 @@ export function useNeoApi() {
 
       try {
         const api = apiRef.current
-        const data = await api.fetchSystemData(entraAccessToken)
+        
+        // Extract email and roles from ID token if available
+        let email: string | null = null
+        let roles: string[] = []
+        let displayName: string | null = null
+        let entraObjectId: string | null = null
+        
+        if (entraToken.id_token) {
+          try {
+            // Decode ID token to get user claims
+            const parts = entraToken.id_token.split(".")
+            if (parts.length === 3) {
+              const payload = parts[1]
+              const decoded = atob(payload.replace(/-/g, "+").replace(/_/g, "/"))
+              const claims = JSON.parse(decoded) as Record<string, unknown>
+              
+              // Extract email from various possible claim names
+              email = (claims.email || claims.preferred_username || claims.upn) as string | null
+              
+              // Extract roles array (Azure AD may use different claim names)
+              if (Array.isArray(claims.roles)) {
+                roles = claims.roles as string[]
+              } else if (claims.roles && typeof claims.roles === "string") {
+                roles = [claims.roles]
+              }
+              
+              displayName = (claims.name || claims.display_name) as string | null
+              entraObjectId = (claims.oid || claims.sub) as string | null
+              
+              appLogger.debug("Extracted Entra ID claims", undefined, {
+                email,
+                roles,
+                displayName,
+                hasObjectId: !!entraObjectId,
+              })
+            }
+          } catch (err) {
+            appLogger.warn("Failed to decode ID token claims", err instanceof Error ? err.message : "Unknown error")
+          }
+        }
+        
+        // Determine if user should be admin based on roles
+        const shouldBeAdmin = roles.some(
+          (role) => role === "Global Administrator" || role === "Administrator"
+        )
+        
+        // If email found, check if local user exists and create if needed
+        if (email) {
+          appLogger.debug("Checking for existing user", undefined, { email })
+          
+          try {
+            // Fetch the list of users to check if they exist
+            const currentUsers = await api.getUsers(entraToken.access_token)
+            const existingUser = currentUsers?.find((u) => u.email === email)
+            
+            if (!existingUser) {
+              // Extract username from email (part before @)
+              const username = email.split("@")[0]
+              
+              appLogger.info("User not found locally, creating new user", undefined, {
+                username,
+                email,
+                isAdmin: shouldBeAdmin,
+              })
+              
+              // Create new user with appropriate admin flag
+              try {
+                // Generate a temporary secure password
+                const tempPassword = `Entra_${entraObjectId?.substring(0, 12) || Math.random().toString(36).substring(2, 15)}`
+                
+                await api.createUser(entraToken.access_token, {
+                  id: 0, // API will assign ID
+                  username,
+                  password: tempPassword,
+                  email,
+                  is_active: true,
+                  is_admin: shouldBeAdmin,
+                })
+                
+                appLogger.info("User created successfully", undefined, {
+                  username,
+                  email,
+                  isAdmin: shouldBeAdmin,
+                })
+                
+                toast.info(`User ${username} created with ${shouldBeAdmin ? "admin" : "regular"} permissions`)
+              } catch (createErr) {
+                appLogger.warn(
+                  "Failed to create user",
+                  createErr instanceof Error ? createErr.message : "Unknown error"
+                )
+                // Continue anyway - the user might exist or the request might succeed despite the error
+                toast.warning("Could not auto-create user, but login may still work")
+              }
+            } else {
+              appLogger.debug("User already exists locally", undefined, { username: existingUser.username })
+            }
+          } catch (usersErr) {
+            appLogger.warn(
+              "Failed to fetch users list for provisioning",
+              usersErr instanceof Error ? usersErr.message : "Unknown error"
+            )
+            // Continue with login anyway
+          }
+        }
+        
+        // Proceed with normal login flow using the access token
+        const data = await api.fetchSystemData(entraToken.access_token)
 
         applySystemData(data)
-        setToken(entraAccessToken)
+        setToken(entraToken.access_token)
         setCacheStats(api.getCacheStats())
 
         if (data.me) {

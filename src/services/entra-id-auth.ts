@@ -14,8 +14,13 @@ export interface OAuthTokenResponse {
   access_token: string
   token_type: string
   expires_in?: number
+  refresh_token?: string
   scope?: string
   id_token?: string
+}
+
+interface StoredOAuthToken extends OAuthTokenResponse {
+  savedAt: number
 }
 
 /**
@@ -37,6 +42,20 @@ interface PKCEChallenge {
   codeChallenge: string
 }
 
+interface MCPOAuthSettingsResponse {
+  mcp_oauth_configured?: boolean
+  tenant_id?: string | null
+  client_id?: string | null
+  client_secret_set?: boolean
+  audience?: string | null
+  message?: string
+}
+
+interface MCPOAuthStatus {
+  configured: boolean
+  message?: string
+}
+
 /**
  * Entra ID OAuth Service
  * Handles OAuth 2.0 Authorization Code flow with PKCE
@@ -51,11 +70,17 @@ export class EntraIdOAuthService {
   private redirectUri: string
   private apiUrl: string
 
+  private buildApiPath(path: string): string {
+    const normalizedBase = this.apiUrl.endsWith("/") ? this.apiUrl.slice(0, -1) : this.apiUrl
+    const normalizedPath = path.startsWith("/") ? path : `/${path}`
+    return `${normalizedBase}${normalizedPath}`
+  }
+
   constructor() {
     this.tenantId = import.meta.env.VITE_ENTRA_TENANT_ID || ""
     this.clientId = import.meta.env.VITE_ENTRA_CLIENT_ID || ""
     this.redirectUri = import.meta.env.VITE_ENTRA_REDIRECT_URI || `${window.location.origin}/auth/callback`
-    this.apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000/api"
+    this.apiUrl = import.meta.env.DEV ? "/api" : (import.meta.env.VITE_API_URL || "/api")
 
     appLogger.debug("EntraIdOAuthService initialized", undefined, {
       tenantId: this.tenantId,
@@ -74,6 +99,64 @@ export class EntraIdOAuthService {
    */
   isConfigured(): boolean {
     return !!(this.tenantId && this.clientId)
+  }
+
+  private async fetchMcpOauthSettings(): Promise<MCPOAuthSettingsResponse> {
+    const endpoint = import.meta.env.DEV
+      ? this.buildApiPath("/api/v1/setup/mcp")
+      : this.buildApiPath("/v1/setup/mcp")
+    
+    appLogger.debug("Fetching MCP OAuth settings", undefined, {
+      endpoint: endpoint,
+    })
+    
+    const response = await fetch(endpoint, {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch MCP OAuth settings: ${response.status} ${response.statusText}`)
+    }
+
+    return (await response.json()) as MCPOAuthSettingsResponse
+  }
+
+  async getMcpOauthStatus(): Promise<MCPOAuthStatus> {
+    try {
+      const settings = await this.fetchMcpOauthSettings()
+
+      appLogger.debug("MCP OAuth settings fetched", undefined, {
+        configured: settings.mcp_oauth_configured,
+        hasTenantId: !!settings.tenant_id,
+        hasClientId: !!settings.client_id,
+      })
+
+      if (settings.tenant_id) {
+        this.tenantId = settings.tenant_id
+      }
+
+      if (settings.client_id) {
+        this.clientId = settings.client_id
+      }
+
+      return {
+        configured: Boolean(settings.mcp_oauth_configured),
+        message: settings.message,
+      }
+    } catch (error) {
+      appLogger.warn(
+        "Unable to determine MCP OAuth status",
+        error instanceof Error ? error.message : "Unknown error"
+      )
+
+      return {
+        configured: false,
+        message: "Could not verify MCP OAuth configuration.",
+      }
+    }
   }
 
   /**
@@ -173,8 +256,16 @@ export class EntraIdOAuthService {
    * Redirects user to Entra ID for authentication
    */
   async initiateAuthorizationFlow(): Promise<void> {
+    const mcpOauthStatus = await this.getMcpOauthStatus()
+    if (!mcpOauthStatus.configured) {
+      throw new Error(
+        mcpOauthStatus.message ||
+        "MCP OAuth is not configured. Configure it in Settings > MCP before using Entra ID login."
+      )
+    }
+
     if (!this.isConfigured()) {
-      throw new Error("Entra ID OAuth is not configured. Check environment variables.")
+      throw new Error("Entra ID OAuth is missing tenant/client values from MCP OAuth configuration.")
     }
 
     try {
@@ -197,7 +288,7 @@ export class EntraIdOAuthService {
       })
 
       // Build authorization URL
-      const authorizeUrl = new URL(`/authorize`, this.apiUrl)
+      const authorizeUrl = new URL(this.buildApiPath("/authorize"), window.location.origin)
       authorizeUrl.searchParams.set("response_type", "code")
       authorizeUrl.searchParams.set("client_id", this.clientId)
       authorizeUrl.searchParams.set("redirect_uri", this.redirectUri)
@@ -283,8 +374,8 @@ export class EntraIdOAuthService {
     try {
       appLogger.debug("Exchanging authorization code for token")
 
-      const tokenUrl = new URL(`/token`, this.apiUrl)
-      const response = await fetch(tokenUrl.toString(), {
+      const tokenUrl = this.buildApiPath("/mcp/token")
+      const response = await fetch(tokenUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
@@ -362,6 +453,84 @@ export class EntraIdOAuthService {
         error instanceof Error ? error.message : "Unknown error"
       )
       return null
+    }
+  }
+
+  private getStoredTokenRecord(): StoredOAuthToken | null {
+    try {
+      const stored = sessionStorage.getItem(EntraIdOAuthService.TOKEN_STORAGE_KEY)
+      if (!stored) return null
+      return JSON.parse(stored) as StoredOAuthToken
+    } catch {
+      return null
+    }
+  }
+
+  getMillisecondsUntilExpiry(): number | null {
+    const stored = this.getStoredTokenRecord()
+    if (!stored?.expires_in) return null
+
+    const savedAt = stored.savedAt ?? Date.now()
+    const expiryTime = savedAt + (stored.expires_in * 1000)
+    return expiryTime - Date.now()
+  }
+
+  async refreshStoredToken(): Promise<OAuthTokenResponse | null> {
+    const stored = this.getStoredTokenRecord()
+
+    if (!stored?.refresh_token) {
+      appLogger.debug("No refresh token available; skipping token refresh")
+      return null
+    }
+
+    try {
+      appLogger.debug("Refreshing Entra ID OAuth token")
+
+      const tokenUrl = this.buildApiPath("/mcp/token")
+      const params = new URLSearchParams({
+        grant_type: "refresh_token",
+        refresh_token: stored.refresh_token,
+        client_id: this.clientId,
+      })
+
+      if (stored.scope) {
+        params.set("scope", stored.scope)
+      }
+
+      const response = await fetch(tokenUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          Accept: "application/json",
+        },
+        body: params.toString(),
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`Refresh token request failed: ${response.status} ${response.statusText} - ${errorText}`)
+      }
+
+      const refreshed = (await response.json()) as OAuthTokenResponse
+      if (!refreshed.access_token) {
+        throw new Error("Refresh token response missing access_token")
+      }
+
+      const merged: OAuthTokenResponse = {
+        ...stored,
+        ...refreshed,
+        refresh_token: refreshed.refresh_token ?? stored.refresh_token,
+      }
+
+      this.saveToken(merged)
+      appLogger.info("OAuth token refreshed successfully")
+      return merged
+    } catch (error) {
+      appLogger.error(
+        "Failed to refresh OAuth token",
+        error instanceof Error ? error.message : "Unknown error"
+      )
+      throw error
     }
   }
 

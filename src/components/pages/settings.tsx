@@ -638,13 +638,13 @@ export default function Settings({ monitoringOverview, state, handlers }: Settin
                                 className="w-full"
                             >
                                 <TabsList>
-                                    <TabsTrigger value="neo-core">{t("neoCoreTab", { ns: "settings" })}</TabsTrigger>
-                                    <TabsTrigger value="neo-mcp">{t("neoMcpTab", { ns: "settings" })}</TabsTrigger>
-                                    <TabsTrigger value="content-visibility">{t("contentVisibilityTab", { ns: "settings" })}</TabsTrigger>
-                                    <TabsTrigger value="cache">{t("cacheTab", { ns: "settings" })}</TabsTrigger>
+                                    <TabsTrigger value="neo-core">Core</TabsTrigger>
+                                    <TabsTrigger value="neo-mcp">MCP</TabsTrigger>
+                                    <TabsTrigger value="ner">NER</TabsTrigger>
+                                    <TabsTrigger value="content-visibility">Privacy</TabsTrigger>
+                                    <TabsTrigger value="cache">Cache</TabsTrigger>
                                     <TabsTrigger value="languages">{t("languagesTab", { ns: "settings" })}</TabsTrigger>
-                                    <TabsTrigger value="logging">{t("loggingTab", { ns: "settings" })}</TabsTrigger>
-                                    <TabsTrigger value="ner">{t("nerTab", { ns: "settings" })}</TabsTrigger>
+                                    <TabsTrigger value="logging">Logs</TabsTrigger>
                                 </TabsList>
                                 <TabsContent value="neo-core">
                                     <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">

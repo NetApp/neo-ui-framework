@@ -543,9 +543,10 @@ export class NeoApiService extends BaseApiClient {
       try {
         return await promise
       } catch (error) {
-        if (error instanceof AuthorizationError) {
-          appLogger.warn("Access denied for optional resource", undefined, {
+        if (error instanceof AuthorizationError || error instanceof AuthenticationError) {
+          appLogger.warn("Optional resource unavailable", undefined, {
             error: error.message,
+            reason: error instanceof AuthenticationError ? "authentication" : "authorization",
           })
           return defaultValue
         }
