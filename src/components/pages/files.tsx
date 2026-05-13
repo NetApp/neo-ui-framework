@@ -82,7 +82,7 @@ import {
   SheetHeader,
   SheetTitle,
   SheetDescription,
-  SheetFooter
+  SheetClose
 } from "@/components/ui/sheet"
 import { Separator } from "@/components/ui/separator"
 import { Spinner } from "@/components/ui/spinner"
@@ -561,25 +561,32 @@ export default function Files({
           setMetadataLoading(false)
         }
       }}>
-        <SheetContent side="bottom" className="max-h-[95vh] flex flex-col p-0 gap-0">
-          <div className="flex-1 overflow-y-auto p-6 flex flex-col">
-            <SheetHeader className="mb-4 p-0">
-              <SheetTitle>File details</SheetTitle>
-              <SheetDescription>
-                Detailed information about the selected file
-              </SheetDescription>
-            </SheetHeader>
-
-            <Separator className="mb-6" />
-
-            <div className="space-y-4">
-              {metadataLoading ? (
-                <div className="flex items-center justify-center py-6">
-                  <Spinner className="size-6" />
+          <SheetContent side="top" hideCloseButton className="max-h-[95vh] flex flex-col p-0 gap-0">
+            <div className="flex-1 overflow-y-auto p-6 flex flex-col">
+              <SheetHeader className="mb-4 p-0">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <SheetTitle>File details</SheetTitle>
+                    <SheetDescription>
+                      Detailed information about the selected file
+                    </SheetDescription>
+                  </div>
+                  <SheetClose asChild>
+                    <Button size="sm">Close</Button>
+                  </SheetClose>
                 </div>
-              ) : metadataError ? (
-                <p className="text-sm text-destructive">{metadataError}</p>
-              ) : metadata ? (
+              </SheetHeader>
+
+              <Separator className="mb-6" />
+
+              <div className="space-y-4">
+                {metadataLoading ? (
+                  <div className="flex items-center justify-center py-6">
+                    <Spinner className="size-6" />
+                  </div>
+                ) : metadataError ? (
+                  <p className="text-sm text-destructive">{metadataError}</p>
+                ) : metadata ? (
                 <dl className="grid grid-cols-1 gap-y-3 text-sm text-muted-foreground sm:grid-cols-3 sm:gap-x-6">
                   <div>
                     <dt className="font-medium text-foreground">Filename</dt>
@@ -672,11 +679,6 @@ export default function Files({
                 <p className="text-sm text-muted-foreground">No details available.</p>
               )}
             </div>
-            <SheetFooter>
-              <Button variant="outline" onClick={() => setSheetOpen(false)}>
-                Close
-              </Button>
-            </SheetFooter>
           </div>
         </SheetContent>
       </Sheet>

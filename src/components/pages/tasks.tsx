@@ -15,6 +15,7 @@ import {
   SheetTitle,
   SheetDescription,
   SheetClose,
+  SheetFooter,
 } from "@/components/ui/sheet"
 import { Separator } from "@/components/ui/separator"
 import { Button } from "@/components/ui/button"
@@ -349,7 +350,7 @@ export default function Tasks({
         <SheetContent side="top" hideCloseButton className="max-h-[95vh] flex flex-col p-0 gap-0">
           <div className="flex-1 overflow-y-auto p-6 flex flex-col">
             <SheetHeader className="mb-4 p-0">
-              <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center justify-between">
                 <div>
                   <SheetTitle>{t("detailsTitle", { ns: "tasks" })}</SheetTitle>
                   <SheetDescription>
@@ -357,25 +358,16 @@ export default function Tasks({
                   </SheetDescription>
                 </div>
                 {selectedTask && (
-                  <div className="flex gap-2">
-                    <Button
-                      variant={canCancelTask(selectedTask.status) ? "destructive" : "outline"}
-                      size="sm"
-                      onClick={() => handleCancelClick(selectedTask)}
-                      disabled={!canCancelTask(selectedTask.status)}
-                    >
-                      <IconTrash className="mr-2 size-4" />
-                      {t("cancelTask", { ns: "tasks" })}
-                    </Button>
+                  <div className="flex items-center gap-2">
                     <SheetClose asChild>
-                      <Button variant="outline" size="sm">{t("closeButton", { ns: "tasks" })}</Button>
+                      <Button size="sm">{t("closeButton", { ns: "tasks" })}</Button>
                     </SheetClose>
                   </div>
                 )}
               </div>
             </SheetHeader>
 
-            {selectedTask ? (
+            {selectedTask && (
               <div className="space-y-6">
                 {loadingTaskDetails ? (
                   <Alert className="mb-2">
@@ -476,8 +468,20 @@ export default function Tasks({
                   </div>
                 )}
               </div>
-            ) : null}
+            )}
           </div>
+          {selectedTask && (
+            <SheetFooter className="p-4 border-t gap-2 sm:gap-0">
+              <Button
+                variant="destructive"
+                onClick={() => handleCancelClick(selectedTask)}
+                disabled={!canCancelTask(selectedTask.status)}
+              >
+                <IconTrash className="mr-2 size-4" />
+                {t("cancelTask", { ns: "tasks" })}
+              </Button>
+            </SheetFooter>
+          )}
         </SheetContent>
       </Sheet>
 

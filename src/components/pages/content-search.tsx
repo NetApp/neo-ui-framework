@@ -50,9 +50,9 @@ import {
     Sheet,
     SheetContent,
     SheetDescription,
-    SheetFooter,
     SheetHeader,
     SheetTitle,
+    SheetClose,
 } from "@/components/ui/sheet"
 import { Separator } from "@/components/ui/separator"
 import {
@@ -664,13 +664,20 @@ export default function ContentSearch({ shares, datasets, onContentSearch, onCre
                             setMetadataLoading(false)
                         }
                     }}>
-                        <SheetContent side="bottom" className="max-h-[95vh] flex flex-col p-0 gap-0">
+                        <SheetContent side="top" hideCloseButton className="max-h-[95vh] flex flex-col p-0 gap-0">
                             <div className="flex-1 overflow-y-auto p-6 flex flex-col">
                                 <SheetHeader className="mb-4 p-0">
-                                    <SheetTitle>File details</SheetTitle>
-                                    <SheetDescription>
-                                        Detailed information about the selected file
-                                    </SheetDescription>
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <SheetTitle>File details</SheetTitle>
+                                            <SheetDescription>
+                                                Detailed information about the selected file
+                                            </SheetDescription>
+                                        </div>
+                                        <SheetClose asChild>
+                                            <Button size="sm">Close</Button>
+                                        </SheetClose>
+                                    </div>
                                 </SheetHeader>
 
                                 <Separator className="mb-6" />
@@ -775,11 +782,6 @@ export default function ContentSearch({ shares, datasets, onContentSearch, onCre
                                         <p className="text-sm text-muted-foreground">No details available.</p>
                                     )}
                                 </div>
-                                <SheetFooter>
-                                    <Button variant="outline" onClick={() => setSheetOpen(false)}>
-                                        Close
-                                    </Button>
-                                </SheetFooter>
                             </div>
                         </SheetContent>
                     </Sheet>

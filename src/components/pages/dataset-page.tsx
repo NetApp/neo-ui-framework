@@ -27,7 +27,6 @@ import {
     Sheet,
     SheetContent,
     SheetHeader,
-    SheetFooter,
     SheetClose,
 } from "@/components/ui/sheet"
 import { Spinner } from "@/components/ui/spinner"
@@ -686,12 +685,17 @@ export default function DatasetPage({
             </div>
 
             <Sheet open={!!selectedFile} onOpenChange={(open) => !open && setSelectedFile(null)}>
-                <SheetContent side="bottom" className="max-h-[95vh] flex flex-col p-0 gap-0">
+                <SheetContent side="top" hideCloseButton className="max-h-[95vh] flex flex-col p-0 gap-0">
                     <div className="flex-1 overflow-y-auto p-6 flex flex-col">
                         <SheetHeader className="mb-4 p-0">
-                            <div className="flex flex-col space-y-1">
-                                <h2 className="text-lg font-semibold">{selectedFile?.filename}</h2>
-                                <p className="text-sm text-muted-foreground break-all">{selectedFile?.unc_path}</p>
+                            <div className="flex items-center justify-between">
+                                <div className="flex flex-col space-y-1">
+                                    <h2 className="text-lg font-semibold">{selectedFile?.filename}</h2>
+                                    <p className="text-sm text-muted-foreground break-all">{selectedFile?.unc_path}</p>
+                                </div>
+                                <SheetClose asChild>
+                                    <Button size="sm">Close</Button>
+                                </SheetClose>
                             </div>
                         </SheetHeader>
 
@@ -805,11 +809,6 @@ export default function DatasetPage({
                             )}
                         </div>
                     </div>
-                    <SheetFooter className="p-4 border-t">
-                        <SheetClose asChild>
-                            <Button variant="outline">Close</Button>
-                        </SheetClose>
-                    </SheetFooter>
                 </SheetContent>
             </Sheet>
 
