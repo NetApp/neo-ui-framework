@@ -19,6 +19,14 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { ConfirmDialog } from "@/components/dialogs/confirm-dialog"
 import {
   IconTrash
@@ -32,24 +40,94 @@ interface TasksProps {
   tasks: TasksResponse[] | null
   taskStats: TaskStatisticsResponse | null
   aclCacheStats: AclCacheStatisticsResponse | null
-  onFetchTasks: () => Promise<void>
+  onFetchTasks: (options?: {
+    force?: boolean
+    status?: string | null
+    taskType?: string | null
+    limit?: number
+  }) => Promise<{
+    count: number
+    hasMore: boolean
+    requestedLimit: number
+  }>
+  onGetTaskDetailed: (taskId: string) => Promise<TasksResponse>
   onDeleteTask: (taskId: string) => Promise<void>
   monitoringOverview: MonitoringOverviewResponse | null
 }
 
-export default function Tasks({ tasks, taskStats, aclCacheStats, onFetchTasks, onDeleteTask, monitoringOverview }: TasksProps) {
+export default function Tasks({
+  tasks,
+  onFetchTasks,
+  onGetTaskDetailed,
+  onDeleteTask,
+  monitoringOverview,
+}: TasksProps) {
   const { t } = useTranslation()
   const [alertMessage, setAlertMessage] = useState<string | null>(null)
   const [alertVariant, setAlertVariant] = useState<"success" | "error">("success")
   const [initialLoad, setInitialLoad] = useState(true)
+  const [loadingTasks, setLoadingTasks] = useState(false)
+  const [loadingTaskDetails, setLoadingTaskDetails] = useState(false)
 
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
   const [selectedTask, setSelectedTask] = useState<TasksResponse | null>(null)
   const [isConfirmOpen, setIsConfirmOpen] = useState(false)
   const [taskToCancel, setTaskToCancel] = useState<TasksResponse | null>(null)
 
-  const handleRefresh = async () => {
+  const [statusFilter, setStatusFilter] = useState("all")
+  const [taskTypeInput, setTaskTypeInput] = useState("")
+  const [appliedStatusFilter, setAppliedStatusFilter] = useState("all")
+  const [appliedTaskType, setAppliedTaskType] = useState<string | null>(null)
+  const [pageSize, setPageSize] = useState(100)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalItems, setTotalItems] = useState(0)
+  const [hasMorePages, setHasMorePages] = useState(false)
+
+  const rows = tasks ?? []
+  const startIndex = (currentPage - 1) * pageSize
+  const pageRows = rows.slice(startIndex, startIndex + pageSize)
+  const totalPages = Math.max(1, Math.ceil(Math.max(totalItems, 1) / pageSize))
+
+  const fetchPage = async (
+    page: number,
+    options?: {
+      force?: boolean
+      status?: string
+      taskType?: string | null
+      pageSizeOverride?: number
+    }
+  ) => {
+    const effectiveStatus = options?.status ?? appliedStatusFilter
+    const effectiveTaskType = options?.taskType ?? appliedTaskType
+    const effectivePageSize = options?.pageSizeOverride ?? pageSize
+    const requestedLimit = page * effectivePageSize
+    setLoadingTasks(true)
     try {
-      await onFetchTasks()
+      const meta = await onFetchTasks({
+        force: options?.force,
+        status: effectiveStatus === "all" ? null : effectiveStatus,
+        taskType: effectiveTaskType,
+        limit: requestedLimit,
+      })
+
+      const inferredTotal = meta.hasMore
+        ? Math.max(meta.count, requestedLimit + 1)
+        : Math.max(meta.count, requestedLimit)
+
+      setTotalItems(inferredTotal)
+      setHasMorePages(meta.hasMore)
+    } finally {
+      setLoadingTasks(false)
+    }
+  }
+
+  const handleRefresh = async (force?: boolean) => {
+    try {
+      await fetchPage(currentPage, {
+        force,
+        status: appliedStatusFilter,
+        taskType: appliedTaskType,
+      })
       if (!initialLoad) {
         setAlertVariant("success")
         setAlertMessage(t("refreshedSuccessfully", { ns: "tasks" }))
@@ -66,11 +144,8 @@ export default function Tasks({ tasks, taskStats, aclCacheStats, onFetchTasks, o
   }
 
   useEffect(() => {
-    if (tasks === null && taskStats === null && aclCacheStats === null) {
-      handleRefresh()
-    } else {
-      setInitialLoad(false)
-    }
+    // Always force-refresh tasks on page mount so pagination metadata is accurate.
+    void handleRefresh(true)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -84,8 +159,20 @@ export default function Tasks({ tasks, taskStats, aclCacheStats, onFetchTasks, o
     return () => window.clearTimeout(timer)
   }, [alertMessage])
 
-  const handleTaskClick = (task: TasksResponse) => {
+  const handleTaskClick = async (task: TasksResponse) => {
+    setSelectedTaskId(task.id)
     setSelectedTask(task)
+    setLoadingTaskDetails(true)
+
+    try {
+      const detailedTask = await onGetTaskDetailed(task.id)
+      setSelectedTask((prev) => (prev?.id === task.id ? detailedTask : prev))
+    } catch (error) {
+      setAlertVariant("error")
+      setAlertMessage(error instanceof Error ? error.message : t("detailsLoadFailed", { ns: "tasks" }))
+    } finally {
+      setLoadingTaskDetails(false)
+    }
   }
 
   const handleCancelClick = (task: TasksResponse) => {
@@ -101,8 +188,10 @@ export default function Tasks({ tasks, taskStats, aclCacheStats, onFetchTasks, o
         setAlertMessage(t("cancellationRequested", { ns: "tasks" }))
         setIsConfirmOpen(false)
         setTaskToCancel(null)
+        setSelectedTaskId(null)
         setSelectedTask(null)
-        handleRefresh()
+        setCurrentPage(1)
+        await fetchPage(1, { force: true })
       } catch (error) {
         setAlertVariant("error")
         setAlertMessage(error instanceof Error ? error.message : t("failedToCancel", { ns: "tasks" }))
@@ -114,6 +203,54 @@ export default function Tasks({ tasks, taskStats, aclCacheStats, onFetchTasks, o
     const statusLower = status.toLowerCase()
     return statusLower === "pending" || statusLower === "running"
   }
+
+  const handleApplyFilters = async () => {
+    const normalizedTaskType = taskTypeInput.trim() || null
+    const normalizedStatus = statusFilter
+    setAppliedStatusFilter(normalizedStatus)
+    setAppliedTaskType(normalizedTaskType)
+    setCurrentPage(1)
+    await fetchPage(1, {
+      force: true,
+      status: normalizedStatus,
+      taskType: normalizedTaskType,
+      pageSizeOverride: pageSize,
+    })
+  }
+
+  const handleClearFilters = async () => {
+    setStatusFilter("all")
+    setTaskTypeInput("")
+    setAppliedStatusFilter("all")
+    setAppliedTaskType(null)
+    setCurrentPage(1)
+    setPageSize(100)
+    await fetchPage(1, {
+      force: true,
+      status: "all",
+      taskType: null,
+      pageSizeOverride: 100,
+    })
+  }
+
+  const handlePageSizeChange = async (nextPageSize: number) => {
+    setPageSize(nextPageSize)
+    setCurrentPage(1)
+    await fetchPage(1, {
+      force: true,
+      status: appliedStatusFilter,
+      taskType: appliedTaskType,
+      pageSizeOverride: nextPageSize,
+    })
+  }
+
+  const handlePageChange = async (nextPage: number) => {
+    if (nextPage < 1 || nextPage === currentPage) return
+    setCurrentPage(nextPage)
+    await fetchPage(nextPage)
+  }
+
+  const canGoNext = currentPage < totalPages || hasMorePages
 
   return (
     <div className="flex flex-1 flex-col">
@@ -128,7 +265,50 @@ export default function Tasks({ tasks, taskStats, aclCacheStats, onFetchTasks, o
               />
             </div>
             <div className="mb-4 flex justify-between items-center">
-
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-3 w-full">
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">{t("filterStatusLabel", { ns: "tasks" })}</p>
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{t("filterStatusAll", { ns: "tasks" })}</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="running">Running</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                      <SelectItem value="failed">Failed</SelectItem>
+                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">{t("filterTaskTypeLabel", { ns: "tasks" })}</p>
+                  <Input
+                    value={taskTypeInput}
+                    onChange={(event) => setTaskTypeInput(event.target.value)}
+                    placeholder={t("filterTaskTypePlaceholder", { ns: "tasks" })}
+                  />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">{t("limitLabel", { ns: "tasks" })}</p>
+                  <Select value={String(pageSize)} onValueChange={(value) => void handlePageSizeChange(Number(value))}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="50">50</SelectItem>
+                      <SelectItem value="100">100</SelectItem>
+                      <SelectItem value="200">200</SelectItem>
+                      <SelectItem value="500">500</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-end gap-2">
+                  <Button onClick={handleApplyFilters} disabled={loadingTasks}>{t("applyFilters", { ns: "tasks" })}</Button>
+                  <Button variant="outline" onClick={handleClearFilters} disabled={loadingTasks}>{t("clearFilters", { ns: "tasks" })}</Button>
+                </div>
+              </div>
             </div>
 
             {alertMessage ? (
@@ -142,13 +322,30 @@ export default function Tasks({ tasks, taskStats, aclCacheStats, onFetchTasks, o
               </Alert>
             ) : null}
 
-
-            <TasksTable tasks={tasks} onTaskClick={handleTaskClick} />
+            <TasksTable
+              tasks={pageRows}
+              currentPage={currentPage}
+              pageSize={pageSize}
+              totalItems={Math.max(totalItems, rows.length)}
+              totalPages={Math.max(totalPages, currentPage)}
+              hasNextPage={canGoNext}
+              isLoading={loadingTasks}
+              onPageChange={handlePageChange}
+              onTaskClick={handleTaskClick}
+            />
           </div>
         </div>
       </div>
 
-      <Sheet open={!!selectedTask} onOpenChange={(open) => !open && setSelectedTask(null)}>
+      <Sheet
+        open={!!selectedTaskId}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedTaskId(null)
+            setSelectedTask(null)
+          }
+        }}
+      >
         <SheetContent side="top" hideCloseButton className="max-h-[95vh] flex flex-col p-0 gap-0">
           <div className="flex-1 overflow-y-auto p-6 flex flex-col">
             <SheetHeader className="mb-4 p-0">
@@ -180,6 +377,13 @@ export default function Tasks({ tasks, taskStats, aclCacheStats, onFetchTasks, o
 
             {selectedTask ? (
               <div className="space-y-6">
+                {loadingTaskDetails ? (
+                  <Alert className="mb-2">
+                    <AlertCircleIcon />
+                    <AlertTitle>{t("loadingTaskDetails", { ns: "tasks" })}</AlertTitle>
+                    <AlertDescription />
+                  </Alert>
+                ) : null}
                 <dl className="grid grid-cols-1 gap-y-4 text-sm sm:grid-cols-2 lg:grid-cols-3 sm:gap-x-6">
                   <div>
                     <dt className="font-medium text-muted-foreground mb-1">{t("taskId", { ns: "tasks" })}</dt>

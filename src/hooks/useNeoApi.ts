@@ -31,6 +31,7 @@ import {
   type MonitoringGraphRateLimitResponse,
   type MonitoringFailedItemsResponse,
   type TasksResponse,
+  type TaskQueryParams,
   type TaskStatisticsResponse,
   type AclCacheStatisticsResponse,
   type SetupStatusResponse,
@@ -1178,37 +1179,59 @@ export function useNeoApi() {
 
 
 
-  const handleFetchTasks = useCallback(async (force?: boolean) => {
+  const handleFetchTasks = useCallback(async (options?: {
+    force?: boolean
+    status?: string | null
+    taskType?: string | null
+    limit?: number
+  }) => {
     if (!token) {
       appLogger.warn("Fetch tasks attempted without active token")
       throw new AuthenticationError()
     }
 
     const api = apiRef.current
+    const query: TaskQueryParams = {
+      status: options?.status ?? null,
+      task_type: options?.taskType ?? null,
+      limit: options?.limit,
+    }
 
     try {
-      appLogger.debug("Fetching tasks data", undefined, { force })
-      if (force) {
+      appLogger.debug("Fetching tasks data", undefined, { force: options?.force, query })
+      if (options?.force) {
         api.clearCache()
       }
-      const [tasks, taskStats, aclCacheStats] = await Promise.all([
-        api.getTasks(token),
+      const [tasksResponse, taskStats, aclCacheStats] = await Promise.all([
+        api.getTasks(token, query),
         api.getTaskStatistics(token),
         api.getAclCacheStatistics(token),
       ])
 
       setMonitoring(prev => ({
         ...prev,
-        tasks,
+        tasks: tasksResponse.tasks,
         taskStats,
         aclCacheStats,
       }))
 
+      const requestedLimit = query.limit ?? 100
+      const taskCount = tasksResponse.count ?? tasksResponse.tasks.length
+      const hasMore = tasksResponse.tasks.length >= requestedLimit
+
       appLogger.info("Tasks data fetched successfully", undefined, {
         total_tasks: taskStats.total_tasks,
         running_tasks: taskStats.by_status.running,
+        fetched_tasks: tasksResponse.tasks.length,
+        requested_limit: requestedLimit,
         acl_cache_stats: true,
       })
+
+      return {
+        count: taskCount,
+        hasMore,
+        requestedLimit,
+      }
     } catch (error) {
       if (error instanceof AuthenticationError) {
         clearSystemData()
@@ -1278,15 +1301,15 @@ export function useNeoApi() {
 
         // Refresh tasks after cancellation attempt
         api.clearCache()
-        const [tasks, taskStats, aclCacheStats] = await Promise.all([
-          api.getTasks(token),
+        const [tasksResponse, taskStats, aclCacheStats] = await Promise.all([
+          api.getTasks(token, { limit: 100 }),
           api.getTaskStatistics(token),
           api.getAclCacheStatistics(token),
         ])
 
         setMonitoring(prev => ({
           ...prev,
-          tasks,
+          tasks: tasksResponse.tasks,
           taskStats,
           aclCacheStats,
         }))
@@ -1333,6 +1356,25 @@ export function useNeoApi() {
       }
     },
     [token, clearSystemData, handleFetchMonitoring, handleFetchSystemData]
+  )
+
+  const handleGetTaskDetailed = useCallback(
+    async (taskId: string) => {
+      if (!token) {
+        appLogger.warn("Fetch task details attempted without active token")
+        throw new AuthenticationError()
+      }
+
+      const api = apiRef.current
+
+      try {
+        return await api.getTaskDetailed(token, taskId)
+      } catch (error) {
+        appLogger.warn("Detailed task fetch failed, falling back to basic task endpoint", undefined, { taskId })
+        return api.getTask(token, taskId)
+      }
+    },
+    [token]
   )
 
   const handleLogout = useCallback(async () => {
@@ -1401,6 +1443,7 @@ export function useNeoApi() {
       handleSearchFiles,
       handleFetchMonitoring,
       handleFetchTasks,
+      handleGetTaskDetailed,
       handleDeleteTask,
       handleLogout,
       handleFilesPageChange,

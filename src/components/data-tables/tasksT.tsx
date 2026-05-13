@@ -16,6 +16,13 @@ import { Button } from "@/components/ui/button"
 
 interface TasksTableProps {
   tasks: TasksResponse[] | null
+  currentPage: number
+  pageSize: number
+  totalItems: number
+  totalPages: number
+  hasNextPage: boolean
+  isLoading: boolean
+  onPageChange: (nextPage: number) => void
   onTaskClick: (task: TasksResponse) => void
 }
 
@@ -73,11 +80,19 @@ export function formatDuration(startedAt: string | null, completedAt: string | n
   return `${(durationMs / 3600000).toFixed(2)}h`
 }
 
-export function TasksTable({ tasks, onTaskClick }: TasksTableProps) {
+export function TasksTable({
+  tasks,
+  currentPage,
+  pageSize,
+  totalItems,
+  totalPages,
+  hasNextPage,
+  isLoading,
+  onPageChange,
+  onTaskClick,
+}: TasksTableProps) {
   const { t } = useTranslation()
   const rows = tasks ?? []
-  const rowsPerPage = 100
-  const [currentPage, setCurrentPage] = useState(1)
 
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>({
     name: 250,
@@ -151,14 +166,9 @@ export function TasksTable({ tasks, onTaskClick }: TasksTableProps) {
     }
   }, [handleResizeMove, handleResizeEnd])
 
-  useEffect(() => {
-    const totalPages = Math.max(1, Math.ceil(rows.length / rowsPerPage))
-    setCurrentPage((page) => Math.min(page, totalPages))
-  }, [rows.length])
-
-  const totalPages = Math.max(1, Math.ceil(rows.length / rowsPerPage))
-  const startIndex = (currentPage - 1) * rowsPerPage
-  const paginatedRows = rows.slice(startIndex, startIndex + rowsPerPage)
+  const startIndex = (currentPage - 1) * pageSize
+  const from = rows.length ? startIndex + 1 : 0
+  const to = startIndex + rows.length
 
   return (
     <>
@@ -204,8 +214,8 @@ export function TasksTable({ tasks, onTaskClick }: TasksTableProps) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {paginatedRows.length ? (
-              paginatedRows.map((task) => (
+            {rows.length ? (
+              rows.map((task) => (
                 <TableRow
                   key={task.id}
                   onClick={() => onTaskClick(task)}
@@ -240,22 +250,29 @@ export function TasksTable({ tasks, onTaskClick }: TasksTableProps) {
       {rows.length > 0 ? (
         <div className="flex items-center justify-between space-x-2 py-4">
           <div className="text-muted-foreground flex-1 text-sm">
-            {t("showingPagination", { ns: "tasks", from: startIndex + 1, to: Math.min(startIndex + paginatedRows.length, rows.length), total: rows.length.toLocaleString(), page: currentPage, pages: totalPages })}
+            {t("showingPagination", {
+              ns: "tasks",
+              from,
+              to,
+              total: totalItems.toLocaleString(),
+              page: currentPage,
+              pages: totalPages,
+            })}
           </div>
           <div className="space-x-2">
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
-              disabled={currentPage === 1}
+              onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+              disabled={currentPage === 1 || isLoading}
             >
               {t("previousButton", { ns: "tasks" })}
             </Button>
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
-              disabled={currentPage === totalPages}
+              onClick={() => onPageChange(currentPage + 1)}
+              disabled={!hasNextPage || isLoading}
             >
               {t("nextButton", { ns: "tasks" })}
             </Button>

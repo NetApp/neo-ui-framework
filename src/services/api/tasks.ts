@@ -1,7 +1,13 @@
 // Copyright 2025 NetApp, Inc. All Rights Reserved.
 import { appLogger } from "@/services/app-logger"
 import { BaseApiClient } from "./base"
-import type { TasksListResponse, TaskStatisticsResponse, AclCacheStatisticsResponse } from "@/services/models"
+import type {
+  TasksResponse,
+  TasksListResponse,
+  TaskStatisticsResponse,
+  AclCacheStatisticsResponse,
+  TaskQueryParams,
+} from "@/services/models"
 
 export interface TaskCancelResponse {
   id?: string
@@ -13,11 +19,32 @@ export interface TaskCancelResponse {
 }
 
 export class TasksApiClient extends BaseApiClient {
-  async getTasks(token: string) {
+  async getTasks(token: string, query?: TaskQueryParams): Promise<TasksListResponse> {
     appLogger.debug("Fetching tasks")
-    const response = await this.requestApiV1WithToken<TasksListResponse>("/tasks", token)
-    // Return just the tasks array for backwards compatibility
-    return response.tasks
+
+    const params = new URLSearchParams()
+    if (query?.status) {
+      params.set("status", query.status)
+    }
+    if (query?.task_type) {
+      params.set("task_type", query.task_type)
+    }
+    if (typeof query?.limit === "number") {
+      params.set("limit", String(query.limit))
+    }
+
+    const endpoint = params.size > 0 ? `/tasks?${params.toString()}` : "/tasks"
+    return this.requestApiV1WithToken<TasksListResponse>(endpoint, token)
+  }
+
+  getTask(token: string, taskId: string) {
+    appLogger.debug("Fetching task by id", undefined, { taskId })
+    return this.requestApiV1WithToken<TasksResponse>(`/tasks/${taskId}`, token)
+  }
+
+  getTaskDetailed(token: string, taskId: string) {
+    appLogger.debug("Fetching detailed task by id", undefined, { taskId })
+    return this.requestApiV1WithToken<TasksResponse>(`/tasks/${taskId}/detailed`, token)
   }
 
   getTaskStatistics(token: string) {

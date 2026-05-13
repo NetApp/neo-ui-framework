@@ -23,6 +23,7 @@ import type {
   MonitoringFailedItemsResponse,
   TasksResponse,
   TasksListResponse,
+  TaskQueryParams,
   TaskStatisticsResponse,
   AclCacheStatisticsResponse,
   HelmChartVersionResponse,
@@ -102,6 +103,7 @@ export type {
   MonitoringFailedItemsResponse,
   TasksResponse,
   TasksListResponse,
+  TaskQueryParams,
   TaskStatisticsResponse,
   AclCacheStatisticsResponse,
   HelmChartVersionResponse,
@@ -492,8 +494,21 @@ export class NeoApiService extends BaseApiClient {
     return this.monitoring.retryWorkItems(token, shareId, workItemIds)
   }
 
-  getTasks(token: string) {
-    return this.dataLoader.load(`tasks:${token}`, () => this.tasks.getTasks(token), this.monitoringTtl)
+  getTasks(token: string, query?: TaskQueryParams) {
+    const key = buildNormalizedCacheKey("tasks", token, query ?? {})
+    return this.dataLoader.load(key, () => this.tasks.getTasks(token, query), this.monitoringTtl)
+  }
+
+  getTask(token: string, taskId: string) {
+    return this.dataLoader.load(`task:${token}:${taskId}`, () => this.tasks.getTask(token, taskId), this.monitoringTtl)
+  }
+
+  getTaskDetailed(token: string, taskId: string) {
+    return this.dataLoader.load(
+      `taskDetailed:${token}:${taskId}`,
+      () => this.tasks.getTaskDetailed(token, taskId),
+      this.monitoringTtl
+    )
   }
 
   getTaskStatistics(token: string) {
@@ -620,7 +635,7 @@ export class NeoApiService extends BaseApiClient {
         this.getMonitoringEnumeration(token),
         this.getMonitoringGraphRateLimit(token),
         this.getMonitoringFailedItems(token),
-        this.getTasks(token),
+        this.getTasks(token, { limit: 100 }),
         this.getTaskStatistics(token),
         this.getFileAnalytics(token),
         this.getSharesAnalytics(token),
@@ -643,7 +658,7 @@ export class NeoApiService extends BaseApiClient {
         enumeration,
         graphRateLimit,
         failedItems,
-        tasks,
+        tasks: tasks.tasks,
         taskStats,
         fileAnalytics,
         sharesAnalytics,

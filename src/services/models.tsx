@@ -524,8 +524,15 @@ export interface TasksListResponse { // only for v3
   count?: number
   filter?: {
     status: string | null
+    task_type?: string | null
     limit: number
   }
+}
+
+export interface TaskQueryParams {
+  status?: string | null
+  task_type?: string | null
+  limit?: number
 }
 
 export interface TaskStatisticsResponse { // only for v3

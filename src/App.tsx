@@ -218,6 +218,7 @@ function App() {
                       taskStats={state.monitoring.taskStats}
                       aclCacheStats={state.monitoring.aclCacheStats}
                       onFetchTasks={handlers.handleFetchTasks}
+                      onGetTaskDetailed={handlers.handleGetTaskDetailed}
                       onDeleteTask={handlers.handleDeleteTask}
                       monitoringOverview={state.monitoring.overview}
                     />
