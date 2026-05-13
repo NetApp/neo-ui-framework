@@ -5,6 +5,8 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import {
   IconActivity,
+  IconBolt,
+  IconCheck,
   IconRefresh,
 } from "@tabler/icons-react"
 import {
@@ -30,6 +32,7 @@ import {
 } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Textarea } from "@/components/ui/textarea"
+import { Input } from "@/components/ui/input"
 import { NeoApiService } from "@/services/neo-api"
 import { useNeoApi } from "@/hooks/useNeoApi"
 import type {
@@ -137,13 +140,23 @@ export function MonitoringChart({
   const [isLoadingOptimization, setIsLoadingOptimization] = useState(false)
   const [isApplyingTuning, setIsApplyingTuning] = useState(false)
   const [isRollingBackTuning, setIsRollingBackTuning] = useState(false)
+  const [isLoadingBenchmark, setIsLoadingBenchmark] = useState(false)
+  const [isRunningBenchmark, setIsRunningBenchmark] = useState(false)
   const [optimizationError, setOptimizationError] = useState<string | null>(null)
   const [optimizationNotice, setOptimizationNotice] = useState<string | null>(null)
+  const [benchmarkError, setBenchmarkError] = useState<string | null>(null)
+  const [benchmarkNotice, setBenchmarkNotice] = useState<string | null>(null)
   const [tuningReason, setTuningReason] = useState("")
   const [tuningRecommendations, setTuningRecommendations] = useState<MonitoringTuningRecommendationsResponse | null>(null)
   const [tuningHistory, setTuningHistory] = useState<MonitoringTuningHistoryResponse | null>(null)
   const [tuningStatus, setTuningStatus] = useState<MonitoringTuningStatusResponse | null>(null)
   const [localTuningTimeline, setLocalTuningTimeline] = useState<Record<string, unknown>[]>([])
+  const [benchmarkStatus, setBenchmarkStatus] = useState<Record<string, unknown> | null>(null)
+  const [benchmarkResults, setBenchmarkResults] = useState<Record<string, unknown> | null>(null)
+  const [benchmarkHistory, setBenchmarkHistory] = useState<Record<string, unknown> | null>(null)
+  const [benchmarkShareId, setBenchmarkShareId] = useState<string>("")
+  const [benchmarkSampleSize, setBenchmarkSampleSize] = useState<string>("500")
+  const [benchmarkStages, setBenchmarkStages] = useState<string>("")
 
   const normalizedNerStatus = useMemo(() => {
     if (!nerStatus) return null
@@ -265,6 +278,31 @@ export function MonitoringChart({
       setOptimizationError(message)
     } finally {
       setIsLoadingOptimization(false)
+    }
+  }, [api, token, t])
+
+  const fetchBenchmarkData = useCallback(async () => {
+    if (!token) return
+
+    setIsLoadingBenchmark(true)
+    setBenchmarkError(null)
+    try {
+      const [statusResponse, resultsResponse, historyResponse] = await Promise.all([
+        api.getMonitoringBenchmarkStatus(token),
+        api.getMonitoringBenchmarkResults(token),
+        api.getMonitoringBenchmarkHistory(token),
+      ])
+
+      setBenchmarkStatus((statusResponse as Record<string, unknown>) ?? null)
+      setBenchmarkResults((resultsResponse as Record<string, unknown>) ?? null)
+      setBenchmarkHistory((historyResponse as Record<string, unknown>) ?? null)
+    } catch (error) {
+      const message = error instanceof Error
+        ? error.message
+        : t("refreshFailed", { ns: "monitoring" })
+      setBenchmarkError(message)
+    } finally {
+      setIsLoadingBenchmark(false)
     }
   }, [api, token, t])
 
@@ -454,6 +492,35 @@ export function MonitoringChart({
     }
   }, [api, token, tuningReason, t, fetchOptimizationData])
 
+  const handleRunBenchmark = useCallback(async () => {
+    if (!token) return
+
+    setIsRunningBenchmark(true)
+    setBenchmarkError(null)
+    setBenchmarkNotice(null)
+    try {
+      const response = await api.runMonitoringBenchmark(token, {
+        shareId: benchmarkShareId || undefined,
+        sampleSize: Number.isNaN(Number(benchmarkSampleSize)) ? undefined : Number(benchmarkSampleSize),
+        stages: benchmarkStages.trim() || undefined,
+      })
+
+      const message = typeof (response as Record<string, unknown>)?.message === "string"
+        ? String((response as Record<string, unknown>).message)
+        : t("benchmarkStarted", { ns: "monitoring", defaultValue: "Benchmark run started." })
+      setBenchmarkNotice(message)
+
+      await fetchBenchmarkData()
+    } catch (error) {
+      const message = error instanceof Error
+        ? error.message
+        : t("operationFailed", { ns: "monitoring", defaultValue: "Operation failed" })
+      setBenchmarkError(message)
+    } finally {
+      setIsRunningBenchmark(false)
+    }
+  }, [api, token, benchmarkShareId, benchmarkSampleSize, benchmarkStages, fetchBenchmarkData, t])
+
   // Auto-refresh monitoring data every 60 seconds
   useEffect(() => {
     const interval = setInterval(() => {
@@ -476,6 +543,12 @@ export function MonitoringChart({
     const interval = window.setInterval(fetchOptimizationData, 120000)
     return () => window.clearInterval(interval)
   }, [fetchOptimizationData])
+
+  useEffect(() => {
+    fetchBenchmarkData()
+    const interval = window.setInterval(fetchBenchmarkData, 120000)
+    return () => window.clearInterval(interval)
+  }, [fetchBenchmarkData])
 
   useEffect(() => {
     fetchFailedQueue()
@@ -951,13 +1024,146 @@ export function MonitoringChart({
     }
   }, [t])
 
+  const benchmarkRuns = useMemo(() => {
+    const historyRuns = Array.isArray(benchmarkHistory?.runs)
+      ? benchmarkHistory.runs
+      : (Array.isArray(benchmarkHistory?.history) ? benchmarkHistory.history : [])
+
+    return historyRuns
+      .map((entry, index) => {
+        const row = entry as Record<string, unknown>
+        const runId = typeof row.run_id === "string"
+          ? row.run_id
+          : `run-${index}`
+        const startedAt = typeof row.started_at === "string"
+          ? row.started_at
+          : (typeof row.created_at === "string" ? row.created_at : "")
+        const status = typeof row.status === "string" ? row.status : "unknown"
+        const durationMs = typeof row.duration_ms === "number"
+          ? row.duration_ms
+          : (typeof row.processing_time_ms === "number" ? row.processing_time_ms : null)
+        return {
+          id: runId,
+          startedAt,
+          status,
+          durationMs,
+        }
+      })
+      .slice(0, 8)
+  }, [benchmarkHistory])
+
+  const toNumberOrNull = useCallback((value: unknown): number | null => {
+    if (typeof value === "number" && Number.isFinite(value)) return value
+    if (typeof value === "string" && value.trim().length > 0) {
+      const parsed = Number(value)
+      return Number.isFinite(parsed) ? parsed : null
+    }
+    return null
+  }, [])
+
+  const benchmarkKpis = useMemo(() => {
+    const throughput = toNumberOrNull(benchmarkResults?.throughput ?? benchmarkResults?.items_per_second)
+    const throughputPrev = toNumberOrNull(benchmarkResults?.previous_throughput ?? benchmarkResults?.previous_items_per_second)
+
+    const latency = toNumberOrNull(benchmarkResults?.avg_latency_ms ?? benchmarkResults?.average_latency_ms)
+    const latencyPrev = toNumberOrNull(benchmarkResults?.previous_avg_latency_ms ?? benchmarkResults?.previous_average_latency_ms)
+
+    const errorRate = toNumberOrNull(benchmarkResults?.error_rate ?? benchmarkResults?.failure_rate)
+    const errorRatePrev = toNumberOrNull(benchmarkResults?.previous_error_rate ?? benchmarkResults?.previous_failure_rate)
+
+    return [
+      {
+        key: "throughput",
+        label: t("throughput", { ns: "monitoring", defaultValue: "Throughput" }),
+        value: throughput,
+        previous: throughputPrev,
+        suffix: "items/s",
+        lowerIsBetter: false,
+      },
+      {
+        key: "latency",
+        label: t("avgLatency", { ns: "monitoring", defaultValue: "Avg latency" }),
+        value: latency,
+        previous: latencyPrev,
+        suffix: "ms",
+        lowerIsBetter: true,
+      },
+      {
+        key: "errorRate",
+        label: t("errorRate", { ns: "monitoring", defaultValue: "Error rate" }),
+        value: errorRate,
+        previous: errorRatePrev,
+        suffix: "%",
+        lowerIsBetter: true,
+      },
+    ]
+  }, [benchmarkResults, t, toNumberOrNull])
+
+  const computeKpiDelta = useCallback((
+    value: number | null,
+    previous: number | null,
+    lowerIsBetter: boolean
+  ) => {
+    if (value === null || previous === null || previous === 0) {
+      return null
+    }
+
+    const rawDelta = value - previous
+    const percent = (rawDelta / previous) * 100
+    const isImprovement = lowerIsBetter ? rawDelta < 0 : rawDelta > 0
+
+    return {
+      label: `${percent > 0 ? "+" : ""}${percent.toFixed(1)}%`,
+      className: isImprovement
+        ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+        : "border-red-200 bg-red-50 text-red-700",
+      arrow: isImprovement ? "↑" : "↓",
+      trendLabel: isImprovement
+        ? t("improved", { ns: "monitoring", defaultValue: "Improved" })
+        : t("regressed", { ns: "monitoring", defaultValue: "Regressed" }),
+    }
+  }, [t])
+
+  const latestTimelineEntry = timelineRows.length > 0 ? timelineRows[0] : null
+  const latestBenchmarkRun = benchmarkRuns.length > 0 ? benchmarkRuns[0] : null
+
+  const getTimelineActionVisual = useCallback((actionValue: unknown) => {
+    const action = String(actionValue ?? "").toLowerCase()
+
+    if (action.includes("rollback")) {
+      return {
+        Icon: IconRefresh,
+        dotClassName: "border-red-200 bg-red-50 text-red-600",
+      }
+    }
+
+    if (action.includes("benchmark") || action.includes("run")) {
+      return {
+        Icon: IconBolt,
+        dotClassName: "border-sky-200 bg-sky-50 text-sky-600",
+      }
+    }
+
+    if (action.includes("apply")) {
+      return {
+        Icon: IconCheck,
+        dotClassName: "border-emerald-200 bg-emerald-50 text-emerald-600",
+      }
+    }
+
+    return {
+      Icon: IconActivity,
+      dotClassName: "border-slate-200 bg-slate-50 text-slate-600",
+    }
+  }, [])
+
   return (
     <Tabs defaultValue="neo" className="w-full">
       <TabsList className="mb-4">
         <TabsTrigger value="neo">{t("neoTab", { ns: "monitoring" })}</TabsTrigger>
         <TabsTrigger value="data-corpus">{t("dataCorpusTab", { ns: "monitoring" })}</TabsTrigger>
         <TabsTrigger value="crawling">{t("crawlingTab", { ns: "monitoring" })}</TabsTrigger>
-        <TabsTrigger value="optimization">{t("optimizationTab", { ns: "monitoring", defaultValue: "Optimization" })}</TabsTrigger>
+        <TabsTrigger value="optimization">{t("performanceTab", { ns: "monitoring", defaultValue: "Performance" })}</TabsTrigger>
         <TabsTrigger value="tasks">{t("tasksTab", { ns: "monitoring" })}</TabsTrigger>
         <TabsTrigger value="ner">{t("nerTab", { ns: "monitoring" })}</TabsTrigger>
       </TabsList>
@@ -1451,6 +1657,204 @@ export function MonitoringChart({
 
       <TabsContent value="optimization">
         <div className="space-y-4">
+          <Card className="border-sky-200 bg-gradient-to-r from-sky-50 via-cyan-50 to-white">
+            <CardHeader className="space-y-2 pb-2">
+              <CardTitle className="text-sm font-semibold tracking-wide">
+                {t("missionControl", { ns: "monitoring", defaultValue: "Mission Control" })}
+              </CardTitle>
+              <div className="grid gap-2 md:grid-cols-4">
+                <div className="rounded border border-sky-200 bg-white/80 p-2 text-xs">
+                  <div className="text-muted-foreground">{t("tuner", { ns: "monitoring", defaultValue: "Tuner" })}</div>
+                  <div className="mt-1 flex items-center gap-2">
+                    <Badge variant={(tuningStatus?.enabled ?? false) ? "outline" : "destructive"}>
+                      {String(tuningStatus?.status ?? ((tuningStatus?.enabled ?? false) ? "enabled" : "disabled"))}
+                    </Badge>
+                  </div>
+                </div>
+                <div className="rounded border border-sky-200 bg-white/80 p-2 text-xs">
+                  <div className="text-muted-foreground">{t("benchmark", { ns: "monitoring", defaultValue: "Benchmark" })}</div>
+                  <div className="mt-1 flex items-center gap-2">
+                    <Badge variant="outline" className="font-mono">
+                      {String((benchmarkStatus?.status ?? benchmarkStatus?.state ?? "unknown"))}
+                    </Badge>
+                  </div>
+                </div>
+                <div className="rounded border border-sky-200 bg-white/80 p-2 text-xs">
+                  <div className="text-muted-foreground">{t("lastOptimization", { ns: "monitoring", defaultValue: "Last optimization" })}</div>
+                  <div className="mt-1 text-sm font-medium">{latestTimelineEntry ? String(latestTimelineEntry.action) : "-"}</div>
+                  <div className="text-[11px] text-muted-foreground">
+                    {latestTimelineEntry ? new Date(latestTimelineEntry.timestamp).toLocaleString() : "-"}
+                  </div>
+                </div>
+                <div className="rounded border border-sky-200 bg-white/80 p-2 text-xs">
+                  <div className="text-muted-foreground">{t("lastBenchmarkRun", { ns: "monitoring", defaultValue: "Last benchmark run" })}</div>
+                  <div className="mt-1 text-sm font-medium">{latestBenchmarkRun?.id ?? "-"}</div>
+                  <div className="text-[11px] text-muted-foreground">
+                    {latestBenchmarkRun?.startedAt ? new Date(latestBenchmarkRun.startedAt).toLocaleString() : "-"}
+                  </div>
+                </div>
+              </div>
+            </CardHeader>
+          </Card>
+
+          <Card>
+            <CardHeader className="space-y-3 pb-2">
+              <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                <CardTitle className="text-sm font-medium">
+                  {t("benchmarkControl", { ns: "monitoring", defaultValue: "Benchmark Control" })}
+                </CardTitle>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-xs"
+                    onClick={fetchBenchmarkData}
+                    disabled={isLoadingBenchmark}
+                  >
+                    <IconRefresh className={`mr-1 h-3 w-3 ${isLoadingBenchmark ? "animate-spin" : ""}`} />
+                    {t("refresh", { ns: "common", defaultValue: "Refresh" })}
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="h-7 text-xs"
+                    onClick={handleRunBenchmark}
+                    disabled={isRunningBenchmark}
+                  >
+                    <IconRefresh className={`mr-1 h-3 w-3 ${isRunningBenchmark ? "animate-spin" : ""}`} />
+                    {t("runBenchmark", { ns: "monitoring", defaultValue: "Run benchmark" })}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="grid gap-2 md:grid-cols-3">
+                <Select value={benchmarkShareId || "all"} onValueChange={(value) => setBenchmarkShareId(value === "all" ? "" : value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={t("benchmarkScope", { ns: "monitoring", defaultValue: "Benchmark scope" })} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t("allShares", { ns: "monitoring", defaultValue: "All shares" })}</SelectItem>
+                    {failedShareOptions.map((shareId) => (
+                      <SelectItem key={`benchmark-${shareId}`} value={shareId}>{shareId}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select value={benchmarkSampleSize} onValueChange={setBenchmarkSampleSize}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={t("sampleSize", { ns: "monitoring", defaultValue: "Sample size" })} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="100">100</SelectItem>
+                    <SelectItem value="500">500</SelectItem>
+                    <SelectItem value="1000">1000</SelectItem>
+                    <SelectItem value="2500">2500</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Input
+                  value={benchmarkStages}
+                  onChange={(event) => setBenchmarkStages(event.target.value)}
+                  placeholder={t("benchmarkStagesPlaceholder", { ns: "monitoring", defaultValue: "Stages (comma-separated, optional)" })}
+                />
+              </div>
+
+              <div className="grid gap-2 md:grid-cols-3">
+                <div className="rounded border p-2 text-xs">
+                  <div className="text-muted-foreground">{t("benchmarkStatus", { ns: "monitoring", defaultValue: "Benchmark status" })}</div>
+                  <div className="mt-1">
+                    <Badge variant="outline" className="font-mono">
+                      {String((benchmarkStatus?.status ?? benchmarkStatus?.state ?? "unknown"))}
+                    </Badge>
+                  </div>
+                </div>
+                <div className="rounded border p-2 text-xs">
+                  <div className="text-muted-foreground">{t("activeRun", { ns: "monitoring", defaultValue: "Active run" })}</div>
+                  <div className="mt-1 font-mono text-sm">{String((benchmarkStatus?.run_id ?? benchmarkStatus?.active_run_id ?? "-"))}</div>
+                </div>
+                <div className="rounded border p-2 text-xs">
+                  <div className="text-muted-foreground">{t("lastCompleted", { ns: "monitoring", defaultValue: "Last completed" })}</div>
+                  <div className="mt-1 text-sm">{typeof benchmarkStatus?.last_completed_at === "string" ? new Date(benchmarkStatus.last_completed_at).toLocaleString() : "-"}</div>
+                </div>
+              </div>
+
+              {benchmarkNotice ? <p className="text-xs text-emerald-700">{benchmarkNotice}</p> : null}
+              {benchmarkError ? <p className="text-xs text-destructive">{benchmarkError}</p> : null}
+            </CardHeader>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">
+                {t("benchmarkResults", { ns: "monitoring", defaultValue: "Benchmark results" })}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {benchmarkResults ? (
+                <div className="grid gap-2 text-xs md:grid-cols-3">
+                  {benchmarkKpis.map((kpi) => {
+                    const delta = computeKpiDelta(kpi.value, kpi.previous, kpi.lowerIsBetter)
+                    return (
+                      <div key={kpi.key} className="rounded border p-3">
+                        <div className="mb-1 text-muted-foreground">{kpi.label}</div>
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="font-mono text-base font-semibold">
+                            {kpi.value !== null ? `${kpi.value}${kpi.suffix ? ` ${kpi.suffix}` : ""}` : "-"}
+                          </div>
+                          {delta ? (
+                            <Badge variant="outline" className={`text-[11px] ${delta.className}`}>
+                              {delta.arrow} {delta.label}
+                            </Badge>
+                          ) : null}
+                        </div>
+                        <div className="mt-1 text-[11px] text-muted-foreground">
+                          {delta
+                            ? `${delta.trendLabel} vs previous`
+                            : t("noBaseline", { ns: "monitoring", defaultValue: "No previous baseline" })}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <div className="text-sm text-muted-foreground">
+                  {isLoadingBenchmark
+                    ? t("loading", { ns: "monitoring", defaultValue: "Loading..." })
+                    : t("noBenchmarkResults", { ns: "monitoring", defaultValue: "No benchmark results yet." })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">
+                {t("benchmarkHistory", { ns: "monitoring", defaultValue: "Benchmark history" })}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {benchmarkRuns.length > 0 ? (
+                <div className="space-y-2">
+                  {benchmarkRuns.map((run) => (
+                    <div key={run.id} className="rounded border p-2 text-xs">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="font-mono text-[11px]">{run.status}</Badge>
+                          <span className="font-medium">{run.id}</span>
+                        </div>
+                        <span className="text-muted-foreground">{run.startedAt ? new Date(run.startedAt).toLocaleString() : "-"}</span>
+                      </div>
+                      <div className="mt-1 text-muted-foreground">
+                        {t("duration", { ns: "monitoring", defaultValue: "Duration" })}: {run.durationMs !== null ? `${run.durationMs} ms` : "-"}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-sm text-muted-foreground">{t("noBenchmarkHistory", { ns: "monitoring", defaultValue: "No benchmark history available." })}</div>
+              )}
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader className="space-y-3 pb-2">
               <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
@@ -1597,32 +2001,65 @@ export function MonitoringChart({
             </CardHeader>
             <CardContent>
               {timelineRows.length > 0 ? (
-                <div className="space-y-2">
-                  {timelineRows.map((row) => (
-                    <div key={row.id} className="rounded border p-2 text-xs">
+                <div className="space-y-0">
+                  <style>{`
+                    @keyframes timelineEntryReveal {
+                      from {
+                        opacity: 0;
+                        transform: translateY(8px);
+                      }
+                      to {
+                        opacity: 1;
+                        transform: translateY(0);
+                      }
+                    }
+                  `}</style>
+                  {timelineRows.map((row, index) => (
+                    <div
+                      key={row.id}
+                      className="relative pl-6"
+                      style={{
+                        animation: "timelineEntryReveal 280ms ease-out both",
+                        animationDelay: `${Math.min(index, 8) * 45}ms`,
+                      }}
+                    >
+                      {index < timelineRows.length - 1 ? (
+                        <div className="absolute left-[11px] top-6 h-[calc(100%-12px)] w-px bg-border" />
+                      ) : null}
                       {(() => {
-                        const diff = computeDiffBadge(row.before, row.after)
+                        const visual = getTimelineActionVisual(row.action)
+                        const ActionIcon = visual.Icon
                         return (
-                          <>
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline" className="font-mono text-[11px]">{row.action}</Badge>
-                          <span className="font-medium">{row.parameter}</span>
-                        </div>
-                        <span className="text-muted-foreground">{new Date(row.timestamp).toLocaleString()}</span>
-                      </div>
-                      <div className="mt-1 flex flex-wrap items-center gap-2 text-muted-foreground">
-                        <span>{t("before", { ns: "monitoring", defaultValue: "Before" })}: {String(row.before)}</span>
-                        <span>|</span>
-                        <span>{t("after", { ns: "monitoring", defaultValue: "After" })}: {String(row.after)}</span>
-                        <Badge variant="outline" className={`text-[11px] ${diff.className}`}>
-                          {diff.arrow} {diff.label}
-                        </Badge>
-                      </div>
-                      {row.reason ? <div className="mt-1 text-muted-foreground">{String(row.reason)}</div> : null}
-                          </>
+                          <div className={`absolute left-0 top-2 flex h-5 w-5 items-center justify-center rounded-full border ${visual.dotClassName}`}>
+                            <ActionIcon className="h-3 w-3" />
+                          </div>
                         )
                       })()}
+                      <div className="mb-2 rounded border p-2 text-xs">
+                        {(() => {
+                          const diff = computeDiffBadge(row.before, row.after)
+                          return (
+                            <>
+                              <div className="flex flex-wrap items-center justify-between gap-2">
+                                <div className="flex items-center gap-2">
+                                  <Badge variant="outline" className="font-mono text-[11px]">{row.action}</Badge>
+                                  <span className="font-medium">{row.parameter}</span>
+                                </div>
+                                <span className="text-muted-foreground">{new Date(row.timestamp).toLocaleString()}</span>
+                              </div>
+                              <div className="mt-1 flex flex-wrap items-center gap-2 text-muted-foreground">
+                                <span>{t("before", { ns: "monitoring", defaultValue: "Before" })}: {String(row.before)}</span>
+                                <span>|</span>
+                                <span>{t("after", { ns: "monitoring", defaultValue: "After" })}: {String(row.after)}</span>
+                                <Badge variant="outline" className={`text-[11px] ${diff.className}`}>
+                                  {diff.arrow} {diff.label}
+                                </Badge>
+                              </div>
+                              {row.reason ? <div className="mt-1 text-muted-foreground">{String(row.reason)}</div> : null}
+                            </>
+                          )
+                        })()}
+                      </div>
                     </div>
                   ))}
                 </div>
