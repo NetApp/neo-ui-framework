@@ -3,8 +3,6 @@
 
 import { useState, useMemo, useEffect, useCallback } from "react"
 import { useParams, useNavigate } from "react-router-dom"
-import Markdown from "react-markdown"
-import remarkGfm from "remark-gfm"
 import { OverviewCard } from "@/components/cards/overview-card"
 import type { FileMetadataResponse, FileEntry } from "@/services/neo-api"
 import type {
@@ -22,13 +20,7 @@ import type {
     UpdateDatasetRequest,
 } from "@/services/models"
 import { toast } from "sonner"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import {
-    Sheet,
-    SheetContent,
-    SheetHeader,
-    SheetClose,
-} from "@/components/ui/sheet"
+import { FileDetailsSheet } from "@/components/dialogs/file-details-sheet"
 import { Spinner } from "@/components/ui/spinner"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -684,133 +676,14 @@ export default function DatasetPage({
                 </div>
             </div>
 
-            <Sheet open={!!selectedFile} onOpenChange={(open) => !open && setSelectedFile(null)}>
-                <SheetContent side="top" hideCloseButton className="max-h-[95vh] flex flex-col p-0 gap-0">
-                    <div className="flex-1 overflow-y-auto p-6 flex flex-col">
-                        <SheetHeader className="mb-4 p-0">
-                            <div className="flex items-center justify-between">
-                                <div className="flex flex-col space-y-1">
-                                    <h2 className="text-lg font-semibold">{selectedFile?.filename}</h2>
-                                    <p className="text-sm text-muted-foreground break-all">{selectedFile?.unc_path}</p>
-                                </div>
-                                <SheetClose asChild>
-                                    <Button size="sm">Close</Button>
-                                </SheetClose>
-                            </div>
-                        </SheetHeader>
-
-                        <div className="mt-4 flex-1 flex flex-col">
-                            {contentLoading ? (
-                                <div className="flex justify-center py-8">
-                                    <Spinner className="size-8" />
-                                </div>
-                            ) : (
-                                <Tabs defaultValue="details" className="w-full flex-1 flex flex-col">
-                                    <TabsList className="grid w-full grid-cols-2">
-                                        <TabsTrigger value="details">Details</TabsTrigger>
-                                        <TabsTrigger value="content">Content</TabsTrigger>
-                                    </TabsList>
-                                    <TabsContent value="details" className="mt-4 flex-1 flex flex-col data-[state='inactive']:hidden">
-                                        {fileMetadata ? (
-                                            <dl className="grid grid-cols-1 gap-y-3 text-sm sm:grid-cols-2 lg:grid-cols-3 sm:gap-x-6">
-                                                <div>
-                                                    <dt className="font-medium text-foreground">Filename</dt>
-                                                    <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{fileMetadata.filename}</pre></dd>
-                                                </div>
-                                                <div>
-                                                    <dt className="font-medium text-foreground">File type</dt>
-                                                    <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{fileMetadata.file_type || "—"}</pre></dd>
-                                                </div>
-                                                <div className="sm:col-span-1">
-                                                    <dt className="font-medium text-foreground">File path</dt>
-                                                    <dd className="break-words p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{fileMetadata.file_path}</pre></dd>
-                                                </div>
-                                                <div className="sm:col-span-1">
-                                                    <dt className="font-medium text-foreground">UNC path</dt>
-                                                    <dd className="break-words p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{fileMetadata.unc_path}</pre></dd>
-                                                </div>
-                                                <div>
-                                                    <dt className="font-medium text-foreground">Size</dt>
-                                                    <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{fileMetadata.size.toLocaleString()} bytes</pre></dd>
-                                                </div>
-                                                <div>
-                                                    <dt className="font-medium text-foreground">Directory</dt>
-                                                    <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{fileMetadata.is_directory ? "Yes" : "No"}</pre></dd>
-                                                </div>
-                                                <div>
-                                                    <dt className="font-medium text-foreground">Created</dt>
-                                                    <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{new Date(fileMetadata.created_at).toLocaleString()}</pre></dd>
-                                                </div>
-                                                <div>
-                                                    <dt className="font-medium text-foreground">Modified</dt>
-                                                    <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{new Date(fileMetadata.modified_time).toLocaleString()}</pre></dd>
-                                                </div>
-                                                <div>
-                                                    <dt className="font-medium text-foreground">Accessed</dt>
-                                                    <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{new Date(fileMetadata.accessed_at).toLocaleString()}</pre></dd>
-                                                </div>
-                                                <div>
-                                                    <dt className="font-medium text-foreground">Indexed</dt>
-                                                    <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{fileMetadata.indexed_at ? new Date(fileMetadata.indexed_at).toLocaleString() : "—"}</pre></dd>
-                                                </div>
-                                                <div>
-                                                    <dt className="font-medium text-foreground">Conversion (ms)</dt>
-                                                    <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{fileMetadata.conversion_duration_ms}</pre></dd>
-                                                </div>
-                                                <div>
-                                                    <dt className="font-medium text-foreground">Extractor</dt>
-                                                    <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{fileMetadata.extractor_used || "—"}</pre></dd>
-                                                </div>
-                                                <div className="sm:col-span-3">
-                                                    <dt className="font-medium text-foreground">ACL principals</dt>
-                                                    <dd className="p-1">
-                                                        <pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">
-                                                            {fileMetadata.acl_principals?.length ? fileMetadata.acl_principals.join(", ") : "N/A"}
-                                                        </pre>
-                                                    </dd>
-                                                </div>
-                                                <div className="sm:col-span-3">
-                                                    <dt className="font-medium text-foreground">Resolved principals</dt>
-                                                    <dd className="p-1">
-                                                        {fileMetadata.resolved_principals?.length ? (
-                                                            <pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">
-                                                                {JSON.stringify(fileMetadata.resolved_principals, null, 2)}
-                                                            </pre>
-                                                        ) : (
-                                                            <pre className="mt-1 max-h-40 overflow-auto rounded bg-muted p-2 text-xs">"N/A"</pre>
-                                                        )}
-                                                    </dd>
-                                                </div>
-                                                <div className="sm:col-span-3">
-                                                    <dt className="font-medium text-foreground">Content</dt>
-                                                    <dd className="p-1">
-                                                        {fileMetadata.content ? (
-                                                            <pre className="mt-1 max-h-96 overflow-auto rounded bg-muted p-2 text-xs">
-                                                                {fileMetadata.content}
-                                                            </pre>
-                                                        ) : (
-                                                            <pre className="mt-1 max-h-40 overflow-auto rounded bg-muted p-2 text-xs">"—"</pre>
-                                                        )}
-                                                    </dd>
-                                                </div>
-                                            </dl>
-                                        ) : (
-                                            <p className="text-center text-muted-foreground">No metadata available</p>
-                                        )}
-                                    </TabsContent>
-                                    <TabsContent value="content" className="mt-4 flex-1 flex flex-col data-[state='inactive']:hidden">
-                                        <div className="flex-1 text-sm text-muted-foreground bg-muted/50 p-2 rounded-md font-mono whitespace-pre-wrap [&_b]:text-red-500 [&_b]:font-bold">
-                                            <Markdown remarkPlugins={[remarkGfm]}>
-                                                {fileMetadata?.content || "*No content available*"}
-                                            </Markdown>
-                                        </div>
-                                    </TabsContent>
-                                </Tabs>
-                            )}
-                        </div>
-                    </div>
-                </SheetContent>
-            </Sheet>
+            <FileDetailsSheet
+                open={!!selectedFile}
+                onOpenChange={(open) => !open && setSelectedFile(null)}
+                selectedFile={selectedFile}
+                metadata={fileMetadata}
+                loading={false}
+                contentLoading={contentLoading}
+            />
 
             <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
                 <DialogContent>

@@ -1,5 +1,5 @@
 // Copyright 2025 NetApp, Inc. All Rights Reserved.
-import { useState, useCallback, useMemo } from "react"
+import { useState, useCallback } from "react"
 import type {
     SharesResponse,
     ContentSearchRequest,
@@ -47,23 +47,14 @@ import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
-    Sheet,
-    SheetContent,
-    SheetDescription,
-    SheetHeader,
-    SheetTitle,
-    SheetClose,
-} from "@/components/ui/sheet"
-import { Separator } from "@/components/ui/separator"
-import {
     Alert,
     AlertDescription,
     AlertTitle,
 } from "@/components/ui/alert"
-import { Spinner } from "@/components/ui/spinner"
 import { toast } from "sonner"
 import { CreateDatasetDialog } from "@/components/dialogs/create-dataset-dialog"
 import { AddToDatasetDialog } from "@/components/dialogs/add-to-dataset-dialog"
+import { FileDetailsSheet } from "@/components/dialogs/file-details-sheet"
 import type { Dataset } from "@/services/models"
 import { useSettings } from "@/context/settings-context"
 
@@ -284,26 +275,6 @@ export default function ContentSearch({ shares, datasets, onContentSearch, onCre
             setMetadataLoading(false)
         }
     }, [onFetchFileMetadata])
-
-    const metadataWithoutContent = useMemo(() => {
-        if (!metadata) return null
-        const { content, content_chunks, ...rest } = metadata
-        return rest
-    }, [metadata])
-
-    const metadataContent = useMemo(() => {
-        if (!metadata || !contentVisibilityEnabled) return null
-
-        if (metadata.content) {
-            return metadata.content
-        }
-
-        if (metadata.content_chunks?.length) {
-            return metadata.content_chunks.join("")
-        }
-
-        return null
-    }, [metadata, contentVisibilityEnabled])
 
     return (
         <div className="flex flex-1 flex-col">
@@ -656,135 +627,22 @@ export default function ContentSearch({ shares, datasets, onContentSearch, onCre
                         }}
                     />
 
-                    <Sheet open={sheetOpen} onOpenChange={(open) => {
-                        setSheetOpen(open)
-                        if (!open) {
-                            setMetadata(null)
-                            setMetadataError(null)
-                            setMetadataLoading(false)
-                        }
-                    }}>
-                        <SheetContent side="top" hideCloseButton className="max-h-[95vh] flex flex-col p-0 gap-0">
-                            <div className="flex-1 overflow-y-auto p-6 flex flex-col">
-                                <SheetHeader className="mb-4 p-0">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <SheetTitle>File details</SheetTitle>
-                                            <SheetDescription>
-                                                Detailed information about the selected file
-                                            </SheetDescription>
-                                        </div>
-                                        <SheetClose asChild>
-                                            <Button size="sm">Close</Button>
-                                        </SheetClose>
-                                    </div>
-                                </SheetHeader>
-
-                                <Separator className="mb-6" />
-
-                                <div className="space-y-4">
-                                    {metadataLoading ? (
-                                        <div className="flex items-center justify-center py-6">
-                                            <Spinner className="size-6" />
-                                        </div>
-                                    ) : metadataError ? (
-                                        <p className="text-sm text-destructive">{metadataError}</p>
-                                    ) : metadata ? (
-                                        <dl className="grid grid-cols-1 gap-y-3 text-sm text-muted-foreground sm:grid-cols-3 sm:gap-x-6">
-                                            <div>
-                                                <dt className="font-medium text-foreground">Filename</dt>
-                                                <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{metadata.filename}</pre></dd>
-                                            </div>
-                                            <div>
-                                                <dt className="font-medium text-foreground">File type</dt>
-                                                <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{metadata.file_type || "—"}</pre></dd>
-                                            </div>
-                                            <div className="sm:col-span-1">
-                                                <dt className="font-medium text-foreground">File path</dt>
-                                                <dd className="break-words p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{metadata.file_path}</pre></dd>
-                                            </div>
-                                            <div className="sm:col-span-1">
-                                                <dt className="font-medium text-foreground">UNC path</dt>
-                                                <dd className="break-words p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{metadata.unc_path}</pre></dd>
-                                            </div>
-                                            <div>
-                                                <dt className="font-medium text-foreground">Size</dt>
-                                                <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{metadata.size.toLocaleString()} bytes</pre></dd>
-                                            </div>
-                                            <div>
-                                                <dt className="font-medium text-foreground">File ID</dt>
-                                                <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{metadata.id}</pre></dd>
-                                            </div>
-                                            <div>
-                                                <dt className="font-medium text-foreground">Created</dt>
-                                                <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{new Date(metadata.created_at).toLocaleString()}</pre></dd>
-                                            </div>
-                                            <div>
-                                                <dt className="font-medium text-foreground">Modified</dt>
-                                                <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{new Date(metadata.modified_time).toLocaleString()}</pre></dd>
-                                            </div>
-                                            <div>
-                                                <dt className="font-medium text-foreground">Accessed</dt>
-                                                <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{new Date(metadata.accessed_at).toLocaleString()}</pre></dd>
-                                            </div>
-                                            <div>
-                                                <dt className="font-medium text-foreground">Indexed</dt>
-                                                <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{metadata.indexed_at ? new Date(metadata.indexed_at).toLocaleString() : "—"}</pre></dd>
-                                            </div>
-                                            <div>
-                                                <dt className="font-medium text-foreground">Conversion (ms)</dt>
-                                                <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{metadata.conversion_duration_ms}</pre></dd>
-                                            </div>
-                                            <div>
-                                                <dt className="font-medium text-foreground">Extractor</dt>
-                                                <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{metadata.extractor_used || "—"}</pre></dd>
-                                            </div>
-                                            <div className="sm:col-span-3">
-                                                <dt className="font-medium text-foreground">ACL principals</dt>
-                                                <dd className="p-1">
-                                                    <pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">
-                                                        {metadata.acl_principals?.length ? metadata.acl_principals.join(", ") : "N/A"}
-                                                    </pre>
-                                                </dd>
-                                            </div>
-                                            <div className="sm:col-span-3">
-                                                <dt className="font-medium text-foreground">Resolved principals</dt>
-                                                <dd className="p-1">
-                                                    {metadata.resolved_principals?.length ? (
-                                                        <pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">
-                                                            {JSON.stringify(metadata.resolved_principals, null, 2)}
-                                                        </pre>
-                                                    ) : (
-                                                        <pre className="mt-1 max-h-40 overflow-auto rounded bg-muted p-2 text-xs">"N/A"</pre>
-                                                    )}
-                                                </dd>
-                                            </div>
-                                            {contentVisibilityEnabled ? (
-                                                <div className="sm:col-span-3">
-                                                    <dt className="font-medium text-foreground">Content</dt>
-                                                    <dd className="p-1">
-                                                        <pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs whitespace-pre-wrap break-words">
-                                                            {metadataContent || "—"}
-                                                        </pre>
-                                                    </dd>
-                                                </div>
-                                            ) : null}
-                                            <div className="sm:col-span-3">
-                                                <dt className="font-medium text-foreground">All Fields</dt>
-                                                <dd className="p-1">
-                                                    <pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">
-                                                        {JSON.stringify(contentVisibilityEnabled ? metadata : metadataWithoutContent, null, 2)}
-                                                    </pre>
-                                                </dd>
-                                            </div>
-                                        </dl>
-                                    ) : (
-                                        <p className="text-sm text-muted-foreground">No details available.</p>
-                                    )}
-                                </div>
-                            </div>
-                        </SheetContent>
-                    </Sheet>
+                    <FileDetailsSheet
+                        open={sheetOpen}
+                        onOpenChange={(open) => {
+                            setSheetOpen(open)
+                            if (!open) {
+                                setMetadata(null)
+                                setMetadataError(null)
+                                setMetadataLoading(false)
+                            }
+                        }}
+                        selectedFile={null}
+                        metadata={metadata}
+                        loading={metadataLoading}
+                        error={metadataError}
+                        contentVisibilityEnabled={contentVisibilityEnabled}
+                    />
                 </div>
             </div>
         </div>
