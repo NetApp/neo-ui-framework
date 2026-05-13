@@ -324,15 +324,33 @@ export interface FilesResponse {
 }
 
 export interface FileSearchParams {
+  // Full-text search (POST /api/v1/search)
+  query?: string
+  modified_after?: string
+  modified_before?: string
+  search_mode?: "natural" | "boolean"
+  sort_by?: "relevance" | "modified_time" | "filename" | "size"
+  sort_order?: "asc" | "desc"
+  
+  // Field filtering (GET /api/v1/files)
   filename?: string
   file_type?: string
   fields?: string
   field_set?: "minimal" | "standard" | "metadata" | "security" | "full"
+  
+  // Content and optimization
   include_content?: boolean
   include_counts?: boolean
-  after_modified_time?: string
+  
+  // Pagination - offset based
   page?: number
   page_size?: number
+  
+  // Pagination - keyset based (cursor)
+  after_modified_time?: string
+  
+  // Filtering
+  share_ids?: string[]
 }
 
 export interface FileEntry {
@@ -581,6 +599,8 @@ export interface ContentSearchRequest {
   modified_after?: string
   modified_before?: string
   sort_by?: "relevance" | "modified_time" | "filename" | "size"
+  sort_order?: "asc" | "desc"
+  search_mode?: "natural" | "boolean"
   page?: number
   page_size?: number
 }

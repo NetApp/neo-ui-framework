@@ -372,13 +372,33 @@ export class NeoApiService extends BaseApiClient {
     return this.shares.startShareCrawl(token, shareId)
   }
 
-  getFiles(token: string, shareId: string, page?: number, pageSize?: number, includeContent: boolean = false) {
-    const key = `files:${token}:${shareId}:${page}:${pageSize}:${includeContent}`
-    return this.dataLoader.load(key, () => this.files.getFiles(token, shareId, page, pageSize, includeContent), this.filesTtl)
+  getFiles(
+    token: string,
+    shareId: string,
+    page?: number,
+    pageSize?: number,
+    includeContent: boolean = false,
+    afterModifiedTime?: string,
+  ) {
+    const key = `files:${token}:${shareId}:${page}:${pageSize}:${includeContent}:${afterModifiedTime ?? ""}`
+    return this.dataLoader.load(
+      key,
+      () => this.files.getFiles(token, shareId, page, pageSize, includeContent, afterModifiedTime),
+      this.filesTtl
+    )
   }
 
   getFileMetadata(token: string, shareId: string, fileId: string, includeContent: boolean = false) {
     return this.dataLoader.load(`fileMetadata:${token}:${shareId}:${fileId}:${includeContent}`, () => this.files.getFileMetadata(token, shareId, fileId, includeContent), this.filesTtl)
+  }
+
+  getFileMetadataWithFallback(token: string, fileId: string, shareId?: string, includeContent: boolean = false) {
+    const key = `fileMetadataFallback:${token}:${fileId}:${shareId ?? ""}:${includeContent}`
+    return this.dataLoader.load(
+      key,
+      () => this.files.getFileMetadataWithFallback(token, fileId, shareId, includeContent),
+      this.filesTtl
+    )
   }
 
   searchFiles(token: string, params: FileSearchParams) {

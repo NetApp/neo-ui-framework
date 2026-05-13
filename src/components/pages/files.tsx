@@ -128,6 +128,9 @@ export default function Files({
   const [searchResults, setSearchResults] = useState<FileSearchResponse | null>(null)
   const [isSearchMode, setIsSearchMode] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
+  
+  // Pagination state - track cursor for keyset pagination
+  const [paginationMode, setPaginationMode] = useState<"offset" | "keyset">("offset")
 
   // Sheet state
   const [sheetOpen, setSheetOpen] = useState(false)
@@ -213,11 +216,20 @@ export default function Files({
   const handleSearch = async (params: FileSearchParams) => {
     setLoading(true)
     setIsSearchMode(true)
+    
+    // Reset pagination state for new search
+    setPaginationMode("offset")
 
     try {
       const results = await onSearchFiles(params)
       setSearchResults(results)
       setSearchDialogOpen(false)
+      
+      // Auto-detect pagination mode from results
+      if (results.next_cursor) {
+        setPaginationMode("keyset")
+      }
+      
       if (!results.total_count) {
         toast.info("No files matched your search")
       }
@@ -278,6 +290,12 @@ export default function Files({
 
   const displayFiles = useMemo<FilesResponse | null>(() => {
     if (isSearchMode && searchResults) {
+      // Detect pagination mode from next_cursor
+      const isKeysetMode = !!searchResults.next_cursor
+      if (isKeysetMode) {
+        setPaginationMode("keyset")
+      }
+      
       return {
         share_id: "__search__",
         path: "Search results",
@@ -289,6 +307,11 @@ export default function Files({
         total_pages: searchResults.total_pages,
         has_next: searchResults.has_next,
         has_previous: searchResults.has_previous,
+        next_cursor: searchResults.next_cursor,
+        content_truncated: searchResults.content_truncated,
+        truncated_file_count: searchResults.truncated_file_count,
+        max_content_length_applied: searchResults.max_content_length_applied,
+        response_size_warning: searchResults.response_size_warning,
       }
     }
 
@@ -324,9 +347,13 @@ export default function Files({
     // Determine effective share ID similar to how FilesTable did it
     const effectiveShareId = selectedShareId ?? file.share_id
 
-    if (!effectiveShareId) {
-      toast.error("Share information not available for this file")
-      return
+    if (!effectiveShareId || effectiveShareId === "__search__") {
+      // For search results, file.id is available for direct lookup
+      if (!file.id) {
+        toast.error("File ID not available for this file")
+        return
+      }
+      // Will use direct file lookup fallback
     }
 
     setSheetOpen(true)
@@ -335,7 +362,7 @@ export default function Files({
     setMetadata(null)
 
     try {
-      const data = await onFetchFileMetadata(effectiveShareId, file.id)
+      const data = await onFetchFileMetadata(effectiveShareId || "__search__", file.id)
       setMetadata(data)
     } catch (error) {
       setMetadataError(error instanceof Error ? error.message : "Failed to load file metadata.")
@@ -462,7 +489,7 @@ export default function Files({
               <div className="flex gap-2">
                 <Button variant="default" onClick={() => setSearchDialogOpen(true)}>
                   <IconFileSearch className="mr-2 size-4" />
-                  Search files
+                  Filter files
                 </Button>
                 <Button
                   variant="outline"
@@ -477,9 +504,21 @@ export default function Files({
             </div>
 
             {isSearchMode ? (
-              <p className="mb-2 text-sm text-muted-foreground">
-                Showing search results across all accessible shares.
-              </p>
+              <div className="mb-2 space-y-1">
+                <p className="text-sm text-muted-foreground">
+                  Showing search results across all accessible shares.
+                </p>
+                {paginationMode === "keyset" && (
+                  <p className="text-xs text-blue-600 dark:text-blue-400">
+                    ⚡ Using optimized keyset pagination (cursor-based) for better performance
+                  </p>
+                )}
+                {displayFiles?.response_size_warning && (
+                  <p className="text-xs text-amber-600 dark:text-amber-400">
+                    ⚠️ {displayFiles.response_size_warning}
+                  </p>
+                )}
+              </div>
             ) : files?.share_id ? (
               <p className="mb-2 text-sm text-muted-foreground">
                 Showing files for:{" "}

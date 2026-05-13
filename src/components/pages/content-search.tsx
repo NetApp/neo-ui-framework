@@ -13,6 +13,8 @@ import type { CreateDatasetFormValues } from "@/components/dialogs/create-datase
 import {
     IconSearch,
     IconFilter,
+    IconChevronLeft,
+    IconChevronRight,
     IconFileTypePdf,
     IconFileTypeDoc,
     IconFileTypeXls,
@@ -104,8 +106,19 @@ export default function ContentSearch({ shares, datasets, onContentSearch, onCre
     const [selectedShare, setSelectedShare] = useState<string>("all")
     const [fileType, setFileType] = useState<string>("all")
     const [sortBy, setSortBy] = useState<"relevance" | "modified_time">("relevance")
+    const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
+    const [searchMode, setSearchMode] = useState<"natural" | "boolean">("natural")
+    const [modifiedAfter, setModifiedAfter] = useState<string>("")
+    const [modifiedBefore, setModifiedBefore] = useState<string>("")
+    const [currentPage, setCurrentPage] = useState(1)
 
-    const handleSearch = useCallback(async (e?: React.FormEvent) => {
+    const toIsoOrUndefined = (value: string) => {
+        if (!value.trim()) return undefined
+        const date = new Date(value)
+        return Number.isNaN(date.getTime()) ? undefined : date.toISOString()
+    }
+
+    const handleSearch = useCallback(async (e?: React.FormEvent, pageOverride: number = 1) => {
         e?.preventDefault()
         if (!query.trim()) return
 
@@ -117,7 +130,9 @@ export default function ContentSearch({ shares, datasets, onContentSearch, onCre
             const payload: ContentSearchRequest = {
                 query,
                 sort_by: sortBy,
-                page: 1,
+                sort_order: sortOrder,
+                search_mode: searchMode,
+                page: pageOverride,
                 page_size: 100,
             }
 
@@ -129,15 +144,36 @@ export default function ContentSearch({ shares, datasets, onContentSearch, onCre
                 payload.file_types = [fileType]
             }
 
+            const parsedModifiedAfter = toIsoOrUndefined(modifiedAfter)
+            const parsedModifiedBefore = toIsoOrUndefined(modifiedBefore)
+
+            if (parsedModifiedAfter) {
+                payload.modified_after = parsedModifiedAfter
+            }
+            if (parsedModifiedBefore) {
+                payload.modified_before = parsedModifiedBefore
+            }
+
             const response = await onContentSearch(payload)
             setResults(response)
+            setCurrentPage(pageOverride)
         } catch (error) {
             toast.error("Search failed. Please try again.")
             console.error(error)
         } finally {
             setLoading(false)
         }
-    }, [query, selectedShare, fileType, sortBy, onContentSearch])
+    }, [query, selectedShare, fileType, sortBy, sortOrder, searchMode, modifiedAfter, modifiedBefore, onContentSearch])
+
+    const handleNextPage = useCallback(async () => {
+        if (!results?.has_next || loading) return
+        await handleSearch(undefined, currentPage + 1)
+    }, [results?.has_next, loading, handleSearch, currentPage])
+
+    const handlePreviousPage = useCallback(async () => {
+        if (!results?.has_previous || loading || currentPage <= 1) return
+        await handleSearch(undefined, currentPage - 1)
+    }, [results?.has_previous, loading, handleSearch, currentPage])
 
     const handleClearSearch = () => {
         setQuery("")
@@ -146,6 +182,11 @@ export default function ContentSearch({ shares, datasets, onContentSearch, onCre
         setSelectedShare("all")
         setFileType("all")
         setSortBy("relevance")
+        setSortOrder("desc")
+        setSearchMode("natural")
+        setModifiedAfter("")
+        setModifiedBefore("")
+        setCurrentPage(1)
         setFiltersOpen(false)
     }
 
@@ -329,6 +370,48 @@ export default function ContentSearch({ shares, datasets, onContentSearch, onCre
                                                     </SelectContent>
                                                 </Select>
                                             </div>
+                                            <div className="space-y-2">
+                                                <Label htmlFor="sort-order-filter">Sort Order</Label>
+                                                <Select value={sortOrder} onValueChange={(v: "asc" | "desc") => setSortOrder(v)}>
+                                                    <SelectTrigger id="sort-order-filter">
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="desc">Descending</SelectItem>
+                                                        <SelectItem value="asc">Ascending</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label htmlFor="search-mode-filter">Search Mode</Label>
+                                                <Select value={searchMode} onValueChange={(v: "natural" | "boolean") => setSearchMode(v)}>
+                                                    <SelectTrigger id="search-mode-filter">
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="natural">Natural</SelectItem>
+                                                        <SelectItem value="boolean">Boolean</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label htmlFor="modified-after-filter">Modified After</Label>
+                                                <Input
+                                                    id="modified-after-filter"
+                                                    type="datetime-local"
+                                                    value={modifiedAfter}
+                                                    onChange={(e) => setModifiedAfter(e.target.value)}
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label htmlFor="modified-before-filter">Modified Before</Label>
+                                                <Input
+                                                    id="modified-before-filter"
+                                                    type="datetime-local"
+                                                    value={modifiedBefore}
+                                                    onChange={(e) => setModifiedBefore(e.target.value)}
+                                                />
+                                            </div>
                                         </div>
                                     )}
                                 </form>
@@ -432,6 +515,34 @@ export default function ContentSearch({ shares, datasets, onContentSearch, onCre
                                         ))}
                                     </div>
                                 )}
+
+                                <div className="flex items-center justify-between pt-2">
+                                    <p className="text-xs text-muted-foreground">
+                                        Page {results.page} of {Math.max(results.total_pages, 1)}
+                                    </p>
+                                    <div className="flex items-center gap-2">
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={handlePreviousPage}
+                                            disabled={!results.has_previous || loading}
+                                        >
+                                            <IconChevronLeft className="mr-1 h-4 w-4" />
+                                            Previous
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={handleNextPage}
+                                            disabled={!results.has_next || loading}
+                                        >
+                                            Next
+                                            <IconChevronRight className="ml-1 h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                </div>
                             </div>
                         )}
                     </div>

@@ -127,14 +127,19 @@ export function SearchFilesDialog({ open, onOpenChange, onSearch, allowContentVi
     }
 
     const params: FileSearchParams = {
-      ...(formValues.filename.trim() && { filename: formValues.filename.trim() }),
+      ...(formValues.filename.trim() && {
+        filename: formValues.filename.trim(),
+      }),
       ...(normalizeFileType(formValues.file_type) && {
         file_type: normalizeFileType(formValues.file_type),
       }),
+
       ...(parseDateTime(formValues.after_modified_time) && {
         after_modified_time: parseDateTime(formValues.after_modified_time),
       }),
+
       ...(formValues.field_set && { field_set: formValues.field_set }),
+
       ...(parseNumber(formValues.page_size) !== undefined && {
         page_size: parseNumber(formValues.page_size),
       }),
@@ -163,9 +168,9 @@ export function SearchFilesDialog({ open, onOpenChange, onSearch, allowContentVi
       <DrawerContent>
         <div className="mx-auto w-full max-w-2xl">
           <DrawerHeader>
-            <DrawerTitle>Search files</DrawerTitle>
+            <DrawerTitle>Filter files</DrawerTitle>
             <DrawerDescription>
-              Filter indexed files and run an API-backed search.
+              Filter indexed files by metadata. Use the Content Search page for full-text content search.
             </DrawerDescription>
           </DrawerHeader>
 
@@ -185,12 +190,12 @@ export function SearchFilesDialog({ open, onOpenChange, onSearch, allowContentVi
                 <Label htmlFor="file_type">File extension</Label>
                 <Input
                   id="file_type"
-                  placeholder="e.g. pdf or .pdf"
+                  placeholder="e.g. pdf,docx,xlsx"
                   value={formValues.file_type}
                   onChange={(event) => handleInputChange("file_type", event.target.value)}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Dot prefix is optional. Values like "pdf" are normalized to ".pdf".
+                  Dot prefix is optional. Comma-separated values are supported and normalized (example: "pdf,docx" becomes ".pdf,.docx").
                 </p>
               </div>
 
@@ -280,7 +285,7 @@ export function SearchFilesDialog({ open, onOpenChange, onSearch, allowContentVi
                     <div className="space-y-0.5 pr-3">
                       <Label htmlFor="include_counts">Include counts</Label>
                       <p className="text-xs text-muted-foreground">
-                        Calculates total counts and aggregate sizes.
+                        Calculates total counts and aggregate sizes (can be expensive at very large scale).
                       </p>
                     </div>
                     <Switch

@@ -653,7 +653,15 @@ export function useNeoApi() {
 
       const api = apiRef.current
       appLogger.debug("Fetching file metadata", undefined, { shareId, fileId })
-      const metadata = await api.getFileMetadata(token, shareId, fileId, contentVisibilityEnabled)
+      
+      // Try direct file lookup first (handles cross-share search results)
+      // Falls back to share-scoped lookup if file_id lookup fails or share_id provided
+      const metadata = await api.getFileMetadataWithFallback(
+        token,
+        fileId,
+        shareId !== "__search__" && shareId !== "__none__" ? shareId : undefined,
+        contentVisibilityEnabled
+      )
       setCacheStats(api.getCacheStats())
       return metadata
     },
