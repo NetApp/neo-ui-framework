@@ -1,11 +1,12 @@
 // Copyright 2025 NetApp, Inc. All Rights Reserved.
-import { useState, useCallback } from "react"
+import { useState, useCallback, useMemo } from "react"
 import type {
     SharesResponse,
     ContentSearchRequest,
     ContentSearchResponse,
     MonitoringOverviewResponse,
     FileEntry,
+    FileMetadataResponse,
     VersionResponse,
     CreateDatasetRequest,
 } from "@/services/models"
@@ -46,14 +47,25 @@ import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
+    Sheet,
+    SheetContent,
+    SheetDescription,
+    SheetFooter,
+    SheetHeader,
+    SheetTitle,
+} from "@/components/ui/sheet"
+import { Separator } from "@/components/ui/separator"
+import {
     Alert,
     AlertDescription,
     AlertTitle,
 } from "@/components/ui/alert"
+import { Spinner } from "@/components/ui/spinner"
 import { toast } from "sonner"
 import { CreateDatasetDialog } from "@/components/dialogs/create-dataset-dialog"
 import { AddToDatasetDialog } from "@/components/dialogs/add-to-dataset-dialog"
 import type { Dataset } from "@/services/models"
+import { useSettings } from "@/context/settings-context"
 
 interface ContentSearchProps {
     shares: SharesResponse[] | null
@@ -62,6 +74,7 @@ interface ContentSearchProps {
     onCreateDataset: (payload: Omit<CreateDatasetRequest, "file_ids">, files: FileEntry[]) => Promise<void>
     onAddToDataset: (datasetId: string, fileIds: string[], notes?: string) => Promise<void>
     onFetchDatasets: () => Promise<void>
+    onFetchFileMetadata: (shareId: string, fileId: string) => Promise<FileMetadataResponse>
     monitoringOverview: MonitoringOverviewResponse | null
     version: VersionResponse | null
 }
@@ -93,7 +106,8 @@ const renderSnippet = (snippet: string) => {
     })
 }
 
-export default function ContentSearch({ shares, datasets, onContentSearch, onCreateDataset, onAddToDataset, onFetchDatasets, version }: ContentSearchProps) {
+export default function ContentSearch({ shares, datasets, onContentSearch, onCreateDataset, onAddToDataset, onFetchDatasets, onFetchFileMetadata, version }: ContentSearchProps) {
+    const { contentVisibilityEnabled } = useSettings()
     const [query, setQuery] = useState("")
     const [results, setResults] = useState<ContentSearchResponse | null>(null)
     const [loading, setLoading] = useState(false)
@@ -104,13 +118,18 @@ export default function ContentSearch({ shares, datasets, onContentSearch, onCre
 
     // Filters
     const [selectedShare, setSelectedShare] = useState<string>("all")
-    const [fileType, setFileType] = useState<string>("all")
-    const [sortBy, setSortBy] = useState<"relevance" | "modified_time">("relevance")
+    const [fileTypesInput, setFileTypesInput] = useState<string>("")
+    const [sortBy, setSortBy] = useState<"relevance" | "modified_time" | "filename" | "size">("relevance")
     const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
     const [searchMode, setSearchMode] = useState<"natural" | "boolean">("natural")
     const [modifiedAfter, setModifiedAfter] = useState<string>("")
     const [modifiedBefore, setModifiedBefore] = useState<string>("")
+    const [pageSize, setPageSize] = useState<string>("100")
     const [currentPage, setCurrentPage] = useState(1)
+    const [sheetOpen, setSheetOpen] = useState(false)
+    const [metadataLoading, setMetadataLoading] = useState(false)
+    const [metadataError, setMetadataError] = useState<string | null>(null)
+    const [metadata, setMetadata] = useState<FileMetadataResponse | null>(null)
 
     const toIsoOrUndefined = (value: string) => {
         if (!value.trim()) return undefined
@@ -118,13 +137,25 @@ export default function ContentSearch({ shares, datasets, onContentSearch, onCre
         return Number.isNaN(date.getTime()) ? undefined : date.toISOString()
     }
 
-    const handleSearch = useCallback(async (e?: React.FormEvent, pageOverride: number = 1) => {
+    const normalizeFileTypes = (value: string) => {
+        return value
+            .split(",")
+            .map((part) => part.trim().toLowerCase())
+            .filter(Boolean)
+            .map((part) => part.replace(/^\./, ""))
+    }
+
+    const handleSearch = useCallback(async (e?: React.FormEvent, pageOverride: number = 1, resetSelection: boolean = true) => {
         e?.preventDefault()
         if (!query.trim()) return
 
         setLoading(true)
-        setResults(null)
-        setSelectedIds(new Set())
+        if (pageOverride === 1) {
+            setResults(null)
+        }
+        if (resetSelection) {
+            setSelectedIds(new Set())
+        }
 
         try {
             const payload: ContentSearchRequest = {
@@ -133,15 +164,16 @@ export default function ContentSearch({ shares, datasets, onContentSearch, onCre
                 sort_order: sortOrder,
                 search_mode: searchMode,
                 page: pageOverride,
-                page_size: 100,
+                page_size: Number(pageSize) || 100,
             }
 
             if (selectedShare !== "all") {
                 payload.share_ids = [selectedShare]
             }
 
-            if (fileType !== "all") {
-                payload.file_types = [fileType]
+            const normalizedFileTypes = normalizeFileTypes(fileTypesInput)
+            if (normalizedFileTypes.length > 0) {
+                payload.file_types = normalizedFileTypes
             }
 
             const parsedModifiedAfter = toIsoOrUndefined(modifiedAfter)
@@ -163,16 +195,16 @@ export default function ContentSearch({ shares, datasets, onContentSearch, onCre
         } finally {
             setLoading(false)
         }
-    }, [query, selectedShare, fileType, sortBy, sortOrder, searchMode, modifiedAfter, modifiedBefore, onContentSearch])
+    }, [query, selectedShare, fileTypesInput, sortBy, sortOrder, searchMode, modifiedAfter, modifiedBefore, pageSize, onContentSearch])
 
     const handleNextPage = useCallback(async () => {
         if (!results?.has_next || loading) return
-        await handleSearch(undefined, currentPage + 1)
+        await handleSearch(undefined, currentPage + 1, false)
     }, [results?.has_next, loading, handleSearch, currentPage])
 
     const handlePreviousPage = useCallback(async () => {
         if (!results?.has_previous || loading || currentPage <= 1) return
-        await handleSearch(undefined, currentPage - 1)
+        await handleSearch(undefined, currentPage - 1, false)
     }, [results?.has_previous, loading, handleSearch, currentPage])
 
     const handleClearSearch = () => {
@@ -180,12 +212,13 @@ export default function ContentSearch({ shares, datasets, onContentSearch, onCre
         setResults(null)
         setSelectedIds(new Set())
         setSelectedShare("all")
-        setFileType("all")
+        setFileTypesInput("")
         setSortBy("relevance")
         setSortOrder("desc")
         setSearchMode("natural")
         setModifiedAfter("")
         setModifiedBefore("")
+        setPageSize("100")
         setCurrentPage(1)
         setFiltersOpen(false)
     }
@@ -235,6 +268,42 @@ export default function ContentSearch({ shares, datasets, onContentSearch, onCre
         }
         setSelectedIds(newSelected)
     }
+
+    const handleOpenDetails = useCallback(async (shareId: string, fileId: string) => {
+        setSheetOpen(true)
+        setMetadataLoading(true)
+        setMetadataError(null)
+        setMetadata(null)
+
+        try {
+            const data = await onFetchFileMetadata(shareId, fileId)
+            setMetadata(data)
+        } catch (error) {
+            setMetadataError(error instanceof Error ? error.message : "Failed to load file metadata.")
+        } finally {
+            setMetadataLoading(false)
+        }
+    }, [onFetchFileMetadata])
+
+    const metadataWithoutContent = useMemo(() => {
+        if (!metadata) return null
+        const { content, content_chunks, ...rest } = metadata
+        return rest
+    }, [metadata])
+
+    const metadataContent = useMemo(() => {
+        if (!metadata || !contentVisibilityEnabled) return null
+
+        if (metadata.content) {
+            return metadata.content
+        }
+
+        if (metadata.content_chunks?.length) {
+            return metadata.content_chunks.join("")
+        }
+
+        return null
+    }, [metadata, contentVisibilityEnabled])
 
     return (
         <div className="flex flex-1 flex-col">
@@ -302,7 +371,7 @@ export default function ContentSearch({ shares, datasets, onContentSearch, onCre
                                                 onChange={(e) => setQuery(e.target.value)}
                                             />
                                         </div>
-                                        <Button type="submit" disabled={loading}>
+                                        <Button type="submit" disabled={loading || !query.trim()}>
                                             {loading ? "Searching..." : "Search"}
                                         </Button>
                                         {results && (
@@ -344,29 +413,28 @@ export default function ContentSearch({ shares, datasets, onContentSearch, onCre
                                                 </Select>
                                             </div>
                                             <div className="space-y-2">
-                                                <Label htmlFor="type-filter">File Type</Label>
-                                                <Select value={fileType} onValueChange={setFileType}>
-                                                    <SelectTrigger id="type-filter">
-                                                        <SelectValue placeholder="All Types" />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem value="all">All Types</SelectItem>
-                                                        <SelectItem value="pdf">PDF</SelectItem>
-                                                        <SelectItem value="docx">Word (DOCX)</SelectItem>
-                                                        <SelectItem value="xlsx">Excel (XLSX)</SelectItem>
-                                                        <SelectItem value="txt">Text (TXT)</SelectItem>
-                                                    </SelectContent>
-                                                </Select>
+                                                <Label htmlFor="type-filter">File Types</Label>
+                                                <Input
+                                                    id="type-filter"
+                                                    placeholder="e.g. pdf,docx,xlsx"
+                                                    value={fileTypesInput}
+                                                    onChange={(e) => setFileTypesInput(e.target.value)}
+                                                />
+                                                <p className="text-xs text-muted-foreground">
+                                                    Comma-separated values supported. Dot prefix is optional.
+                                                </p>
                                             </div>
                                             <div className="space-y-2">
                                                 <Label htmlFor="sort-filter">Sort By</Label>
-                                                <Select value={sortBy} onValueChange={(v: "relevance" | "modified_time") => setSortBy(v)}>
+                                                <Select value={sortBy} onValueChange={(v: "relevance" | "modified_time" | "filename" | "size") => setSortBy(v)}>
                                                     <SelectTrigger id="sort-filter">
                                                         <SelectValue />
                                                     </SelectTrigger>
                                                     <SelectContent>
                                                         <SelectItem value="relevance">Relevance</SelectItem>
                                                         <SelectItem value="modified_time">Date Modified</SelectItem>
+                                                        <SelectItem value="filename">Filename</SelectItem>
+                                                        <SelectItem value="size">Size</SelectItem>
                                                     </SelectContent>
                                                 </Select>
                                             </div>
@@ -411,6 +479,20 @@ export default function ContentSearch({ shares, datasets, onContentSearch, onCre
                                                     value={modifiedBefore}
                                                     onChange={(e) => setModifiedBefore(e.target.value)}
                                                 />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label htmlFor="page-size-filter">Results Per Page</Label>
+                                                <Select value={pageSize} onValueChange={setPageSize}>
+                                                    <SelectTrigger id="page-size-filter">
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="25">25</SelectItem>
+                                                        <SelectItem value="50">50</SelectItem>
+                                                        <SelectItem value="100">100</SelectItem>
+                                                        <SelectItem value="200">200</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
                                             </div>
                                         </div>
                                     )}
@@ -478,7 +560,11 @@ export default function ContentSearch({ shares, datasets, onContentSearch, onCre
                                                             />
                                                             <div className="flex items-center gap-2">
                                                                 {FILE_TYPE_ICONS[result.file_type] || <IconFileText className="h-4 w-4 text-gray-500" />}
-                                                                <CardTitle className="text-base font-medium truncate" title={result.filename}>
+                                                                <CardTitle
+                                                                    className="text-base font-medium truncate cursor-pointer underline-offset-4 hover:underline"
+                                                                    title={result.filename}
+                                                                    onClick={() => void handleOpenDetails(result.share_id, result.id)}
+                                                                >
                                                                     {result.filename}
                                                                 </CardTitle>
                                                             </div>
@@ -569,6 +655,134 @@ export default function ContentSearch({ shares, datasets, onContentSearch, onCre
                             toast.success(`${fileIds.length} file${fileIds.length !== 1 ? "s" : ""} added to "${datasetName}"`)
                         }}
                     />
+
+                    <Sheet open={sheetOpen} onOpenChange={(open) => {
+                        setSheetOpen(open)
+                        if (!open) {
+                            setMetadata(null)
+                            setMetadataError(null)
+                            setMetadataLoading(false)
+                        }
+                    }}>
+                        <SheetContent side="bottom" className="max-h-[95vh] flex flex-col p-0 gap-0">
+                            <div className="flex-1 overflow-y-auto p-6 flex flex-col">
+                                <SheetHeader className="mb-4 p-0">
+                                    <SheetTitle>File details</SheetTitle>
+                                    <SheetDescription>
+                                        Detailed information about the selected file
+                                    </SheetDescription>
+                                </SheetHeader>
+
+                                <Separator className="mb-6" />
+
+                                <div className="space-y-4">
+                                    {metadataLoading ? (
+                                        <div className="flex items-center justify-center py-6">
+                                            <Spinner className="size-6" />
+                                        </div>
+                                    ) : metadataError ? (
+                                        <p className="text-sm text-destructive">{metadataError}</p>
+                                    ) : metadata ? (
+                                        <dl className="grid grid-cols-1 gap-y-3 text-sm text-muted-foreground sm:grid-cols-3 sm:gap-x-6">
+                                            <div>
+                                                <dt className="font-medium text-foreground">Filename</dt>
+                                                <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{metadata.filename}</pre></dd>
+                                            </div>
+                                            <div>
+                                                <dt className="font-medium text-foreground">File type</dt>
+                                                <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{metadata.file_type || "—"}</pre></dd>
+                                            </div>
+                                            <div className="sm:col-span-1">
+                                                <dt className="font-medium text-foreground">File path</dt>
+                                                <dd className="break-words p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{metadata.file_path}</pre></dd>
+                                            </div>
+                                            <div className="sm:col-span-1">
+                                                <dt className="font-medium text-foreground">UNC path</dt>
+                                                <dd className="break-words p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{metadata.unc_path}</pre></dd>
+                                            </div>
+                                            <div>
+                                                <dt className="font-medium text-foreground">Size</dt>
+                                                <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{metadata.size.toLocaleString()} bytes</pre></dd>
+                                            </div>
+                                            <div>
+                                                <dt className="font-medium text-foreground">File ID</dt>
+                                                <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{metadata.id}</pre></dd>
+                                            </div>
+                                            <div>
+                                                <dt className="font-medium text-foreground">Created</dt>
+                                                <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{new Date(metadata.created_at).toLocaleString()}</pre></dd>
+                                            </div>
+                                            <div>
+                                                <dt className="font-medium text-foreground">Modified</dt>
+                                                <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{new Date(metadata.modified_time).toLocaleString()}</pre></dd>
+                                            </div>
+                                            <div>
+                                                <dt className="font-medium text-foreground">Accessed</dt>
+                                                <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{new Date(metadata.accessed_at).toLocaleString()}</pre></dd>
+                                            </div>
+                                            <div>
+                                                <dt className="font-medium text-foreground">Indexed</dt>
+                                                <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{metadata.indexed_at ? new Date(metadata.indexed_at).toLocaleString() : "—"}</pre></dd>
+                                            </div>
+                                            <div>
+                                                <dt className="font-medium text-foreground">Conversion (ms)</dt>
+                                                <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{metadata.conversion_duration_ms}</pre></dd>
+                                            </div>
+                                            <div>
+                                                <dt className="font-medium text-foreground">Extractor</dt>
+                                                <dd className="p-1"><pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">{metadata.extractor_used || "—"}</pre></dd>
+                                            </div>
+                                            <div className="sm:col-span-3">
+                                                <dt className="font-medium text-foreground">ACL principals</dt>
+                                                <dd className="p-1">
+                                                    <pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">
+                                                        {metadata.acl_principals?.length ? metadata.acl_principals.join(", ") : "N/A"}
+                                                    </pre>
+                                                </dd>
+                                            </div>
+                                            <div className="sm:col-span-3">
+                                                <dt className="font-medium text-foreground">Resolved principals</dt>
+                                                <dd className="p-1">
+                                                    {metadata.resolved_principals?.length ? (
+                                                        <pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">
+                                                            {JSON.stringify(metadata.resolved_principals, null, 2)}
+                                                        </pre>
+                                                    ) : (
+                                                        <pre className="mt-1 max-h-40 overflow-auto rounded bg-muted p-2 text-xs">"N/A"</pre>
+                                                    )}
+                                                </dd>
+                                            </div>
+                                            {contentVisibilityEnabled ? (
+                                                <div className="sm:col-span-3">
+                                                    <dt className="font-medium text-foreground">Content</dt>
+                                                    <dd className="p-1">
+                                                        <pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs whitespace-pre-wrap break-words">
+                                                            {metadataContent || "—"}
+                                                        </pre>
+                                                    </dd>
+                                                </div>
+                                            ) : null}
+                                            <div className="sm:col-span-3">
+                                                <dt className="font-medium text-foreground">All Fields</dt>
+                                                <dd className="p-1">
+                                                    <pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">
+                                                        {JSON.stringify(contentVisibilityEnabled ? metadata : metadataWithoutContent, null, 2)}
+                                                    </pre>
+                                                </dd>
+                                            </div>
+                                        </dl>
+                                    ) : (
+                                        <p className="text-sm text-muted-foreground">No details available.</p>
+                                    )}
+                                </div>
+                                <SheetFooter>
+                                    <Button variant="outline" onClick={() => setSheetOpen(false)}>
+                                        Close
+                                    </Button>
+                                </SheetFooter>
+                            </div>
+                        </SheetContent>
+                    </Sheet>
                 </div>
             </div>
         </div>

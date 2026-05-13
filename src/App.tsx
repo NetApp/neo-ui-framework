@@ -181,6 +181,7 @@ function App() {
                       onCreateDataset={handlers.handleCreateDataset}
                       onAddToDataset={handlers.handleAddDatasetItems}
                       onFetchDatasets={handlers.handleFetchDatasets}
+                      onFetchFileMetadata={handlers.handleFetchFileMetadata}
                       monitoringOverview={state.monitoring.overview}
                       version={state.version}
                     />
