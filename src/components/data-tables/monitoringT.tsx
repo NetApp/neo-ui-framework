@@ -1127,6 +1127,28 @@ export function MonitoringChart({
   const latestTimelineEntry = timelineRows.length > 0 ? timelineRows[0] : null
   const latestBenchmarkRun = benchmarkRuns.length > 0 ? benchmarkRuns[0] : null
 
+  const normalizedHealthStatus = String(health?.status ?? "unknown").trim().toLowerCase()
+  const isSystemHealthy = ["ok", "healthy", "up", "running", "ready"].includes(normalizedHealthStatus)
+  const hasExplicitLicenseValidity = typeof license?.license_valid === "boolean"
+  const hasExplicitLicenseConfigured = typeof license?.license_configured === "boolean"
+  const licenseDaysRemaining = license?.days_remaining
+    ?? license?.details?.days_remaining
+    ?? null
+  const connectorId = license?.connector_id ?? "-"
+  const healthDisplayStatus = normalizedHealthStatus === "unknown" ? "Unknown" : normalizedHealthStatus
+  const licenseDaysDisplay = licenseDaysRemaining !== null ? `${licenseDaysRemaining}d left` : "-"
+  const licenseStatusLabel = (() => {
+    if (hasExplicitLicenseConfigured && license?.license_configured === false) return "Not configured"
+    if (typeof licenseDaysRemaining === "number") {
+      if (licenseDaysRemaining <= 0) return "Expired"
+      if (licenseDaysRemaining < 10) return "Attention"
+      return "Valid"
+    }
+    if (hasExplicitLicenseValidity) return license?.license_valid ? "Valid" : "Attention"
+    return "Configured"
+  })()
+  const isLicenseStatusGreen = licenseStatusLabel === "Valid"
+
   const getTimelineActionVisual = useCallback((actionValue: unknown) => {
     const action = String(actionValue ?? "").toLowerCase()
 
@@ -1170,21 +1192,68 @@ export function MonitoringChart({
 
       {/* Neo Tab */}
       <TabsContent value="neo">
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {/* System Versions Card */}
-          <VersioningCard
-            version={version}
-            helmChartVersion={helmChartVersion}
-            health={health}
-            license={license}
-            className="md:col-span-1 lg:col-span-1"
-          />
+        <div className="space-y-4">
+          <Card className="border-slate-300 bg-muted/60">
+            <CardHeader className="space-y-2 pb-2">
+              <CardTitle className="text-sm font-semibold tracking-wide">
+                {t("neoInstanceControlPlane", { ns: "monitoring", defaultValue: "Neo Instance Control Plane" })}
+              </CardTitle>
+              <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-4">
+                <div className="rounded border border-slate-300 bg-background/90 p-2 text-xs">
+                  <div className="text-muted-foreground">{t("systemHealth", { ns: "monitoring", defaultValue: "System health" })}</div>
+                  <div className="mt-1 flex items-center gap-2">
+                    <Badge
+                      variant={isSystemHealthy ? "default" : "destructive"}
+                      className={isSystemHealthy ? "bg-emerald-600 text-white" : undefined}
+                    >
+                      {healthDisplayStatus}
+                    </Badge>
+                    <span className="font-mono text-[11px] text-muted-foreground">{health?.service ?? "neo-api"}</span>
+                  </div>
+                </div>
 
-          {/* Database Size Card */}
-          <DatabaseSizeCard databaseSize={databaseSize} className="lg:col-span-1" />
+                <div className="rounded border border-slate-300 bg-background/90 p-2 text-xs">
+                  <div className="text-muted-foreground">{t("licenseStatus", { ns: "monitoring", defaultValue: "License" })}</div>
+                  <div className="mt-1 flex items-center gap-2">
+                    <Badge
+                      variant={isLicenseStatusGreen ? "default" : (licenseStatusLabel === "Attention" ? "outline" : "destructive")}
+                      className={isLicenseStatusGreen ? "bg-emerald-600 text-white" : undefined}
+                    >
+                      {licenseStatusLabel}
+                    </Badge>
+                    <span className="text-[11px] text-muted-foreground">{licenseDaysDisplay}</span>
+                  </div>
+                </div>
 
-          {/* Cache Stats Card */}
-          <CacheStatsCard cacheStats={cacheStats} className="lg:col-span-1" />
+                <div className="rounded border border-slate-300 bg-background/90 p-2 text-xs">
+                  <div className="text-muted-foreground">{t("appVersion", { ns: "monitoring", defaultValue: "App version" })}</div>
+                  <div className="mt-1 font-mono text-sm">{version?.version ?? "-"}</div>
+                </div>
+
+                <div className="rounded border border-slate-300 bg-background/90 p-2 text-xs">
+                  <div className="text-muted-foreground">{t("connectorId", { ns: "monitoring", defaultValue: "Connector ID" })}</div>
+                  <div className="mt-1 truncate font-mono text-sm">{connectorId}</div>
+                </div>
+              </div>
+            </CardHeader>
+          </Card>
+
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {/* System Versions Card */}
+            <VersioningCard
+              version={version}
+              helmChartVersion={helmChartVersion}
+              health={health}
+              license={license}
+              className="md:col-span-1 lg:col-span-1"
+            />
+
+            {/* Database Size Card */}
+            <DatabaseSizeCard databaseSize={databaseSize} className="lg:col-span-1" />
+
+            {/* Cache Stats Card */}
+            <CacheStatsCard cacheStats={cacheStats} className="lg:col-span-1" />
+          </div>
         </div>
       </TabsContent>
 
@@ -1657,13 +1726,13 @@ export function MonitoringChart({
 
       <TabsContent value="optimization">
         <div className="space-y-4">
-          <Card className="border-sky-200 bg-gradient-to-r from-sky-50 via-cyan-50 to-white">
+          <Card className="border-slate-300 bg-muted/60">
             <CardHeader className="space-y-2 pb-2">
               <CardTitle className="text-sm font-semibold tracking-wide">
                 {t("missionControl", { ns: "monitoring", defaultValue: "Mission Control" })}
               </CardTitle>
               <div className="grid gap-2 md:grid-cols-4">
-                <div className="rounded border border-sky-200 bg-white/80 p-2 text-xs">
+                <div className="rounded border border-slate-300 bg-background/90 p-2 text-xs">
                   <div className="text-muted-foreground">{t("tuner", { ns: "monitoring", defaultValue: "Tuner" })}</div>
                   <div className="mt-1 flex items-center gap-2">
                     <Badge variant={(tuningStatus?.enabled ?? false) ? "outline" : "destructive"}>
@@ -1671,7 +1740,7 @@ export function MonitoringChart({
                     </Badge>
                   </div>
                 </div>
-                <div className="rounded border border-sky-200 bg-white/80 p-2 text-xs">
+                <div className="rounded border border-slate-300 bg-background/90 p-2 text-xs">
                   <div className="text-muted-foreground">{t("benchmark", { ns: "monitoring", defaultValue: "Benchmark" })}</div>
                   <div className="mt-1 flex items-center gap-2">
                     <Badge variant="outline" className="font-mono">
@@ -1679,14 +1748,14 @@ export function MonitoringChart({
                     </Badge>
                   </div>
                 </div>
-                <div className="rounded border border-sky-200 bg-white/80 p-2 text-xs">
+                <div className="rounded border border-slate-300 bg-background/90 p-2 text-xs">
                   <div className="text-muted-foreground">{t("lastOptimization", { ns: "monitoring", defaultValue: "Last optimization" })}</div>
                   <div className="mt-1 text-sm font-medium">{latestTimelineEntry ? String(latestTimelineEntry.action) : "-"}</div>
                   <div className="text-[11px] text-muted-foreground">
                     {latestTimelineEntry ? new Date(latestTimelineEntry.timestamp).toLocaleString() : "-"}
                   </div>
                 </div>
-                <div className="rounded border border-sky-200 bg-white/80 p-2 text-xs">
+                <div className="rounded border border-slate-300 bg-background/90 p-2 text-xs">
                   <div className="text-muted-foreground">{t("lastBenchmarkRun", { ns: "monitoring", defaultValue: "Last benchmark run" })}</div>
                   <div className="mt-1 text-sm font-medium">{latestBenchmarkRun?.id ?? "-"}</div>
                   <div className="text-[11px] text-muted-foreground">
