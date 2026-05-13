@@ -21,6 +21,21 @@ import type {
   MonitoringWorkersResponse,
   MonitoringGraphRateLimitResponse,
   MonitoringFailedItemsResponse,
+  MonitoringWorkQueueStatsResponse,
+  MonitoringServicesResponse,
+  MonitoringRetryFailedResponse,
+  MonitoringSizingProfileResponse,
+  MonitoringSizingCurrentResponse,
+  MonitoringSizingParameterResponse,
+  MonitoringBenchmarkRunResponse,
+  MonitoringBenchmarkStatusResponse,
+  MonitoringBenchmarkResultResponse,
+  MonitoringBenchmarkHistoryResponse,
+  MonitoringTuningRecommendationsResponse,
+  MonitoringTuningHistoryResponse,
+  MonitoringTuningApplyResponse,
+  MonitoringTuningRollbackResponse,
+  MonitoringTuningStatusResponse,
   TasksResponse,
   TasksListResponse,
   TaskQueryParams,
@@ -103,6 +118,21 @@ export type {
   MonitoringWorkersResponse,
   MonitoringGraphRateLimitResponse,
   MonitoringFailedItemsResponse,
+  MonitoringWorkQueueStatsResponse,
+  MonitoringServicesResponse,
+  MonitoringRetryFailedResponse,
+  MonitoringSizingProfileResponse,
+  MonitoringSizingCurrentResponse,
+  MonitoringSizingParameterResponse,
+  MonitoringBenchmarkRunResponse,
+  MonitoringBenchmarkStatusResponse,
+  MonitoringBenchmarkResultResponse,
+  MonitoringBenchmarkHistoryResponse,
+  MonitoringTuningRecommendationsResponse,
+  MonitoringTuningHistoryResponse,
+  MonitoringTuningApplyResponse,
+  MonitoringTuningRollbackResponse,
+  MonitoringTuningStatusResponse,
   TasksResponse,
   TasksListResponse,
   TaskQueryParams,
@@ -530,12 +560,99 @@ export class NeoApiService extends BaseApiClient {
     return this.dataLoader.load(`monitoringGraphRateLimit:${token}`, () => this.monitoring.getMonitoringGraphRateLimit(token), this.monitoringTtl)
   }
 
-  getMonitoringFailedItems(token: string) {
-    return this.dataLoader.load(`monitoringFailedItems:${token}`, () => this.monitoring.getMonitoringFailedItems(token), this.monitoringTtl)
+  getMonitoringFailedItems(
+    token: string,
+    options?: {
+      shareId?: string
+      workType?: string
+      limit?: number
+    }
+  ) {
+    const key = buildNormalizedCacheKey("monitoringFailedItems", token, options ?? {})
+    return this.dataLoader.load(key, () => this.monitoring.getMonitoringFailedItems(token, options), this.monitoringTtl)
+  }
+
+  getMonitoringWorkQueue(token: string) {
+    return this.dataLoader.load(`monitoringWorkQueue:${token}`, () => this.monitoring.getMonitoringWorkQueue(token), this.monitoringTtl)
+  }
+
+  getMonitoringWorkQueueByShare(token: string, shareId: string) {
+    return this.dataLoader.load(
+      `monitoringWorkQueueByShare:${token}:${shareId}`,
+      () => this.monitoring.getMonitoringWorkQueueByShare(token, shareId),
+      this.monitoringTtl
+    )
+  }
+
+  getMonitoringServices(token: string) {
+    return this.dataLoader.load(`monitoringServices:${token}`, () => this.monitoring.getMonitoringServices(token), this.monitoringTtl)
+  }
+
+  retryFailedItems(token: string, shareId?: string | null, workItemIds?: string[]) {
+    return this.monitoring.retryFailedItems(token, shareId, workItemIds)
   }
 
   retryWorkItems(token: string, shareId: string, workItemIds: string[]) {
     return this.monitoring.retryWorkItems(token, shareId, workItemIds)
+  }
+
+  getMonitoringSizingProfiles(token: string) {
+    return this.dataLoader.load(`monitoringSizingProfiles:${token}`, () => this.monitoring.getMonitoringSizingProfiles(token), this.monitoringTtl)
+  }
+
+  getMonitoringSizingCurrent(token: string) {
+    return this.dataLoader.load(`monitoringSizingCurrent:${token}`, () => this.monitoring.getMonitoringSizingCurrent(token), this.monitoringTtl)
+  }
+
+  getMonitoringSizingParameters(token: string) {
+    return this.dataLoader.load(`monitoringSizingParameters:${token}`, () => this.monitoring.getMonitoringSizingParameters(token), this.monitoringTtl)
+  }
+
+  runMonitoringBenchmark(
+    token: string,
+    options?: {
+      shareId?: string
+      sampleSize?: number
+      stages?: string
+    }
+  ) {
+    return this.monitoring.runMonitoringBenchmark(token, options)
+  }
+
+  getMonitoringBenchmarkStatus(token: string) {
+    return this.dataLoader.load(`monitoringBenchmarkStatus:${token}`, () => this.monitoring.getMonitoringBenchmarkStatus(token), this.monitoringTtl)
+  }
+
+  getMonitoringBenchmarkResults(token: string) {
+    return this.dataLoader.load(`monitoringBenchmarkResults:${token}`, () => this.monitoring.getMonitoringBenchmarkResults(token), this.monitoringTtl)
+  }
+
+  getMonitoringBenchmarkHistory(token: string) {
+    return this.dataLoader.load(`monitoringBenchmarkHistory:${token}`, () => this.monitoring.getMonitoringBenchmarkHistory(token), this.monitoringTtl)
+  }
+
+  getMonitoringTuningRecommendations(token: string) {
+    return this.dataLoader.load(
+      `monitoringTuningRecommendations:${token}`,
+      () => this.monitoring.getMonitoringTuningRecommendations(token),
+      this.monitoringTtl
+    )
+  }
+
+  getMonitoringTuningHistory(token: string) {
+    return this.dataLoader.load(`monitoringTuningHistory:${token}`, () => this.monitoring.getMonitoringTuningHistory(token), this.monitoringTtl)
+  }
+
+  applyMonitoringTuning(token: string, parameter: string, value: string, reason?: string) {
+    return this.monitoring.applyMonitoringTuning(token, parameter, value, reason)
+  }
+
+  rollbackMonitoringTuning(token: string) {
+    return this.monitoring.rollbackMonitoringTuning(token)
+  }
+
+  getMonitoringTuningStatus(token: string) {
+    return this.dataLoader.load(`monitoringTuningStatus:${token}`, () => this.monitoring.getMonitoringTuningStatus(token), this.monitoringTtl)
   }
 
   getTasks(token: string, query?: TaskQueryParams) {

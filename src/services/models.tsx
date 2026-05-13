@@ -525,6 +525,148 @@ export interface MonitoringFailedItemsResponse { // only for v3
   [key: string]: unknown
 }
 
+export interface MonitoringWorkQueueShareStats {
+  share_id?: string
+  share_name?: string
+  total_items?: number
+  pending_items?: number
+  claimed_items?: number
+  processing_items?: number
+  completed_items?: number
+  failed_items?: number
+  abandoned_items?: number
+  [key: string]: unknown
+}
+
+export interface MonitoringWorkQueueStatsResponse {
+  total_items?: number
+  pending_items?: number
+  claimed_items?: number
+  processing_items?: number
+  completed_items?: number
+  failed_items?: number
+  abandoned_items?: number
+  by_share?: MonitoringWorkQueueShareStats[] | Record<string, MonitoringWorkQueueShareStats>
+  timestamp?: string
+  [key: string]: unknown
+}
+
+export interface MonitoringServiceHealth {
+  name?: string
+  service?: string
+  status?: string
+  healthy?: boolean
+  message?: string
+  last_heartbeat?: string
+  [key: string]: unknown
+}
+
+export interface MonitoringServicesResponse {
+  services?: MonitoringServiceHealth[] | Record<string, MonitoringServiceHealth | string | boolean>
+  timestamp?: string
+  [key: string]: unknown
+}
+
+export interface MonitoringRetryFailedResponse {
+  message?: string
+  retried_count?: number
+  requested_count?: number
+  [key: string]: unknown
+}
+
+export interface MonitoringSizingProfileResponse {
+  profile_name?: string
+  description?: string
+  recommended_for?: string
+  parameters?: Record<string, unknown>
+  [key: string]: unknown
+}
+
+export interface MonitoringSizingCurrentResponse {
+  current_profile?: string
+  recommended_profile?: string
+  drift_score?: number
+  parameters?: Record<string, unknown>
+  [key: string]: unknown
+}
+
+export interface MonitoringSizingParameterResponse {
+  name?: string
+  description?: string
+  default_value?: unknown
+  current_value?: unknown
+  recommended_value?: unknown
+  [key: string]: unknown
+}
+
+export interface MonitoringBenchmarkRunResponse {
+  benchmark_id?: string
+  status?: string
+  message?: string
+  [key: string]: unknown
+}
+
+export interface MonitoringBenchmarkStatusResponse {
+  benchmark_id?: string
+  status?: string
+  progress?: number
+  started_at?: string
+  completed_at?: string | null
+  [key: string]: unknown
+}
+
+export interface MonitoringBenchmarkResultResponse {
+  benchmark_id?: string
+  metrics?: Record<string, unknown>
+  finished_at?: string
+  [key: string]: unknown
+}
+
+export interface MonitoringBenchmarkHistoryResponse {
+  runs?: MonitoringBenchmarkResultResponse[]
+  [key: string]: unknown
+}
+
+export interface MonitoringTuningRecommendation {
+  parameter?: string
+  value?: string | number | boolean
+  reason?: string
+  impact?: string
+  [key: string]: unknown
+}
+
+export interface MonitoringTuningRecommendationsResponse {
+  recommendations?: MonitoringTuningRecommendation[]
+  generated_at?: string
+  [key: string]: unknown
+}
+
+export interface MonitoringTuningHistoryResponse {
+  history?: Record<string, unknown>[]
+  [key: string]: unknown
+}
+
+export interface MonitoringTuningApplyResponse {
+  success?: boolean
+  message?: string
+  applied_change?: Record<string, unknown>
+  [key: string]: unknown
+}
+
+export interface MonitoringTuningRollbackResponse {
+  success?: boolean
+  message?: string
+  rolled_back_change?: Record<string, unknown>
+  [key: string]: unknown
+}
+
+export interface MonitoringTuningStatusResponse {
+  status?: string
+  enabled?: boolean
+  last_run_at?: string
+  [key: string]: unknown
+}
+
 export interface TasksResponse { // only for v3
   id: string
   name: string
