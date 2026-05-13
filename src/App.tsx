@@ -134,6 +134,11 @@ function App() {
                       onUpdateShare={handlers.handleUpdateShare}
                       onStartCrawl={handlers.handleStartCrawl}
                       onFetchShareDetails={handlers.handleFetchShareDetails}
+                      onFetchGraphSyncStatus={handlers.handleFetchGraphSyncStatus}
+                      onGraphBackfill={handlers.handleGraphBackfill}
+                      onGraphRetryFailed={handlers.handleGraphRetryFailed}
+                      onGraphForceReupload={handlers.handleGraphForceReupload}
+                      onGraphCleanup={handlers.handleGraphCleanup}
                       onRefresh={handlers.handleRefresh}
                       monitoringOverview={state.monitoring.overview}
                       isAdmin={state.me?.is_admin ?? false}

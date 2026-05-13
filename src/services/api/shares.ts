@@ -2,6 +2,8 @@
 import { appLogger } from "@/services/app-logger"
 import { BaseApiClient } from "./base"
 import type {
+  GraphSyncActionResponse,
+  GraphSyncStatusResponse,
   ShareConfigRequest,
   ShareDetailsResponse,
   SharesResponse,
@@ -80,6 +82,47 @@ export class SharesApiClient extends BaseApiClient {
       token,
       { method: "POST" },
       { parseJson: false }
+    )
+  }
+
+  getGraphSyncStatus(token: string, shareId: string) {
+    appLogger.debug("Fetching Graph sync status", undefined, { shareId })
+    return this.requestApiV1WithToken<GraphSyncStatusResponse>(`/shares/${shareId}/graph/status`, token)
+  }
+
+  triggerGraphBackfill(token: string, shareId: string) {
+    appLogger.debug("Triggering Graph backfill", undefined, { shareId })
+    return this.requestApiV1WithToken<GraphSyncActionResponse>(
+      `/shares/${shareId}/graph/backfill`,
+      token,
+      { method: "POST" }
+    )
+  }
+
+  triggerGraphRetryFailed(token: string, shareId: string) {
+    appLogger.debug("Triggering Graph retry failed", undefined, { shareId })
+    return this.requestApiV1WithToken<GraphSyncActionResponse>(
+      `/shares/${shareId}/graph/retry-failed`,
+      token,
+      { method: "POST" }
+    )
+  }
+
+  triggerGraphForceReupload(token: string, shareId: string) {
+    appLogger.debug("Triggering Graph force reupload", undefined, { shareId })
+    return this.requestApiV1WithToken<GraphSyncActionResponse>(
+      `/shares/${shareId}/graph/force-reupload`,
+      token,
+      { method: "POST" }
+    )
+  }
+
+  triggerGraphCleanup(token: string, shareId: string) {
+    appLogger.debug("Triggering Graph cleanup", undefined, { shareId })
+    return this.requestApiV1WithToken<GraphSyncActionResponse>(
+      `/shares/${shareId}/graph/cleanup`,
+      token,
+      { method: "POST" }
     )
   }
 }

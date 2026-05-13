@@ -46,6 +46,7 @@ import {
   type SetupFactoryResetRequest,
   type Body_configure_oauth_api_v1_setup_oauth_post,
   type DatasetResponse,
+  type GraphSyncStatusResponse,
   type UpdateDatasetRequest,
   type DatasetExpirationResponse,
   type DatasetSearchRequest,
@@ -571,6 +572,144 @@ export function useNeoApi() {
       return api.getShareDetails(token, shareId)
     },
     [token]
+  )
+
+  const handleFetchGraphSyncStatus = useCallback(
+    async (shareId: string): Promise<GraphSyncStatusResponse> => {
+      if (!token) {
+        appLogger.warn("Fetch Graph sync status attempted without active token")
+        throw new AuthenticationError()
+      }
+
+      const api = apiRef.current
+      appLogger.debug("Fetching Graph sync status", undefined, { shareId })
+      return api.getGraphSyncStatus(token, shareId)
+    },
+    [token]
+  )
+
+  const handleGraphBackfill = useCallback(
+    async (shareId: string): Promise<boolean> => {
+      if (!token) {
+        appLogger.warn("Graph backfill attempted without active token")
+        throw new AuthenticationError()
+      }
+
+      const api = apiRef.current
+
+      try {
+        await api.triggerGraphBackfill(token, shareId)
+        toast.success("Graph backfill started")
+        appLogger.info("Graph backfill triggered", undefined, { shareId })
+        return true
+      } catch (error) {
+        if (error instanceof AuthenticationError) {
+          clearSystemData()
+          setToken(null)
+        }
+        toast.error("Failed to start Graph backfill")
+        appLogger.error(
+          "Graph backfill trigger failed",
+          error instanceof Error ? error.message : "Unknown error",
+          { shareId }
+        )
+        return false
+      }
+    },
+    [clearSystemData, token]
+  )
+
+  const handleGraphRetryFailed = useCallback(
+    async (shareId: string): Promise<boolean> => {
+      if (!token) {
+        appLogger.warn("Graph retry failed attempted without active token")
+        throw new AuthenticationError()
+      }
+
+      const api = apiRef.current
+
+      try {
+        await api.triggerGraphRetryFailed(token, shareId)
+        toast.success("Failed Graph uploads queued for retry")
+        appLogger.info("Graph retry failed triggered", undefined, { shareId })
+        return true
+      } catch (error) {
+        if (error instanceof AuthenticationError) {
+          clearSystemData()
+          setToken(null)
+        }
+        toast.error("Failed to retry Graph uploads")
+        appLogger.error(
+          "Graph retry failed trigger failed",
+          error instanceof Error ? error.message : "Unknown error",
+          { shareId }
+        )
+        return false
+      }
+    },
+    [clearSystemData, token]
+  )
+
+  const handleGraphForceReupload = useCallback(
+    async (shareId: string): Promise<boolean> => {
+      if (!token) {
+        appLogger.warn("Graph force reupload attempted without active token")
+        throw new AuthenticationError()
+      }
+
+      const api = apiRef.current
+
+      try {
+        await api.triggerGraphForceReupload(token, shareId)
+        toast.success("Graph reupload queued")
+        appLogger.info("Graph force reupload triggered", undefined, { shareId })
+        return true
+      } catch (error) {
+        if (error instanceof AuthenticationError) {
+          clearSystemData()
+          setToken(null)
+        }
+        toast.error("Failed to queue Graph reupload")
+        appLogger.error(
+          "Graph force reupload trigger failed",
+          error instanceof Error ? error.message : "Unknown error",
+          { shareId }
+        )
+        return false
+      }
+    },
+    [clearSystemData, token]
+  )
+
+  const handleGraphCleanup = useCallback(
+    async (shareId: string): Promise<boolean> => {
+      if (!token) {
+        appLogger.warn("Graph cleanup attempted without active token")
+        throw new AuthenticationError()
+      }
+
+      const api = apiRef.current
+
+      try {
+        await api.triggerGraphCleanup(token, shareId)
+        toast.success("Graph cleanup queued")
+        appLogger.info("Graph cleanup triggered", undefined, { shareId })
+        return true
+      } catch (error) {
+        if (error instanceof AuthenticationError) {
+          clearSystemData()
+          setToken(null)
+        }
+        toast.error("Failed to queue Graph cleanup")
+        appLogger.error(
+          "Graph cleanup trigger failed",
+          error instanceof Error ? error.message : "Unknown error",
+          { shareId }
+        )
+        return false
+      }
+    },
+    [clearSystemData, token]
   )
 
   const handleAddUser = useCallback(
@@ -1444,6 +1583,11 @@ export function useNeoApi() {
       handleUpdateShare,
       handleStartCrawl,
       handleFetchShareDetails,
+      handleFetchGraphSyncStatus,
+      handleGraphBackfill,
+      handleGraphRetryFailed,
+      handleGraphForceReupload,
+      handleGraphCleanup,
       handleAddUser,
       handleChangePassword,
       handleFetchFileMetadata,

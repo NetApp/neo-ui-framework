@@ -61,6 +61,8 @@ import type {
   Body_configure_oauth_api_v1_setup_oauth_post,
   EntraLinkRequest,
   EntraUnlinkRequest,
+  GraphSyncStatusResponse,
+  GraphSyncActionResponse,
 } from "./models"
 import { BaseApiClient, AuthenticationError, AuthorizationError } from "./api/base"
 import { AuthApiClient } from "./api/auth"
@@ -139,6 +141,8 @@ export type {
   SetupCompleteResponse,
   InitialCredentialsResponse,
   Body_configure_oauth_api_v1_setup_oauth_post,
+  GraphSyncStatusResponse,
+  GraphSyncActionResponse,
 }
 export { AuthenticationError, AuthorizationError }
 function normalizeCacheKeyValue(value: unknown): unknown {
@@ -370,6 +374,26 @@ export class NeoApiService extends BaseApiClient {
 
   startShareCrawl(token: string, shareId: string) {
     return this.shares.startShareCrawl(token, shareId)
+  }
+
+  getGraphSyncStatus(token: string, shareId: string) {
+    return this.shares.getGraphSyncStatus(token, shareId)
+  }
+
+  triggerGraphBackfill(token: string, shareId: string) {
+    return this.shares.triggerGraphBackfill(token, shareId)
+  }
+
+  triggerGraphRetryFailed(token: string, shareId: string) {
+    return this.shares.triggerGraphRetryFailed(token, shareId)
+  }
+
+  triggerGraphForceReupload(token: string, shareId: string) {
+    return this.shares.triggerGraphForceReupload(token, shareId)
+  }
+
+  triggerGraphCleanup(token: string, shareId: string) {
+    return this.shares.triggerGraphCleanup(token, shareId)
   }
 
   getFiles(

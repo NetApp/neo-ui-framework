@@ -26,6 +26,7 @@ import {
 } from "lucide-react"
 
 import type {
+  GraphSyncStatusResponse,
   ShareDetailsResponse,
   SharesResponse,
   MonitoringOverviewResponse
@@ -78,6 +79,7 @@ import {
 import { ConfirmDialog } from "@/components/dialogs/confirm-dialog"
 import { Spinner } from "@/components/ui/spinner"
 import { Separator } from "@/components/ui/separator"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 interface SharesProps {
   shares: SharesResponse[] | null
@@ -86,6 +88,11 @@ interface SharesProps {
   onUpdateShare: (shareId: string, share: ShareUpdateRequest) => Promise<void>
   onStartCrawl: (shareId: string) => Promise<boolean>
   onFetchShareDetails: (shareId: string) => Promise<ShareDetailsResponse>
+  onFetchGraphSyncStatus: (shareId: string) => Promise<GraphSyncStatusResponse>
+  onGraphBackfill: (shareId: string) => Promise<boolean>
+  onGraphRetryFailed: (shareId: string) => Promise<boolean>
+  onGraphForceReupload: (shareId: string) => Promise<boolean>
+  onGraphCleanup: (shareId: string) => Promise<boolean>
   onRefresh: () => Promise<void>
   monitoringOverview: MonitoringOverviewResponse | null
   isAdmin: boolean
@@ -147,7 +154,7 @@ function getStatusBadge(status: string) {
     </Badge>
   )
 }
-export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShare, onStartCrawl, onFetchShareDetails, onRefresh, monitoringOverview, isAdmin }: SharesProps) {
+export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShare, onStartCrawl, onFetchShareDetails, onFetchGraphSyncStatus, onGraphBackfill, onGraphRetryFailed, onGraphForceReupload, onGraphCleanup, onRefresh, monitoringOverview, isAdmin }: SharesProps) {
   const { t } = useTranslation()
   const [sheetOpen, setSheetOpen] = useState(false)
   const [sheetMode, setSheetMode] = useState<'details' | 'create' | 'create-s3' | 'create-nfs' | null>(null)
@@ -197,9 +204,74 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
   const [detailsLoading, setDetailsLoading] = useState(false)
   const [detailsError, setDetailsError] = useState<string | null>(null)
   const [selectedShareDetails, setSelectedShareDetails] = useState<ShareDetailsResponse | null>(null)
+  const [graphSyncStatus, setGraphSyncStatus] = useState<GraphSyncStatusResponse | null>(null)
+  const [graphSyncLoading, setGraphSyncLoading] = useState(false)
+  const [graphSyncError, setGraphSyncError] = useState<string | null>(null)
+  const [graphActionLoading, setGraphActionLoading] = useState<"backfill" | "retry-failed" | "force-reupload" | "cleanup" | null>(null)
   const [selectedProtocol, setSelectedProtocol] = useState<"smb" | "nfs" | "s3">("smb")
 
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [detailsTab, setDetailsTab] = useState<"details" | "graph-sync">("details")
+
+  const normalizeGraphStatus = useCallback((status: GraphSyncStatusResponse): GraphSyncStatusResponse => {
+    const toSafeInt = (value: unknown) => {
+      const numeric = Number(value)
+      return Number.isFinite(numeric) && numeric > 0 ? Math.floor(numeric) : 0
+    }
+
+    return {
+      pending_upload: toSafeInt(status.pending_upload),
+      uploaded: toSafeInt(status.uploaded),
+      failed: toSafeInt(status.failed),
+      in_progress: toSafeInt(status.in_progress),
+    }
+  }, [])
+
+  const fetchGraphSyncStatus = useCallback(async (shareId: string, isBackground = false) => {
+    if (!isBackground) {
+      setGraphSyncLoading(true)
+    }
+    setGraphSyncError(null)
+
+    try {
+      const status = await onFetchGraphSyncStatus(shareId)
+      const normalized = normalizeGraphStatus(status)
+      setGraphSyncStatus(normalized)
+      return normalized
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unable to load Graph sync status."
+      setGraphSyncError(message)
+      return null
+    } finally {
+      if (!isBackground) {
+        setGraphSyncLoading(false)
+      }
+    }
+  }, [normalizeGraphStatus, onFetchGraphSyncStatus])
+
+  const getGraphHealthBadge = useCallback((status: GraphSyncStatusResponse | null) => {
+    if (!status) {
+      return <Badge variant="outline">Unknown</Badge>
+    }
+
+    if (status.failed > 0) {
+      return <Badge variant="outline" className="text-destructive border-destructive/50">Degraded</Badge>
+    }
+
+    if (status.in_progress > 0) {
+      return <Badge variant="outline" className="text-blue-600 border-blue-200 dark:text-blue-400 dark:border-blue-800">Processing</Badge>
+    }
+
+    if (status.pending_upload > 0) {
+      return <Badge variant="outline" className="text-yellow-600 border-yellow-200 dark:text-yellow-400 dark:border-yellow-800">Pending</Badge>
+    }
+
+    if (status.uploaded > 0) {
+      return <Badge variant="outline" className="text-green-600 border-green-200 dark:text-green-400 dark:border-green-800">Healthy</Badge>
+    }
+
+    return <Badge variant="outline">Idle</Badge>
+  }, [])
 
   const resetForm = useCallback(() => {
     setSharePath("")
@@ -518,6 +590,9 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
     setDetailsLoading(true)
     setDetailsError(null)
     setSelectedShareDetails(null)
+    setDetailsTab("details")
+    setGraphSyncStatus(null)
+    setGraphSyncError(null)
     setEditingShareId(shareId)
 
     try {
@@ -583,6 +658,62 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
     }
   }, [editingShareId, onDeleteShare])
 
+  const runGraphAction = useCallback(async (
+    action: "backfill" | "retry-failed" | "force-reupload" | "cleanup",
+    actionFn: (shareId: string) => Promise<boolean>,
+    successMessage: string,
+    errorMessage: string,
+  ) => {
+    if (!editingShareId) return
+
+    setGraphActionLoading(action)
+
+    try {
+      const ok = await actionFn(editingShareId)
+      if (ok) {
+        setAlertVariant("success")
+        setAlertMessage(successMessage)
+        await fetchGraphSyncStatus(editingShareId)
+      } else {
+        setAlertVariant("error")
+        setAlertMessage(errorMessage)
+      }
+    } finally {
+      setGraphActionLoading(null)
+    }
+  }, [editingShareId, fetchGraphSyncStatus])
+
+  useEffect(() => {
+    if (!sheetOpen || sheetMode !== "details" || detailsTab !== "graph-sync" || !editingShareId) {
+      return
+    }
+
+    let isCancelled = false
+    let hasFetchedInitial = false
+    let timeoutId: ReturnType<typeof setTimeout> | null = null
+
+    const tick = async () => {
+      if (isCancelled) return
+
+      const status = await fetchGraphSyncStatus(editingShareId, hasFetchedInitial)
+      hasFetchedInitial = true
+      if (isCancelled || !status) return
+
+      if (status.in_progress > 0) {
+        timeoutId = setTimeout(tick, 7000)
+      }
+    }
+
+    void tick()
+
+    return () => {
+      isCancelled = true
+      if (timeoutId) {
+        clearTimeout(timeoutId)
+      }
+    }
+  }, [detailsTab, editingShareId, fetchGraphSyncStatus, sheetMode, sheetOpen])
+
 
 
   return (
@@ -633,6 +764,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
           resetForm()
           setSubmitting(false)
           setSheetMode(null)
+          setDetailsTab("details")
         }
       }}>
         <SheetContent side="top" hideCloseButton className="max-h-[95vh] flex flex-col p-0 gap-0">
@@ -641,7 +773,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
               <div className="flex items-center justify-between">
                 <div>
                   <SheetTitle>
-                    {sheetMode === 'create' ? (editingShareId ? "Edit CIFS share" : "Add CIFS") : sheetMode === 'create-s3' ? (editingShareId ? "Edit S3 bucket" : "Add S3 bucket") : sheetMode === 'create-nfs' ? (editingShareId ? "Edit NFS export" : "Add NFS export") : "Share Details"}
+                    {sheetMode === 'create' ? (editingShareId ? "Edit CIFS share" : "Add CIFS") : sheetMode === 'create-s3' ? (editingShareId ? "Edit S3 bucket" : "Add S3 bucket") : sheetMode === 'create-nfs' ? (editingShareId ? "Edit NFS export" : "Add NFS export") : "Source Details"}
                   </SheetTitle>
                   <SheetDescription>
                     {sheetMode === 'details' && selectedShareDetails?.share_path}
@@ -670,7 +802,7 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
                       Modify
                     </Button>
                     <SheetClose asChild>
-                      <Button variant="outline" size="sm">Close</Button>
+                      <Button size="sm">Close</Button>
                     </SheetClose>
                   </div>
                 )}
@@ -707,8 +839,17 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
             <Separator className="mb-6" />
 
             {sheetMode === 'details' && (
-              <>
-                <div className="space-y-4">
+              <Tabs
+                value={detailsTab}
+                onValueChange={(value) => setDetailsTab(value as "details" | "graph-sync")}
+                className="space-y-4"
+              >
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="details">Details</TabsTrigger>
+                  <TabsTrigger value="graph-sync">Graph Sync</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="details" className="mt-0 space-y-4">
                   {detailsLoading ? (
                     <div className="flex items-center justify-center py-6">
                       <Spinner className="size-6" />
@@ -718,10 +859,6 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
                   ) : selectedShareDetails ? (
                     selectedProtocol === "nfs" ? (
                       <div className="rounded-lg border bg-muted/20 p-4 space-y-4">
-                        <div>
-                          <p className="text-sm font-semibold">Details</p>
-                          <p className="text-xs text-muted-foreground">Current NFS configuration and crawl metadata.</p>
-                        </div>
                         <dl className="grid grid-cols-1 gap-y-3 text-sm text-muted-foreground sm:grid-cols-2 lg:grid-cols-3 sm:gap-x-6">
                         <div>
                           <dt className="font-medium text-foreground">Share path</dt>
@@ -783,10 +920,6 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
                       </div>
                     ) : selectedProtocol === "s3" ? (
                       <div className="rounded-lg border bg-muted/20 p-4 space-y-4">
-                        <div>
-                          <p className="text-sm font-semibold">Details</p>
-                          <p className="text-xs text-muted-foreground">Current S3 configuration and crawl metadata.</p>
-                        </div>
                         <dl className="grid grid-cols-1 gap-y-3 text-sm text-muted-foreground sm:grid-cols-2 lg:grid-cols-3 sm:gap-x-6">
                         <div>
                           <dt className="font-medium text-foreground">Bucket path</dt>
@@ -856,10 +989,6 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
                       </div>
                     ) : (
                       <div className="rounded-lg border bg-muted/20 p-4 space-y-4">
-                        <div>
-                          <p className="text-sm font-semibold">Details</p>
-                          <p className="text-xs text-muted-foreground">Current SMB/CIFS configuration and crawl metadata.</p>
-                        </div>
                         <dl className="grid grid-cols-1 gap-y-3 text-sm text-muted-foreground sm:grid-cols-2 lg:grid-cols-3 sm:gap-x-6">
                         <div>
                           <dt className="font-medium text-foreground">Share path</dt>
@@ -939,8 +1068,103 @@ export default function Shares({ shares, onDeleteShare, onAddShare, onUpdateShar
                   ) : (
                     <p className="text-sm text-muted-foreground">No details available.</p>
                   )}
-                </div>
-              </>
+                </TabsContent>
+
+                <TabsContent value="graph-sync" className="mt-0 space-y-4">
+                  {detailsLoading ? (
+                    <div className="flex items-center justify-center py-6">
+                      <Spinner className="size-6" />
+                    </div>
+                  ) : detailsError ? (
+                    <p className="text-sm text-destructive">{detailsError}</p>
+                  ) : selectedShareDetails ? (
+                    <div className="rounded-lg border bg-muted/20 p-4 space-y-4">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                          <p className="text-sm font-semibold">Graph Sync</p>
+                          <p className="text-xs text-muted-foreground">Upload queue status and Graph maintenance controls.</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {getGraphHealthBadge(graphSyncStatus)}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => editingShareId && fetchGraphSyncStatus(editingShareId)}
+                            disabled={graphSyncLoading || !editingShareId}
+                          >
+                            {graphSyncLoading ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
+                            Refresh
+                          </Button>
+                        </div>
+                      </div>
+
+                      {graphSyncError ? (
+                        <p className="text-sm text-destructive rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2">{graphSyncError}</p>
+                      ) : null}
+
+                      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                        <div className="rounded-md border bg-background p-3">
+                          <p className="text-xs text-muted-foreground">Pending</p>
+                          <p className="text-lg font-semibold">{graphSyncStatus?.pending_upload ?? "-"}</p>
+                        </div>
+                        <div className="rounded-md border bg-background p-3">
+                          <p className="text-xs text-muted-foreground">Uploaded</p>
+                          <p className="text-lg font-semibold">{graphSyncStatus?.uploaded ?? "-"}</p>
+                        </div>
+                        <div className="rounded-md border bg-background p-3">
+                          <p className="text-xs text-muted-foreground">Failed</p>
+                          <p className="text-lg font-semibold">{graphSyncStatus?.failed ?? "-"}</p>
+                        </div>
+                        <div className="rounded-md border bg-background p-3">
+                          <p className="text-xs text-muted-foreground">In Progress</p>
+                          <p className="text-lg font-semibold">{graphSyncStatus?.in_progress ?? "-"}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => runGraphAction("backfill", onGraphBackfill, "Graph backfill started.", "Graph backfill failed to start.")}
+                          disabled={!isAdmin || graphActionLoading !== null}
+                        >
+                          {graphActionLoading === "backfill" ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
+                          Backfill
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => runGraphAction("retry-failed", onGraphRetryFailed, "Failed Graph uploads queued for retry.", "Retry failed uploads action failed.")}
+                          disabled={!isAdmin || graphActionLoading !== null || (graphSyncStatus?.failed ?? 0) === 0}
+                        >
+                          {graphActionLoading === "retry-failed" ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
+                          Retry Failed
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => runGraphAction("force-reupload", onGraphForceReupload, "Graph reupload queued.", "Force reupload action failed.")}
+                          disabled={!isAdmin || graphActionLoading !== null || (graphSyncStatus?.uploaded ?? 0) === 0}
+                        >
+                          {graphActionLoading === "force-reupload" ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
+                          Force Reupload
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => runGraphAction("cleanup", onGraphCleanup, "Graph cleanup queued.", "Graph cleanup action failed.")}
+                          disabled={!isAdmin || graphActionLoading !== null || ((graphSyncStatus?.uploaded ?? 0) + (graphSyncStatus?.in_progress ?? 0)) === 0}
+                        >
+                          {graphActionLoading === "cleanup" ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
+                          Cleanup
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No details available.</p>
+                  )}
+                </TabsContent>
+              </Tabs>
             )}
 
             {sheetMode === 'create' && (

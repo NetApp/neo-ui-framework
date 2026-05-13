@@ -239,6 +239,19 @@ export interface SharesResponse {
 
 export interface ShareDetailsResponse extends SharesResponse {}
 
+export interface GraphSyncStatusResponse {
+  pending_upload: number
+  uploaded: number
+  failed: number
+  in_progress: number
+}
+
+export interface GraphSyncActionResponse {
+  success?: boolean
+  message?: string
+  [key: string]: unknown
+}
+
 export interface ShareRules {
   exclude_patterns?: string[]
   include_patterns?: string[]
