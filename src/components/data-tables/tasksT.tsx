@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react"
+import { useTranslation } from "react-i18next"
 import { CheckCircle2, XCircle, Clock, Loader2, Ban } from "lucide-react"
 import type { TasksResponse } from "@/services/neo-api"
 
@@ -11,6 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { Button } from "@/components/ui/button"
 
 interface TasksTableProps {
   tasks: TasksResponse[] | null
@@ -72,7 +74,10 @@ export function formatDuration(startedAt: string | null, completedAt: string | n
 }
 
 export function TasksTable({ tasks, onTaskClick }: TasksTableProps) {
+  const { t } = useTranslation()
   const rows = tasks ?? []
+  const rowsPerPage = 100
+  const [currentPage, setCurrentPage] = useState(1)
 
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>({
     name: 250,
@@ -146,80 +151,117 @@ export function TasksTable({ tasks, onTaskClick }: TasksTableProps) {
     }
   }, [handleResizeMove, handleResizeEnd])
 
+  useEffect(() => {
+    const totalPages = Math.max(1, Math.ceil(rows.length / rowsPerPage))
+    setCurrentPage((page) => Math.min(page, totalPages))
+  }, [rows.length])
+
+  const totalPages = Math.max(1, Math.ceil(rows.length / rowsPerPage))
+  const startIndex = (currentPage - 1) * rowsPerPage
+  const paginatedRows = rows.slice(startIndex, startIndex + rowsPerPage)
+
   return (
-    <div className="overflow-hidden rounded-lg border">
-      <Table style={{ tableLayout: 'fixed', width: '100%' }}>
-        <TableHeader className="sticky top-0 z-10 bg-muted">
-          <TableRow>
-            <TableHead style={{ width: columnWidths.name, position: 'relative' }}>
-              Name
-              <div
-                className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-primary/50"
-                onMouseDown={(e) => handleResizeStart(e, 'name')}
-              />
-            </TableHead>
-            <TableHead style={{ width: columnWidths.share_id, position: 'relative' }}>
-              Share ID
-              <div
-                className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-primary/50"
-                onMouseDown={(e) => handleResizeStart(e, 'share_id')}
-              />
-            </TableHead>
-            <TableHead style={{ width: columnWidths.created_at, position: 'relative' }}>
-              Created
-              <div
-                className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-primary/50"
-                onMouseDown={(e) => handleResizeStart(e, 'created_at')}
-              />
-            </TableHead>
-            <TableHead style={{ width: columnWidths.duration, position: 'relative' }}>
-              Duration
-              <div
-                className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-primary/50"
-                onMouseDown={(e) => handleResizeStart(e, 'duration')}
-              />
-            </TableHead>
-            <TableHead style={{ width: columnWidths.status, position: 'relative' }}>
-              Status
-              <div
-                className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-primary/50"
-                onMouseDown={(e) => handleResizeStart(e, 'status')}
-              />
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {rows.length ? (
-            rows.map((task) => (
-              <TableRow
-                key={task.id}
-                onClick={() => onTaskClick(task)}
-                className="cursor-pointer hover:bg-muted/50"
-              >
-                <TableCell className="font-medium truncate" title={task.name}>{task.name}</TableCell>
-                <TableCell className="truncate" title={task.share_id ?? ""}>
-                  <div className="font-mono text-xs truncate">
-                    {task.share_id ? task.share_id : "—"}
-                  </div>
-                </TableCell>
-                <TableCell className="text-sm truncate">
-                  {new Date(task.created_at).toLocaleString()}
-                </TableCell>
-                <TableCell className="text-sm truncate">
-                  {formatDuration(task.started_at, task.completed_at)}
-                </TableCell>
-                <TableCell className="truncate">{getStatusBadge(task.status)}</TableCell>
-              </TableRow>
-            ))
-          ) : (
+    <>
+      <div className="overflow-hidden rounded-lg border">
+        <Table style={{ tableLayout: 'fixed', width: '100%' }}>
+          <TableHeader className="sticky top-0 z-10 bg-muted">
             <TableRow>
-              <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">
-                No tasks available.
-              </TableCell>
+              <TableHead style={{ width: columnWidths.name, position: 'relative' }}>
+                {t("columnName", { ns: "tasks" })}
+                <div
+                  className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-primary/50"
+                  onMouseDown={(e) => handleResizeStart(e, 'name')}
+                />
+              </TableHead>
+              <TableHead style={{ width: columnWidths.share_id, position: 'relative' }}>
+                {t("columnShareId", { ns: "tasks" })}
+                <div
+                  className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-primary/50"
+                  onMouseDown={(e) => handleResizeStart(e, 'share_id')}
+                />
+              </TableHead>
+              <TableHead style={{ width: columnWidths.created_at, position: 'relative' }}>
+                {t("columnCreated", { ns: "tasks" })}
+                <div
+                  className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-primary/50"
+                  onMouseDown={(e) => handleResizeStart(e, 'created_at')}
+                />
+              </TableHead>
+              <TableHead style={{ width: columnWidths.duration, position: 'relative' }}>
+                {t("columnDuration", { ns: "tasks" })}
+                <div
+                  className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-primary/50"
+                  onMouseDown={(e) => handleResizeStart(e, 'duration')}
+                />
+              </TableHead>
+              <TableHead style={{ width: columnWidths.status, position: 'relative' }}>
+                {t("columnStatus", { ns: "tasks" })}
+                <div
+                  className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-primary/50"
+                  onMouseDown={(e) => handleResizeStart(e, 'status')}
+                />
+              </TableHead>
             </TableRow>
-          )}
-        </TableBody>
-      </Table>
-    </div>
+          </TableHeader>
+          <TableBody>
+            {paginatedRows.length ? (
+              paginatedRows.map((task) => (
+                <TableRow
+                  key={task.id}
+                  onClick={() => onTaskClick(task)}
+                  className="cursor-pointer hover:bg-muted/50"
+                >
+                  <TableCell className="font-medium truncate" title={task.name}>{task.name}</TableCell>
+                  <TableCell className="truncate" title={task.share_id ?? ""}>
+                    <div className="font-mono text-xs truncate">
+                      {task.share_id ? task.share_id : "—"}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-sm truncate">
+                    {new Date(task.created_at).toLocaleString()}
+                  </TableCell>
+                  <TableCell className="text-sm truncate">
+                    {formatDuration(task.started_at, task.completed_at)}
+                  </TableCell>
+                  <TableCell className="truncate">{getStatusBadge(task.status)}</TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">
+                  {t("noTasksAvailable", { ns: "tasks" })}
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      {rows.length > 0 ? (
+        <div className="flex items-center justify-between space-x-2 py-4">
+          <div className="text-muted-foreground flex-1 text-sm">
+            {t("showingPagination", { ns: "tasks", from: startIndex + 1, to: Math.min(startIndex + paginatedRows.length, rows.length), total: rows.length.toLocaleString(), page: currentPage, pages: totalPages })}
+          </div>
+          <div className="space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+              disabled={currentPage === 1}
+            >
+              {t("previousButton", { ns: "tasks" })}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+              disabled={currentPage === totalPages}
+            >
+              {t("nextButton", { ns: "tasks" })}
+            </Button>
+          </div>
+        </div>
+      ) : null}
+    </>
   )
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useNeoApi } from "@/hooks/useNeoApi"
 import { NeoApiService } from "@/services/neo-api"
 import { Button } from "@/components/ui/button"
@@ -42,9 +42,9 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
     const [tenantId, setTenantId] = useState("")
     const [clientId, setClientId] = useState("")
     const [clientSecret, setClientSecret] = useState("")
-    const [connectorId] = useState("netappneo")
-    const [connectorName, setConnectorName] = useState("NetApp NEO Connector")
-    const [connectorDescription] = useState("The connector contains information contained in the on premises or on-prem file share server...")
+    const [connectorId, setConnectorId] = useState("netappneo-01")
+    const [connectorName, setConnectorName] = useState("NetApp Neo Connector 01")
+    const [connectorDescription, setConnectorDescription] = useState("The connector give access to data from on premises or on-prem file share servers.")
 
     // Proxy State
     const [proxyUrl, setProxyUrl] = useState("")
@@ -52,7 +52,7 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
     const [proxyPassword, setProxyPassword] = useState("")
 
     // SSL State
-    const [verifySsl, setVerifySsl] = useState(true)
+    const [verifySsl, setVerifySsl] = useState(false)
 
     const [caCertificate, setCaCertificate] = useState("")
 
@@ -65,6 +65,13 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
     const [confirmPassword, setConfirmPassword] = useState("")
     const [passwordError, setPasswordError] = useState<string | null>(null)
 
+    const getErrorMessage = (error: unknown, fallback: string) => {
+        if (error instanceof Error && error.message) {
+            return error.message
+        }
+        return fallback
+    }
+
     useEffect(() => {
         if (!open) {
             // Reset state when dialog closes/reopens if needed
@@ -73,27 +80,40 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
         }
     }, [open])
 
-    useEffect(() => {
-        if (completionCountdown !== null && completionCountdown > 0) {
-            const timer = setTimeout(() => setCompletionCountdown(completionCountdown - 1), 1000)
-            return () => clearTimeout(timer)
-        } else if (completionCountdown === 0) {
-            fetchCredentials()
-        }
-    }, [completionCountdown])
 
-    const fetchCredentials = async () => {
+    const fetchCredentials = useCallback(async () => {
         setIsLoading(true)
         try {
             const result = await handlers.getInitialCredentials()
             setCredentials({ username: result.username, password: result.password })
             setStep("CREDENTIALS")
-        } catch (err) {
+        } catch {
             setError("Failed to fetch credentials. Please try again.")
         } finally {
             setIsLoading(false)
         }
-    }
+    }, [handlers])
+
+    useEffect(() => {
+        if (completionCountdown !== null && completionCountdown > 0) {
+            const timer = setTimeout(() => setCompletionCountdown(completionCountdown - 1), 1000)
+            return () => clearTimeout(timer)
+        }
+        if (completionCountdown === 0) {
+            setCompletionCountdown(null)
+            void fetchCredentials()
+        }
+    }, [completionCountdown, fetchCredentials])
+
+    useEffect(() => {
+        if (completionCountdown !== null && completionCountdown > 0) {
+            const timer = setTimeout(() => setCompletionCountdown(completionCountdown - 1), 1000)
+            return () => clearTimeout(timer)
+        }
+        if (completionCountdown === 0) {
+            void fetchCredentials()
+        }
+    }, [completionCountdown, fetchCredentials])
 
     const handleNext = () => {
         setError(null)
@@ -134,6 +154,27 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
         }
     }
 
+    const handleBack = () => {
+        setError(null)
+        setSuccessMessage(null)
+        switch (step) {
+            case "M365":
+                setStep("LICENSE")
+                break
+            case "PROXY":
+                setStep("M365")
+                break
+            case "SSL":
+                setStep("PROXY")
+                break
+            case "COMPLETE_ACTION":
+                setStep("SSL")
+                break
+            default:
+                break
+        }
+    }
+
     const submitLicense = async () => {
         if (!licenseKey) {
             setError("License key is required.")
@@ -151,8 +192,8 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
             } else {
                 setError(res.message || "Failed to configure license.")
             }
-        } catch (e: any) {
-            setError(e.message || "An error occurred.")
+        } catch (error: unknown) {
+            setError(getErrorMessage(error, "An error occurred."))
         } finally {
             setIsLoading(false)
         }
@@ -179,8 +220,8 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
             } else {
                 setError(res.message || "Failed to configure M365.")
             }
-        } catch (e: any) {
-            setError(e.message || "An error occurred.")
+        } catch (error: unknown) {
+            setError(getErrorMessage(error, "An error occurred."))
         } finally {
             setIsLoading(false)
         }
@@ -215,8 +256,8 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
                 setError(res.message || "Failed to complete setup.")
                 setIsLoading(false)
             }
-        } catch (e: any) {
-            setError(e.message || "An error occurred.")
+        } catch (error: unknown) {
+            setError(getErrorMessage(error, "An error occurred."))
             setIsLoading(false)
         }
     }
@@ -246,8 +287,8 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
             onOpenChange(false)
             // Reload to force re-login or dashboard refresh
             window.location.reload()
-        } catch (e: any) {
-            setPasswordError(e.message || "Failed to update password.")
+        } catch (error: unknown) {
+            setPasswordError(getErrorMessage(error, "Failed to update password."))
         } finally {
             setIsLoading(false)
         }
@@ -303,6 +344,19 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
                             <div className="grid gap-2">
                                 <Label>Connector Name</Label>
                                 <Input value={connectorName} onChange={(e) => setConnectorName(e.target.value)} />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label>Connector ID</Label>
+                                <Input value={connectorId} onChange={(e) => setConnectorId(e.target.value)} />
+                            </div>
+                            <div className="grid gap-2 md:col-span-2">
+                                <Label>Connector Description</Label>
+                                <Textarea
+                                    value={connectorDescription}
+                                    onChange={(e) => setConnectorDescription(e.target.value)}
+                                    placeholder="Enter connector description..."
+                                    className="min-h-[60px]"
+                                />
                             </div>
                         </div>
                     </div>
@@ -391,14 +445,22 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
         switch (step) {
             case "LICENSE":
                 return (
-                    <Button onClick={handleNext} disabled={isLoading || !licenseKey}>
-                        {isLoading ? "Saving..." : "Next: M365 Setup"}
-                    </Button>
+                    <div className="flex justify-between w-full">
+                        <Button variant="outline" onClick={handleBack} disabled>
+                            Back
+                        </Button>
+                        <Button onClick={handleNext} disabled={isLoading || !licenseKey}>
+                            {isLoading ? "Saving..." : "Next: M365 Copilot Setup"}
+                        </Button>
+                    </div>
                 )
             case "M365":
                 return (
                     <div className="flex justify-between w-full">
-                        <Button variant="outline" onClick={handleSkip}>Skip</Button>
+                        <div className="flex gap-2">
+                            <Button variant="outline" onClick={handleBack} disabled={isLoading}>Back</Button>
+                            <Button variant="outline" onClick={handleSkip} disabled={isLoading}>Skip</Button>
+                        </div>
                         <Button onClick={submitM365} disabled={isLoading}>
                             {isLoading ? "Saving..." : "Save & Next"}
                         </Button>
@@ -407,7 +469,10 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
             case "PROXY":
                 return (
                     <div className="flex justify-between w-full">
-                        <Button variant="outline" onClick={handleSkip}>Skip</Button>
+                        <div className="flex gap-2">
+                            <Button variant="outline" onClick={handleBack} disabled={isLoading}>Back</Button>
+                            <Button variant="outline" onClick={handleSkip} disabled={isLoading}>Skip</Button>
+                        </div>
                         <Button onClick={submitProxy} disabled={isLoading}>
                             {isLoading ? "Saving..." : "Save & Next"}
                         </Button>
@@ -416,7 +481,10 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
             case "SSL":
                 return (
                     <div className="flex justify-between w-full">
-                        <Button variant="outline" onClick={handleSkip}>Skip</Button>
+                        <div className="flex gap-2">
+                            <Button variant="outline" onClick={handleBack} disabled={isLoading}>Back</Button>
+                            <Button variant="outline" onClick={handleSkip} disabled={isLoading}>Skip</Button>
+                        </div>
                         <Button onClick={submitSSL} disabled={isLoading}>
                             {isLoading ? "Saving..." : "Save & Next"}
                         </Button>
@@ -424,9 +492,12 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
                 )
             case "COMPLETE_ACTION":
                 return (
-                    <Button onClick={handleCompleteSetup} disabled={isLoading} className="w-full bg-green-600 hover:bg-green-700">
-                        {isLoading ? "Finalizing..." : "Finish Setup"}
-                    </Button>
+                    <div className="flex justify-between w-full">
+                        <Button variant="outline" onClick={handleBack} disabled={isLoading}>Back</Button>
+                        <Button onClick={handleCompleteSetup} disabled={isLoading} className="bg-green-600 hover:bg-green-700">
+                            {isLoading ? "Finalizing..." : "Finish Setup"}
+                        </Button>
+                    </div>
                 )
             case "CREDENTIALS":
                 return (

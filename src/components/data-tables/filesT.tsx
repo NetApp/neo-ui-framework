@@ -55,7 +55,7 @@ export function FilesTable({
   onPageChange,
   onFileClick
 }: FilesTableProps) {
-  const rows = files?.files ?? []
+  const rows = useMemo(() => files?.files ?? [], [files?.files])
   const message = emptyMessage ?? (loading ? "Loading files…" : "No files available.")
   const showShareColumn = rows.some((file) => file.share_name || file.share_path)
   const columnCount = 4 + (showShareColumn ? 1 : 0)
@@ -180,11 +180,11 @@ export function FilesTable({
 
   // Calculate pagination info
   const currentPage = files?.page ?? 1  // Change from 0 to 1 as default
-  const totalPages = files?.total_pages ?? 0
+  const totalPages = files?.total_pages ?? null
   const hasPrevious = files?.has_previous ?? false
   const hasNext = files?.has_next ?? false
-  const totalCount = files?.total_count ?? 0
-  const totalSize = files?.total_size ?? 0
+  const totalCount = files?.total_count
+  const totalSize = files?.total_size
 
   return (
     <>
@@ -294,10 +294,10 @@ export function FilesTable({
       </div>
 
       {/* Pagination Controls */}
-      {files && !loading && totalPages > 1 ? (
+      {files && !loading && (totalPages !== null ? totalPages > 1 : hasPrevious || hasNext) ? (
         <div className="flex items-center justify-between space-x-2 py-4">
           <div className="text-muted-foreground flex-1 text-sm">
-            Showing page {currentPage} of {totalPages} · {totalCount.toLocaleString()} files · Total size {totalSize.toLocaleString()} bytes
+            {totalPages !== null ? `Showing page ${currentPage} of ${totalPages}` : `Showing page ${currentPage}`} · {totalCount !== null && totalCount !== undefined ? `${totalCount.toLocaleString()} files` : "Count unavailable"} · {totalSize !== null && totalSize !== undefined ? `Total size ${totalSize.toLocaleString()} bytes` : "Size unavailable"}
           </div>
           <div className="space-x-2">
             <Button
@@ -318,9 +318,9 @@ export function FilesTable({
             </Button>
           </div>
         </div>
-      ) : files && !loading && totalCount > 0 ? (
+      ) : files && !loading && typeof totalCount === "number" && totalCount > 0 ? (
         <p className="mt-2 text-sm text-muted-foreground">
-          Showing page {currentPage} of {totalPages} · {totalCount.toLocaleString()} files · Total size {totalSize.toLocaleString()} bytes
+          {totalPages !== null ? `Showing page ${currentPage} of ${totalPages}` : `Showing page ${currentPage}`} · {totalCount.toLocaleString()} files · {typeof totalSize === "number" ? `Total size ${totalSize.toLocaleString()} bytes` : "Size unavailable"}
         </p>
       ) : null}
     </>

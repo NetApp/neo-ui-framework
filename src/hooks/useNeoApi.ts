@@ -23,6 +23,7 @@ import {
   type FileSearchResponse,
   type ContentSearchRequest,
   type ContentSearchResponse,
+  type CreateSubsetRequest,
   type SetupLicenseRequest,
   type MonitoringOverviewResponse,
   type MonitoringWorkersResponse,
@@ -35,15 +36,37 @@ import {
   type SetupStatusResponse,
   AuthenticationError,
   type SetupGraphRequest,
+  type SetupGraphConfigResponse,
   type SetupGraphResponse,
+  type SetupProxyRequest,
+  type SetupProxyResponse,  
+  type SetupProxyConfigResponse,
+  type SetupSslConfigResponse,
   type SetupFactoryResetRequest,
+  type Body_configure_oauth_api_v1_setup_oauth_post,
+  type Body_configure_mcp_oauth_api_v1_setup_mcp_post,
+  type MCPOAuthSettingsResponse,
+  type DatasetResponse,
+  type UpdateDatasetRequest,
+  type DatasetExpirationResponse,
+  type DatasetSearchRequest,
+  type DatasetSearchResponse,
+  type DatasetNerSearchRequest,
+  type DatasetNerSearchResponse,
+  type ShareDatasetRequest,
+  type DatasetShareResponse,
+  type DatasetPermission,
 } from "@/services/neo-api"
 
 
 import type {
   ConnectionCredentials,
   FileEntry,
-  Dataset
+  Dataset,
+  CreateDatasetRequest,
+  DatasetItemsResponse,
+  ShareConfigRequest,
+  ShareUpdateRequest,
 } from "@/services/models"
 
 import { useSettings } from "@/context/settings-context"
@@ -52,7 +75,7 @@ import { useSettings } from "@/context/settings-context"
 const neoApiService = new NeoApiService()
 
 export function useNeoApi() {
-  const { monitoringTtl, filesTtl, cacheMaxSize } = useSettings()
+  const { monitoringTtl, filesTtl, cacheMaxSize, contentVisibilityEnabled } = useSettings()
   const [health, setHealth] = useState<HealthResponse | null>(null)
   const [license, setLicense] = useState<LicenseResponse | null>(null)
   const [version, setVersion] = useState<VersionResponse | null>(null)
@@ -122,7 +145,7 @@ export function useNeoApi() {
   const [token, setToken] = useState<string | null>(() => {
     try {
       return localStorage.getItem("neo_token")
-    } catch (e) {
+    } catch {
       // Handle potential localStorage access errors (e.g. private mode)
       return null
     }
@@ -326,13 +349,12 @@ export function useNeoApi() {
       return data
     } catch (error) {
       if (error instanceof AuthenticationError) {
-        clearSystemData()
-        setToken(null)
+        appLogger.warn("System data fetch returned authentication error; keeping current session")
       }
       appLogger.error("Failed to fetch system data", error instanceof Error ? error.message : "Unknown error")
       throw error
     }
-  }, [token, applySystemData, clearSystemData])
+  }, [token, applySystemData])
 
   const handleFetchMonitoring = useCallback(async (force?: boolean) => {
     if (!token) {
@@ -359,13 +381,12 @@ export function useNeoApi() {
       appLogger.info("Monitoring data fetched successfully")
     } catch (error) {
       if (error instanceof AuthenticationError) {
-        clearSystemData()
-        setToken(null)
+        appLogger.warn("Monitoring fetch returned authentication error; keeping current session")
       }
       appLogger.error("Failed to fetch monitoring data", error instanceof Error ? error.message : "Unknown error")
       throw error
     }
-  }, [token, clearSystemData])
+  }, [token])
 
   const handleRefresh = useCallback(async (): Promise<void> => {
     if (!token) {
@@ -432,23 +453,7 @@ export function useNeoApi() {
   )
 
   const handleAddShare = useCallback(
-    async (share: {
-      share_path: string
-      username: string
-      password: string
-      crawl_schedule: string
-      rules: {
-        exclude_patterns: string[]
-        include_patterns: string[]
-        max_file_size: number
-        min_file_size: number
-        persist_file_content: boolean
-      }
-      realm: string
-      use_kerberos: string
-      workgroup: string
-      resolve_order: string
-    }) => {
+    async (share: ShareConfigRequest) => {
       if (!token) {
         appLogger.warn("Share creation attempted without active token")
         throw new AuthenticationError()
@@ -482,20 +487,7 @@ export function useNeoApi() {
   )
 
   const handleUpdateShare = useCallback(
-    async (
-      shareId: string,
-      share: {
-        share_path?: string
-        username?: string
-        password?: string
-        crawl_schedule?: string
-        rules?: Record<string, unknown>
-        realm?: string
-        use_kerberos?: string
-        workgroup?: string
-        resolve_order?: string
-      }
-    ) => {
+    async (shareId: string, share: ShareUpdateRequest) => {
       if (!token) {
         appLogger.warn("Share update attempted without active token")
         throw new AuthenticationError()
@@ -660,11 +652,11 @@ export function useNeoApi() {
 
       const api = apiRef.current
       appLogger.debug("Fetching file metadata", undefined, { shareId, fileId })
-      const metadata = await api.getFileMetadata(token, shareId, fileId)
+      const metadata = await api.getFileMetadata(token, shareId, fileId, contentVisibilityEnabled)
       setCacheStats(api.getCacheStats())
       return metadata
     },
-    [token]
+    [token, contentVisibilityEnabled]
   )
 
   const handleSearchFiles = useCallback(
@@ -675,12 +667,19 @@ export function useNeoApi() {
       }
 
       const api = apiRef.current
-      appLogger.debug("Searching files", undefined, { query: params.query, share_id: params.share_id })
-      const results = await api.searchFiles(token, params)
+      appLogger.debug("Searching files", undefined, {
+        filename: params.filename,
+        file_type: params.file_type,
+        field_set: params.field_set,
+      })
+      const results = await api.searchFiles(token, {
+        ...params,
+        include_content: contentVisibilityEnabled ? Boolean(params.include_content) : false,
+      })
       setCacheStats(api.getCacheStats())
       return results
     },
-    [token]
+    [token, contentVisibilityEnabled]
   )
 
   const handleContentSearch = useCallback(
@@ -723,35 +722,25 @@ export function useNeoApi() {
       try {
         appLogger.info("Loading files", undefined, { shareKey, page })
         if (shareKey === "all") {
-          // Use the /files endpoint to get ALL files across all shares with pagination
-          const searchParams: FileSearchParams = {
-            page: page || 1,
-            page_size: 100
-          }
-          const response = await api.searchFiles(token, searchParams)
+          // Use the standard listing endpoint for all-shares mode.
+          // This avoids the search pipeline and keeps pagination behavior consistent.
+          const response = await api.getFiles(token, "all", page || 1, 100, contentVisibilityEnabled)
 
-          const aggregated: FilesResponse = {
+          const allShares: FilesResponse = {
+            ...response,
             share_id: "all",
             path: "All shares",
-            files: response.files,
-            total_count: response.total_count,
-            total_size: response.total_size,
-            page: response.page,
-            page_size: response.page_size,
-            total_pages: response.total_pages,
-            has_next: response.has_next,
-            has_previous: response.has_previous,
           }
 
-          setFiles(aggregated)
-          appLogger.info("Files loaded from all shares via /files endpoint", undefined, {
+          setFiles(allShares)
+          appLogger.info("Files loaded from all shares", undefined, {
             total_files: response.files.length,
             page: response.page,
             total_pages: response.total_pages
           })
         } else {
           // Use the /shares/{shareId}/files endpoint for specific shares
-          const response = await api.getFiles(token, shareKey, page || 1, 100)
+          const response = await api.getFiles(token, shareKey, page || 1, 100, contentVisibilityEnabled)
           setFiles(response)
           appLogger.info("Files loaded from specific share", undefined, {
             shareKey,
@@ -776,7 +765,7 @@ export function useNeoApi() {
         toast.error("Failed to load files")
       }
     },
-    [token, clearSystemData]
+    [token, clearSystemData, contentVisibilityEnabled]
   )
 
   const handleFetchMyDocuments = useCallback(
@@ -790,7 +779,7 @@ export function useNeoApi() {
 
       try {
         appLogger.info("Fetching my documents", undefined, { page })
-        const response = await api.getMyDocuments(token, page, pageSize)
+        const response = await api.getMyDocuments(token, page, pageSize, contentVisibilityEnabled)
 
         // Adapt FileSearchResponse to FilesResponse for consistency if needed, 
         // or just return it. The FilesTable expects FilesResponse structure mostly.
@@ -825,23 +814,358 @@ export function useNeoApi() {
         throw error
       }
     },
-    [token, clearSystemData]
+    [token, contentVisibilityEnabled]
   )
 
 
-  const handleCreateDataset = useCallback(async (name: string, files: FileEntry[]) => {
-    const newDataset: Dataset = {
-      id: crypto.randomUUID(),
-      name: name, // Assuming 'name' from parameters should be used
-      files: files, // Assuming 'files' from parameters should be used
-      createdAt: new Date().toISOString(),
+  const handleCreateDataset = useCallback(async (
+    payload: Omit<CreateDatasetRequest, "file_ids">,
+    files: FileEntry[]
+  ) => {
+    if (!token) {
+      appLogger.warn("Dataset creation attempted without active token")
+      throw new AuthenticationError()
     }
-    setDatasets((prev) => [...prev, newDataset])
-  }, [])
 
-  const handleDeleteDataset = useCallback((id: string) => {
-    setDatasets((prev) => prev.filter((d) => d.id !== id))
-  }, [])
+    const api = apiRef.current
+    const file_ids = files.map(f => f.id)
+
+    try {
+      appLogger.info("Creating dataset via API", undefined, { name: payload.name, file_count: file_ids.length })
+      const response = await api.createDataset(token, { ...payload, file_ids })
+
+      const newDataset: Dataset = {
+        id: response.id,
+        name: response.name,
+        description: response.description,
+        is_public: response.is_public,
+        acl_override_enabled: response.acl_override_enabled,
+        files,
+        createdAt: response.created_at,
+      }
+      setDatasets((prev) => [...prev, newDataset])
+      appLogger.info("Dataset created successfully", undefined, { id: response.id, name: response.name })
+    } catch (error) {
+      if (error instanceof AuthenticationError) {
+        clearSystemData()
+        setToken(null)
+      }
+      appLogger.error(
+        "Dataset creation failed",
+        error instanceof Error ? error.message : "Unknown error",
+        { name: payload.name }
+      )
+      throw error
+    }
+  }, [token, clearSystemData])
+
+  const handleFetchDatasetItems = useCallback(async (
+    datasetId: string,
+    page: number = 1,
+    pageSize: number = 50
+  ): Promise<DatasetItemsResponse> => {
+    if (!token) {
+      appLogger.warn("Fetch dataset items attempted without active token")
+      throw new AuthenticationError()
+    }
+
+    const api = apiRef.current
+    appLogger.debug("Fetching dataset items", undefined, { datasetId, page, pageSize })
+    return api.getDatasetItems(token, datasetId, page, pageSize)
+  }, [token])
+
+  const handleFetchDatasets = useCallback(async (page: number = 1, pageSize: number = 50, ownedOnly: boolean = false) => {
+    if (!token) {
+      appLogger.warn("Fetch datasets attempted without active token")
+      throw new AuthenticationError()
+    }
+
+    const api = apiRef.current
+    try {
+      appLogger.debug("Fetching datasets", undefined, { page, pageSize, ownedOnly })
+      const response = await api.getDatasets(token, page, pageSize, ownedOnly)
+      const mapped: Dataset[] = response.datasets.map(item => ({
+        id: item.id,
+        name: item.name,
+        description: item.description,
+        owner_id: item.owner_id,
+        owner_username: item.owner_username,
+        is_public: item.is_public,
+        acl_override_enabled: item.acl_override_enabled,
+        item_count: item.item_count,
+        files: [],
+        createdAt: item.created_at,
+        updatedAt: item.updated_at,
+        expiresAt: item.expires_at,
+        expiresInHours: item.expires_in_hours,
+        userPermission: item.user_permission,
+      }))
+      setDatasets(mapped)
+      appLogger.info("Datasets fetched", undefined, { count: mapped.length })
+    } catch (error) {
+      if (error instanceof AuthenticationError) {
+        clearSystemData()
+        setToken(null)
+      }
+      appLogger.error("Failed to fetch datasets", error instanceof Error ? error.message : "Unknown error")
+      throw error
+    }
+  }, [token, clearSystemData])
+
+  const handleFetchDataset = useCallback(async (datasetId: string): Promise<DatasetResponse> => {
+    if (!token) {
+      appLogger.warn("Fetch dataset attempted without active token")
+      throw new AuthenticationError()
+    }
+
+    const api = apiRef.current
+    appLogger.debug("Fetching dataset", undefined, { datasetId })
+    return api.getDataset(token, datasetId)
+  }, [token])
+
+  const handleUpdateDataset = useCallback(async (datasetId: string, payload: UpdateDatasetRequest): Promise<DatasetResponse> => {
+    if (!token) {
+      appLogger.warn("Dataset update attempted without active token")
+      throw new AuthenticationError()
+    }
+
+    const api = apiRef.current
+    try {
+      const updated = await api.updateDataset(token, datasetId, payload)
+      setDatasets(prev => prev.map(dataset => (
+        dataset.id === datasetId
+          ? {
+              ...dataset,
+              name: updated.name,
+              description: updated.description,
+              is_public: updated.is_public,
+              acl_override_enabled: updated.acl_override_enabled,
+              owner_id: updated.owner_id,
+              owner_username: updated.owner_username,
+              item_count: updated.item_count,
+              updatedAt: updated.updated_at,
+              expiresAt: updated.expires_at,
+              expiresInHours: updated.expires_in_hours,
+              userPermission: updated.user_permission,
+            }
+          : dataset
+      )))
+      appLogger.info("Dataset updated", undefined, { datasetId })
+      return updated
+    } catch (error) {
+      if (error instanceof AuthenticationError) {
+        clearSystemData()
+        setToken(null)
+      }
+      appLogger.error("Dataset update failed", error instanceof Error ? error.message : "Unknown error", { datasetId })
+      throw error
+    }
+  }, [token, clearSystemData])
+
+  const handleFetchExpiringDatasets = useCallback(async (): Promise<DatasetExpirationResponse> => {
+    if (!token) {
+      appLogger.warn("Fetch expiring datasets attempted without active token")
+      throw new AuthenticationError()
+    }
+
+    const api = apiRef.current
+    appLogger.debug("Fetching expiring datasets")
+    return api.getExpiringDatasets(token)
+  }, [token])
+
+  const handleSearchDataset = useCallback(async (
+    datasetId: string,
+    payload: DatasetSearchRequest
+  ): Promise<DatasetSearchResponse> => {
+    if (!token) {
+      appLogger.warn("Dataset search attempted without active token")
+      throw new AuthenticationError()
+    }
+
+    const api = apiRef.current
+    appLogger.debug("Searching dataset", undefined, { datasetId, query: payload.query })
+    return api.searchDataset(token, datasetId, payload)
+  }, [token])
+
+  const handleNerSearchDataset = useCallback(async (
+    datasetId: string,
+    payload: DatasetNerSearchRequest
+  ): Promise<DatasetNerSearchResponse> => {
+    if (!token) {
+      appLogger.warn("Dataset NER search attempted without active token")
+      throw new AuthenticationError()
+    }
+
+    const api = apiRef.current
+    appLogger.debug("NER searching dataset", undefined, { datasetId, q: payload.q })
+    return api.nerSearchDataset(token, datasetId, payload)
+  }, [token])
+
+  const handleCreateDatasetSubset = useCallback(async (
+    datasetId: string,
+    payload: CreateSubsetRequest
+  ): Promise<DatasetResponse> => {
+    if (!token) {
+      appLogger.warn("Create subset attempted without active token")
+      throw new AuthenticationError()
+    }
+
+    const api = apiRef.current
+    try {
+      const created = await api.createSubset(token, datasetId, payload)
+      setDatasets(prev => ([
+        ...prev,
+        {
+          id: created.id,
+          name: created.name,
+          description: created.description,
+          owner_id: created.owner_id,
+          owner_username: created.owner_username,
+          is_public: created.is_public,
+          acl_override_enabled: created.acl_override_enabled,
+          item_count: created.item_count,
+          files: [],
+          createdAt: created.created_at,
+          updatedAt: created.updated_at,
+          expiresAt: created.expires_at,
+          expiresInHours: created.expires_in_hours,
+          userPermission: created.user_permission,
+        },
+      ]))
+      appLogger.info("Dataset subset created", undefined, { datasetId, createdId: created.id })
+      return created
+    } catch (error) {
+      if (error instanceof AuthenticationError) {
+        clearSystemData()
+        setToken(null)
+      }
+      appLogger.error("Create subset failed", error instanceof Error ? error.message : "Unknown error", { datasetId })
+      throw error
+    }
+  }, [token, clearSystemData])
+
+  const handleShareDataset = useCallback(async (
+    datasetId: string,
+    payload: ShareDatasetRequest
+  ): Promise<DatasetShareResponse> => {
+    if (!token) {
+      appLogger.warn("Share dataset attempted without active token")
+      throw new AuthenticationError()
+    }
+
+    const api = apiRef.current
+    appLogger.debug("Sharing dataset", undefined, { datasetId, permission: payload.permission })
+    return api.shareDataset(token, datasetId, payload)
+  }, [token])
+
+  const handleListDatasetShares = useCallback(async (datasetId: string): Promise<DatasetShareResponse[]> => {
+    if (!token) {
+      appLogger.warn("List dataset shares attempted without active token")
+      throw new AuthenticationError()
+    }
+
+    const api = apiRef.current
+    appLogger.debug("Listing dataset shares", undefined, { datasetId })
+    return api.listDatasetShares(token, datasetId)
+  }, [token])
+
+  const handleUpdateDatasetShare = useCallback(async (
+    datasetId: string,
+    shareId: string,
+    permission?: DatasetPermission | null,
+    expiresAt?: string | null
+  ): Promise<DatasetShareResponse> => {
+    if (!token) {
+      appLogger.warn("Update dataset share attempted without active token")
+      throw new AuthenticationError()
+    }
+
+    const api = apiRef.current
+    appLogger.debug("Updating dataset share", undefined, { datasetId, shareId, permission, expiresAt })
+    return api.updateDatasetShare(token, datasetId, shareId, permission, expiresAt)
+  }, [token])
+
+  const handleRevokeDatasetShare = useCallback(async (datasetId: string, shareId: string): Promise<void> => {
+    if (!token) {
+      appLogger.warn("Revoke dataset share attempted without active token")
+      throw new AuthenticationError()
+    }
+
+    const api = apiRef.current
+    appLogger.debug("Revoking dataset share", undefined, { datasetId, shareId })
+    return api.revokeDatasetShare(token, datasetId, shareId)
+  }, [token])
+
+  const handleDeleteDataset = useCallback(async (id: string) => {
+    if (!token) {
+      appLogger.warn("Dataset deletion attempted without active token")
+      throw new AuthenticationError()
+    }
+
+    const api = apiRef.current
+    try {
+      await api.deleteDataset(token, id)
+      setDatasets((prev) => prev.filter((d) => d.id !== id))
+      appLogger.info("Dataset deleted", undefined, { id })
+    } catch (error) {
+      if (error instanceof AuthenticationError) {
+        clearSystemData()
+        setToken(null)
+      }
+      appLogger.error("Dataset deletion failed", error instanceof Error ? error.message : "Unknown error", { id })
+      throw error
+    }
+  }, [token, clearSystemData])
+
+  const handleAddDatasetItems = useCallback(async (datasetId: string, fileIds: string[], notes?: string) => {
+    if (!token) {
+      appLogger.warn("Add dataset items attempted without active token")
+      throw new AuthenticationError()
+    }
+
+    if (!fileIds.length) {
+      appLogger.warn("No file IDs provided for adding to dataset")
+      return
+    }
+
+    const api = apiRef.current
+    try {
+      await api.addDatasetItems(token, datasetId, fileIds, notes)
+      appLogger.info("Items added to dataset", undefined, { datasetId, fileCount: fileIds.length })
+    } catch (error) {
+      if (error instanceof AuthenticationError) {
+        clearSystemData()
+        setToken(null)
+      }
+      appLogger.error("Add dataset items failed", error instanceof Error ? error.message : "Unknown error", { datasetId })
+      throw error
+    }
+  }, [token, clearSystemData])
+
+  const handleDeleteDatasetItems = useCallback(async (datasetId: string, fileIds: string[]) => {
+    if (!token) {
+      appLogger.warn("Dataset items deletion attempted without active token")
+      throw new AuthenticationError()
+    }
+
+    if (!fileIds.length) {
+      appLogger.warn("No file IDs provided for deletion")
+      return
+    }
+
+    const api = apiRef.current
+    try {
+      await api.deleteDatasetItems(token, datasetId, fileIds)
+      appLogger.info("Dataset items deleted", undefined, { datasetId, fileIds })
+    } catch (error) {
+      if (error instanceof AuthenticationError) {
+        clearSystemData()
+        setToken(null)
+      }
+      appLogger.error("Dataset items deletion failed", error instanceof Error ? error.message : "Unknown error", { datasetId })
+      throw error
+    }
+  }, [token, clearSystemData])
 
   const handleFilesPageChange = useCallback(
     async (page: number) => {
@@ -945,6 +1269,12 @@ export function useNeoApi() {
       try {
         appLogger.info("Cancelling task", undefined, { taskId })
         const response = await api.deleteTask(token, taskId)
+        const wasCancelled = response.cancelled ?? response.status === "cancelled"
+        const responseTaskId = response.id ?? response.task_id ?? taskId
+        const responseMessage = response.message
+          ?? (wasCancelled
+            ? `Task ${responseTaskId} cancellation requested.`
+            : `Task ${responseTaskId} was not cancelled.`)
 
         // Refresh tasks after cancellation attempt
         api.clearCache()
@@ -961,14 +1291,15 @@ export function useNeoApi() {
           aclCacheStats,
         }))
 
-        if (response.status === "cancelled") {
-          toast.success(`Task cancelled: ${response.message} `)
+        if (wasCancelled) {
+          toast.success(`Task cancelled: ${responseMessage}`)
         } else {
-          toast.warning(`Task cancellation: ${response.message} `)
+          toast.warning(`Task cancellation: ${responseMessage}`)
         }
 
         appLogger.info("Task cancellation response received", undefined, {
-          taskId,
+          taskId: responseTaskId,
+          cancelled: wasCancelled,
           status: response.status,
           graceful: response.graceful
         })
@@ -1001,7 +1332,7 @@ export function useNeoApi() {
         throw error
       }
     },
-    [token, clearSystemData]
+    [token, clearSystemData, handleFetchMonitoring, handleFetchSystemData]
   )
 
   const handleLogout = useCallback(async () => {
@@ -1024,10 +1355,176 @@ export function useNeoApi() {
     // Always clear local state regardless of server response
     clearSystemData()
     apiRef.current.clearCache()
+    // Remove token from localStorage synchronously to prevent stale session
+    // on browser refresh (the useEffect cleanup is async and may not run in time)
+    try {
+      localStorage.removeItem("neo_token")
+    } catch (e) {
+      appLogger.error("Failed to remove token from localStorage", e instanceof Error ? e.message : "Unknown error")
+    }
     setToken(null)
     toast.success("Logged out successfully")
     appLogger.info("User logged out successfully")
   }, [clearSystemData, me?.username, token])
+
+  const handleEntraIdLogin = useCallback(
+    async (entraToken: { access_token: string; id_token?: string }) => {
+      if (!entraToken.access_token) {
+        throw new Error("Entra ID access token is missing")
+      }
+
+      appLogger.info("Processing Entra ID login with user provisioning")
+
+      clearSystemData()
+      apiRef.current.clearCache()
+      setToken(null)
+
+      try {
+        const api = apiRef.current
+        
+        // Extract email and roles from ID token if available
+        let email: string | null = null
+        let roles: string[] = []
+        let displayName: string | null = null
+        let entraObjectId: string | null = null
+        
+        if (entraToken.id_token) {
+          try {
+            // Decode ID token to get user claims
+            const parts = entraToken.id_token.split(".")
+            if (parts.length === 3) {
+              const payload = parts[1]
+              const decoded = atob(payload.replace(/-/g, "+").replace(/_/g, "/"))
+              const claims = JSON.parse(decoded) as Record<string, unknown>
+              
+              // Extract email from various possible claim names
+              email = (claims.email || claims.preferred_username || claims.upn) as string | null
+              
+              // Extract roles array (Azure AD may use different claim names)
+              if (Array.isArray(claims.roles)) {
+                roles = claims.roles as string[]
+              } else if (claims.roles && typeof claims.roles === "string") {
+                roles = [claims.roles]
+              }
+              
+              displayName = (claims.name || claims.display_name) as string | null
+              entraObjectId = (claims.oid || claims.sub) as string | null
+              
+              appLogger.debug("Extracted Entra ID claims", undefined, {
+                email,
+                roles,
+                displayName,
+                hasObjectId: !!entraObjectId,
+              })
+            }
+          } catch (err) {
+            appLogger.warn("Failed to decode ID token claims", err instanceof Error ? err.message : "Unknown error")
+          }
+        }
+        
+        // Determine if user should be admin based on roles
+        const shouldBeAdmin = roles.some(
+          (role) => role === "Global Administrator" || role === "Administrator"
+        )
+        
+        // If email found, check if local user exists and create if needed
+        if (email) {
+          appLogger.debug("Checking for existing user", undefined, { email })
+          
+          try {
+            // Fetch the list of users to check if they exist
+            const currentUsers = await api.getUsers(entraToken.access_token)
+            const existingUser = currentUsers?.find((u) => u.email === email)
+            
+            if (!existingUser) {
+              // Extract username from email (part before @)
+              const username = email.split("@")[0]
+              
+              appLogger.info("User not found locally, creating new user", undefined, {
+                username,
+                email,
+                isAdmin: shouldBeAdmin,
+              })
+              
+              // Create new user with appropriate admin flag
+              try {
+                // Generate a temporary secure password
+                const tempPassword = `Entra_${entraObjectId?.substring(0, 12) || Math.random().toString(36).substring(2, 15)}`
+                
+                await api.createUser(entraToken.access_token, {
+                  id: 0, // API will assign ID
+                  username,
+                  password: tempPassword,
+                  email,
+                  is_active: true,
+                  is_admin: shouldBeAdmin,
+                })
+                
+                appLogger.info("User created successfully", undefined, {
+                  username,
+                  email,
+                  isAdmin: shouldBeAdmin,
+                })
+                
+                toast.info(`User ${username} created with ${shouldBeAdmin ? "admin" : "regular"} permissions`)
+              } catch (createErr) {
+                appLogger.warn(
+                  "Failed to create user",
+                  createErr instanceof Error ? createErr.message : "Unknown error"
+                )
+                // Continue anyway - the user might exist or the request might succeed despite the error
+                toast.warning("Could not auto-create user, but login may still work")
+              }
+            } else {
+              appLogger.debug("User already exists locally", undefined, { username: existingUser.username })
+            }
+          } catch (usersErr) {
+            appLogger.warn(
+              "Failed to fetch users list for provisioning",
+              usersErr instanceof Error ? usersErr.message : "Unknown error"
+            )
+            // Continue with login anyway
+          }
+        }
+        
+        // Proceed with normal login flow using the access token
+        const data = await api.fetchSystemData(entraToken.access_token)
+
+        applySystemData(data)
+        setToken(entraToken.access_token)
+        setCacheStats(api.getCacheStats())
+
+        if (data.me) {
+          toast.success(`Welcome, ${data.me.username}`)
+        } else {
+          toast.success("Welcome")
+        }
+
+        appLogger.info("Successfully logged in with Entra ID", undefined, {
+          userId: data.me?.id,
+          username: data.me?.username,
+        })
+      } catch (error) {
+        clearSystemData()
+        setToken(null)
+
+        if (error instanceof AuthenticationError) {
+          toast.error(error.message)
+        } else if (error instanceof Error) {
+          toast.error(`Entra ID login failed: ${error.message}`)
+        } else {
+          toast.error("Entra ID login failed. Please try again")
+        }
+
+        appLogger.error(
+          "Entra ID login failed",
+          error instanceof Error ? error.message : "Unknown error"
+        )
+        throw error
+      }
+    },
+    [applySystemData, clearSystemData]
+  )
 
   return {
     state: {
@@ -1065,10 +1562,25 @@ export function useNeoApi() {
       handleFetchTasks,
       handleDeleteTask,
       handleLogout,
+      handleEntraIdLogin,
       handleFilesPageChange,
       handleFetchMyDocuments,
       handleCreateDataset,
       handleDeleteDataset,
+      handleFetchDataset,
+      handleUpdateDataset,
+      handleFetchExpiringDatasets,
+      handleDeleteDatasetItems,
+      handleAddDatasetItems,
+      handleFetchDatasets,
+      handleFetchDatasetItems,
+      handleSearchDataset,
+      handleNerSearchDataset,
+      handleCreateDatasetSubset,
+      handleShareDataset,
+      handleListDatasetShares,
+      handleUpdateDatasetShare,
+      handleRevokeDatasetShare,
       handleContentSearch,
       handleRetryWorkItems,
       clearCache: useCallback(() => apiRef.current.clearCache(), []),
@@ -1084,6 +1596,33 @@ export function useNeoApi() {
         },
         []
       ),
+      getSetupGraph: useCallback(async (): Promise<SetupGraphConfigResponse> => {
+        return apiRef.current.getSetupGraph()
+      }, []),
+      setupProxy: useCallback(async (request: SetupProxyRequest): Promise<SetupProxyResponse> => {
+        return apiRef.current.setupProxy(request)
+      }, []),      
+      getSetupProxy: useCallback(async (): Promise<SetupProxyConfigResponse> => {
+        return apiRef.current.getSetupProxy()
+      }, []),   
+      getSetupSsl: useCallback(async (): Promise<SetupSslConfigResponse> => {
+        return apiRef.current.getSetupSsl()
+      }, []),               
+      setupOauth: useCallback(
+        async (request: Body_configure_oauth_api_v1_setup_oauth_post) => {
+          return apiRef.current.setupOauth(request)
+        },
+        []
+      ),
+      setupMcpOauth: useCallback(
+        async (request: Body_configure_mcp_oauth_api_v1_setup_mcp_post) => {
+          return apiRef.current.setupMcpOauth(request)
+        },
+        []
+      ),
+      getSetupMcpOauth: useCallback(async (): Promise<MCPOAuthSettingsResponse> => {
+        return apiRef.current.getSetupMcpOauth()
+      }, []),
       resetSetup: useCallback(async () => {
         return apiRef.current.resetSetup()
       }, []),
@@ -1096,6 +1635,23 @@ export function useNeoApi() {
       completeSetup: useCallback(async () => {
         return apiRef.current.completeSetup()
       }, []),
+      getMcpInfo: useCallback(async () => {
+        if (!token) throw new AuthenticationError()
+        return apiRef.current.getMcpInfo(token)
+      }, [token]),
+      handleOAuthLogin: useCallback(async () => {
+        await apiRef.current.handleOAuthLogin()
+      }, []),
+      handleLinkEntraIdentity: useCallback(async () => {
+        if (!token) throw new AuthenticationError()
+        if (!me?.id) throw new Error("User ID not available")
+        await apiRef.current.linkEntraIdentity(token, { user_id: me.id })
+      }, [token, me?.id]),
+      handleUnlinkEntraIdentity: useCallback(async () => {
+        if (!token) throw new AuthenticationError()
+        if (!me?.id) throw new Error("User ID not available")
+        await apiRef.current.unlinkEntraIdentity(token, { user_id: me.id })
+      }, [token, me?.id]),
     },
   }
 }

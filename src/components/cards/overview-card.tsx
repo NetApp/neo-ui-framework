@@ -70,7 +70,7 @@ export function OverviewCard({
                                     <Database className="h-4 w-4" />
                                     <span className="text-sm font-medium">Caching Strategy</span>
                                 </div>
-                                <div className="text-2xl font-bold">LRU</div>
+                                <div className="text-xl font-bold">LRU</div>
                             </div>
                         ) : (
                             <div className="flex flex-col space-y-1.5 p-4 border rounded-lg bg-muted/50">
@@ -78,7 +78,7 @@ export function OverviewCard({
                                     <Clock className="h-4 w-4" />
                                     <span className="text-sm font-medium">Monitoring TTL</span>
                                 </div>
-                                <div className="text-2xl font-bold">{monitoringTtl} min</div>
+                                <div className="text-xl font-bold">{monitoringTtl} min</div>
                             </div>
                         )}
                         <div className="flex flex-col space-y-1.5 p-4 border rounded-lg bg-muted/50">
@@ -86,14 +86,14 @@ export function OverviewCard({
                                 <Clock className="h-4 w-4" />
                                 <span className="text-sm font-medium">Files TTL</span>
                             </div>
-                            <div className="text-2xl font-bold">{filesTtl} min</div>
+                            <div className="text-xl font-bold">{filesTtl} min</div>
                         </div>
                         <div className="flex flex-col space-y-1.5 p-4 border rounded-lg bg-muted/50">
                             <div className="flex items-center gap-2 text-muted-foreground">
                                 <Database className="h-4 w-4" />
                                 <span className="text-sm font-medium">Cache Size Limit</span>
                             </div>
-                            <div className="text-2xl font-bold">{cacheMaxSize} MB</div>
+                            <div className="text-xl font-bold">{cacheMaxSize} MB</div>
                         </div>
                         <div className="flex flex-col space-y-1.5 p-4 border rounded-lg bg-muted/50">
                             <div className="flex items-center gap-2 text-muted-foreground">
@@ -101,7 +101,7 @@ export function OverviewCard({
                                 <span className="text-sm font-medium">Current Usage</span>
                             </div>
                             <div className="flex flex-col">
-                                <div className="text-2xl font-bold">{formatBytes(cacheStats?.sizeBytes || 0)}</div>
+                                <div className="text-xl font-bold">{formatBytes(cacheStats?.sizeBytes || 0)}</div>
                                 <div className="text-xs text-muted-foreground">{cacheStats?.items || 0} items</div>
                             </div>
                         </div>

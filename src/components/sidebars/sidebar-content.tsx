@@ -9,11 +9,12 @@ import {
   IconActivity,
   IconSettings,
   IconFileSearch,
+  IconBrandGraphql,
+  IconListSearch,
   IconFolders,
-  IconFolderCode,
   // IconArrowsJoin,
   IconFolderShare,
-  IconFiles,
+  // IconFiles,
 } from "@tabler/icons-react"
 
 import {
@@ -33,90 +34,78 @@ const data = {
     //   icon: IconArrowsJoin,
     // },
     {
-      name: "Monitoring",
+      nameKey: "monitoring",
       url: "#/monitoring",
       icon: IconActivity,
     },
     {
-      name: "Tasks",
+      nameKey: "tasks",
       url: "#/tasks",
       icon: IconListCheck,
     },
   ],
   navDataEstate: [
     {
-      name: "Sources",
+      nameKey: "sources",
       url: "#/shares",
       icon: IconFolderShare,
-    },
-    {
-      name: "Data Corpus",
-      url: "#/my-datasets/data-corpus",
-      icon: IconFiles,
     },
   ],
   navDiscovery: [
     {
-      name: "Content Search",
-      url: "#/my-datasets/content-search",
+      nameKey: "dataCorpus",
+      url: "#/my-datasets/data-corpus",
       icon: IconFileSearch,
+    },
+    {
+      nameKey: "contentSearch",
+      url: "#/my-datasets/content-search",
+      icon: IconListSearch,
+    },
+    {
+      nameKey: "entities",
+      url: "#/my-datasets/entities",
+      icon: IconBrandGraphql,
     },
   ],
   navDatasets: [
     {
-      name: "My Datasets",
+      nameKey: "myDatasets",
       url: "#/my-datasets/my-datasets",
       icon: IconFolders,
     },
   ],
   navSecondary: [
     {
-      name: "Users",
+      nameKey: "users",
       url: "#/users",
       icon: IconUsers,
     },
     {
-      name: "Settings",
+      nameKey: "settings",
       url: "#/settings",
       icon: IconSettings,
     },
     {
-      name: "Logs",
+      nameKey: "logs",
       url: "#/logs",
       icon: IconFileText,
     },
     {
-      name: "Help",
+      nameKey: "help",
       url: "#/help",
       icon: IconHelp,
     },
   ],
 }
 
-import type { Dataset } from "@/services/models"
-
-interface AppSidebarContentProps extends React.ComponentProps<typeof SidebarContent> {
-  datasets?: Dataset[]
-}
-
-export function AppSidebarContent({ datasets = [], ...props }: AppSidebarContentProps) {
-  const datasetItems = datasets.map((dataset) => ({
-    name: dataset.name,
-    url: `#/my-datasets/${dataset.id}`,
-    icon: IconFolderCode,
-  }))
-
-  const navDatasets = [
-    ...data.navDatasets,
-    ...datasetItems
-  ]
-
+export function AppSidebarContent({ ...props }: React.ComponentProps<typeof SidebarContent>) {
   return (
     <SidebarContent {...props}>
       <NavMain items={data.navMain} />
-      <NavMain items={data.navDataEstate} label="Data Estate" />
-      <NavMain items={data.navDiscovery} label="Discovery" />
-      <NavMain items={navDatasets} label="Datasets" />
+      <NavMain items={data.navDataEstate} labelKey="dataEstate" labelNamespace="nav" />
+      <NavMain items={data.navDiscovery} labelKey="discovery" labelNamespace="nav" />
+      <NavMain items={data.navDatasets} labelKey="collections" labelNamespace="nav" />
       <NavMain items={data.navSecondary} className="mt-auto" />
     </SidebarContent>
   )

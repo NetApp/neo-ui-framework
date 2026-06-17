@@ -8,19 +8,25 @@ import type {
   FileSearchResponse,
   ContentSearchRequest,
   ContentSearchResponse,
+  CreateDatasetRequest,
+  DatasetResponse,
 } from "@/services/models"
 
 export class FilesApiClient extends BaseApiClient {
-  async getFiles(token: string, shareId: string, page?: number, pageSize?: number) {
+  async getFiles(token: string, shareId: string, page?: number, pageSize?: number, includeContent: boolean = false) {
     const params = new URLSearchParams()
     if (page !== undefined) params.append("page", page.toString())
     if (pageSize !== undefined) params.append("page_size", pageSize.toString())
+    params.append("include_content", includeContent ? "true" : "false")
+    if (shareId === "all" || shareId === "__all__") {
+      params.append("include_counts", "false")
+    }
 
-    let endpoint = `/files?${params}`
+    let endpoint = this.buildApiV1Path(`/files?${params}`)
 
     // If specific share is selected, use the share-specific endpoint
     if (shareId && shareId !== "all" && shareId !== "__none__" && shareId !== "__all__") {
-      endpoint = `/shares/${shareId}/files?${params}`
+      endpoint = this.buildApiV1Path(`/shares/${shareId}/files?${params}`)
     }
 
     appLogger.debug("Fetching files", undefined, { shareId, endpoint })
@@ -51,18 +57,23 @@ export class FilesApiClient extends BaseApiClient {
     } as FilesResponse
   }
 
-  getFileMetadata(token: string, shareId: string, fileId: string) {
+  getFileMetadata(token: string, shareId: string, fileId: string, includeContent: boolean = false) {
     appLogger.debug("Fetching file metadata", undefined, { shareId, fileId })
+    const params = new URLSearchParams()
+    params.append("file_id", fileId)
+    params.append("include_content", includeContent ? "true" : "false")
+
     return this.requestWithToken<FileMetadataResponse>(
-      `/shares/${shareId}/files/metadata?file_id=${encodeURIComponent(fileId)}`,
+      this.buildApiV1Path(`/shares/${shareId}/files/metadata?${params.toString()}`),
       token
     )
   }
 
   searchFiles(token: string, params: FileSearchParams) {
     appLogger.debug("Searching files", undefined, {
-      query: params.query,
-      share_id: params.share_id,
+      filename: params.filename,
+      file_type: params.file_type,
+      field_set: params.field_set,
     })
 
     const searchParams = new URLSearchParams()
@@ -78,22 +89,34 @@ export class FilesApiClient extends BaseApiClient {
     })
 
     const query = searchParams.toString()
-    return this.requestWithToken<FileSearchResponse>(`/files${query ? `?${query}` : ""}`, token)
+    return this.requestWithToken<FileSearchResponse>(this.buildApiV1Path(`/files${query ? `?${query}` : ""}`), token)
   }
 
-  getMyDocuments(token: string, page: number = 1, pageSize: number = 100) {
+  getMyDocuments(token: string, page: number = 1, pageSize: number = 100, includeContent: boolean = false) {
     const params = new URLSearchParams()
     params.append("page", page.toString())
     params.append("page_size", pageSize.toString())
+    params.append("include_content", includeContent ? "true" : "false")
 
     appLogger.debug("Fetching my documents", undefined, { page, pageSize })
     // Using /files endpoint which returns files accessible to the user
-    return this.requestWithToken<FileSearchResponse>(`/files?${params}`, token)
+    return this.requestWithToken<FileSearchResponse>(this.buildApiV1Path(`/files?${params}`), token)
   }
 
   searchContent(token: string, payload: ContentSearchRequest) {
     appLogger.debug("Performing content search", undefined, { query: payload.query })
-    return this.requestWithToken<ContentSearchResponse>("/search", token, {
+    return this.requestApiV1WithToken<ContentSearchResponse>("/search", token, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    })
+  }
+
+  createDataset(token: string, payload: CreateDatasetRequest) {
+    appLogger.debug("Creating dataset", undefined, { name: payload.name, file_count: payload.file_ids.length })
+    return this.requestApiV1WithToken<DatasetResponse>("/datasets", token, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

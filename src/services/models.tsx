@@ -10,9 +10,6 @@ export interface ConnectionCredentials {
   password: string
 }
 
-
-
-
 export interface SetupStatusResponse { // only for v3
   setup_complete: boolean
   database_configured: boolean
@@ -49,6 +46,44 @@ export interface SetupGraphRequest {
   connector_description: string
 }
 
+export interface SetupGraphConfigResponse {
+  graph_configured: boolean
+  tenant_id: string
+  client_id: string
+  client_secret_set: boolean
+  connector_id: string
+  connector_name: string
+  connector_description: string
+  message: string
+}
+
+export interface SetupProxyRequest {
+  proxy_url: string
+  proxy_username?: string
+  proxy_password?: string
+}
+
+export interface SetupProxyResponse {
+  success: boolean
+  message: string
+}
+
+export interface SetupProxyConfigResponse {
+  proxy_configured: boolean
+  proxy_url: string | null
+  proxy_username: string | null
+  proxy_password_set: boolean
+  message: string
+}
+
+export interface SetupSslConfigResponse {
+  verify_ssl: boolean
+  timeout: number
+  custom_ca_certificate_configured: boolean
+  allow_legacy_certificates: boolean
+  message: string
+}
+
 export interface SetupGraphResponse {
   success: boolean
   message: string
@@ -81,7 +116,7 @@ export interface InitialCredentialsResponse {
 
 export interface MonitoringData {
   // Add properties here if needed, or leave it effectively empty for now
-  [key: string]: any
+  [key: string]: unknown
 }
 
 export interface ReadyResponse { // only for v3
@@ -98,39 +133,28 @@ export interface ReadyResponse { // only for v3
 // Dashboard Page Models 
 export interface HealthResponse {
   status: string
-  version: string
-  timestamp: string
-  components: {
-    database: {
-      status: string;
-      error: string | null
-    }
-    filesystem: {
-      status: string;
-      error: string | null
-    }
-    graph_connector?: { // only for v3
-      status: string
-      error: string | null
-    }
-    shares: {
-      active_count: number
-      errors: string[]
-    }
-  }
-  metrics: {
-    cpu_percent: number
-    memory_percent: number
-    disk_percent: number
-  }
+  service?: string
+  version?: string
+  timestamp?: string
+  worker_url?: string
+  components?: Record<string, string>
+}
+
+export interface LicenseDetails {
+  days_remaining?: number | null
+  expiry_date?: string | null
 }
 
 export interface LicenseResponse {
+  license_configured?: boolean
+  license_valid?: boolean
+  connector_id?: string
+  error_message?: string | null
+  in_reconfiguration_mode?: boolean
   message: string
-  details: {
-    connection_id: string
-    days_remaining: number
-  }
+  days_remaining?: number | null
+  expiry_date?: string | null
+  details?: LicenseDetails | null
 }
 
 export interface VersionResponse {
@@ -186,30 +210,98 @@ export interface DatabaseSizeResponse { // only for v3
 // Shares Page Models
 export interface SharesResponse {
   id: string
-  share_path: string
-  username: string
-  status: string
-  last_crawled: string
-  last_crawl_file_count: number
-}
-
-export interface ShareDetailsResponse {
-  id: string
+  protocol?: "smb" | "nfs" | "s3"
   share_path: string
   username: string
   created_at: string
-  last_crawled: string
-  last_crawl_duration_ms: number
-  last_crawl_file_count: number
+  last_crawled: string | null
+  last_crawl_duration_ms: number | null
+  last_crawl_file_count: number | null
   crawl_schedule: string
   rules: Record<string, unknown>
   status: string
-  error_message: string
-  last_connection_attempt: string
-  realm: string
-  use_kerberos: string
-  workgroup: string
-  resolve_order: string
+  error_message: string | null
+  last_connection_attempt: string | null
+  realm?: string | null
+  use_kerberos?: string | null
+  workgroup?: string | null
+  resolve_order?: string | null
+  nfs_version?: string | null
+  nfs_security?: string | null
+  nfs_mount_options?: string | null
+  smb_mount_options?: string | null
+  s3_endpoint_url?: string | null
+  s3_region?: string | null
+  s3_bucket?: string | null
+  s3_prefix?: string | null
+  s3_use_ssl?: boolean | null
+}
+
+export interface ShareDetailsResponse extends SharesResponse {}
+
+export interface ShareRules {
+  exclude_patterns?: string[]
+  include_patterns?: string[]
+  max_file_size?: number
+  min_file_size?: number
+  persist_file_content?: boolean
+  [key: string]: unknown
+}
+
+export interface ShareConfigRequest {
+  id?: string | null
+  protocol?: "smb" | "nfs" | "s3"
+  share_path: string
+  username?: string
+  password?: string
+  crawl_schedule?: string
+  rules?: ShareRules
+  realm?: string | null
+  use_kerberos?: string
+  workgroup?: string | null
+  resolve_order?: string
+  nfs_version?: string | null
+  nfs_security?: string | null
+  nfs_mount_options?: string | null
+  smb_mount_options?: string | null
+  s3_endpoint_url?: string | null
+  s3_region?: string | null
+  s3_bucket?: string | null
+  s3_prefix?: string | null
+  s3_use_ssl?: boolean
+}
+
+export interface ShareUpdateRequest {
+  share_path?: string | null
+  username?: string | null
+  password?: string | null
+  crawl_schedule?: string | null
+  rules?: Record<string, unknown> | null
+  realm?: string | null
+  use_kerberos?: string | null
+  workgroup?: string | null
+  resolve_order?: string | null
+  nfs_version?: string | null
+  nfs_security?: string | null
+  nfs_mount_options?: string | null
+  smb_mount_options?: string | null
+  s3_endpoint_url?: string | null
+  s3_region?: string | null
+  s3_bucket?: string | null
+  s3_prefix?: string | null
+  s3_use_ssl?: boolean | null
+}
+
+export interface NFSShareCreateRequest {
+  protocol: 'nfs'
+  share_path: string
+  nfs_version?: string
+  nfs_security?: string
+  nfs_mount_options?: string
+  username?: string
+  password?: string
+  crawl_schedule?: string
+  rules?: Record<string, unknown>
 }
 
 // Files Page Models
@@ -217,33 +309,30 @@ export interface FilesResponse {
   share_id: string
   path: string
   files: FileEntry[]
-  total_count: number
-  total_size: number
+  total_count: number | null
+  total_size: number | null
   page: number
   page_size: number
-  total_pages: number
+  total_pages: number | null
   has_next: boolean
   has_previous: boolean
+  next_cursor?: string | null
+  content_truncated?: boolean | null
+  truncated_file_count?: number | null
+  max_content_length_applied?: number | null
+  response_size_warning?: string | null
 }
 
 export interface FileSearchParams {
-  path?: string
   filename?: string
   file_type?: string
-  accessed_at_after?: string
-  accessed_at_before?: string
-  modified_time_after?: string
-  modified_time_before?: string
-  created_at_after?: string
-  created_at_before?: string
-  size_min?: number
-  size_max?: number
-  sort_by?: "modified_time" | "created_at" | "accessed_at" | "filename" | "size" | "share_name"
-  sort_order?: "asc" | "desc"
+  fields?: string
+  field_set?: "minimal" | "standard" | "metadata" | "security" | "full"
+  include_content?: boolean
+  include_counts?: boolean
+  after_modified_time?: string
   page?: number
   page_size?: number
-  query?: string
-  share_id?: string
 }
 
 export interface FileEntry {
@@ -257,41 +346,42 @@ export interface FileEntry {
   accessed_at: string
   is_directory: boolean
   file_type: string
+  content?: string | null
+  content_chunks?: string[] | null
+  conversion_duration_ms?: number | null
+  extractor_used?: string | null
   indexed_at: string
+  acl_principals?: string[] | null
+  resolved_principals?: Record<string, unknown>[] | null
   share_id?: string
-  share_name?: string
-  share_path?: string
+  share_name?: string | null
+  share_path?: string | null
+  [key: string]: unknown
 }
 
 export interface FileSearchResponse {
   files: FileEntry[]
-  total_count: number
-  total_size: number
+  total_count: number | null
+  total_size: number | null
   page: number
   page_size: number
-  total_pages: number
+  total_pages: number | null
   has_next: boolean
   has_previous: boolean
+  next_cursor?: string | null
+  content_truncated?: boolean | null
+  truncated_file_count?: number | null
+  max_content_length_applied?: number | null
+  response_size_warning?: string | null
 }
 
-export interface FileMetadataResponse {
-  id: string
-  file_path: string
-  unc_path: string
-  filename: string
-  size: number
-  created_at: string
-  modified_time: string
-  accessed_at: string
-  is_directory: boolean
-  file_type: string
-  content: string
-  content_chunks: string[]
-  conversion_duration_ms: number
-  extractor_used: string
-  indexed_at: string
-  acl_principals: string[]
-  resolved_principals: Record<string, unknown>[]
+export interface FileMetadataResponse extends FileEntry {
+  content?: string | null
+  content_chunks?: string[] | null
+  conversion_duration_ms?: number | null
+  extractor_used?: string | null
+  acl_principals?: string[] | null
+  resolved_principals?: Record<string, unknown>[] | null
 }
 
 // Operations Page Models
@@ -301,8 +391,10 @@ export interface OperationResponse {
   status: string
   details: string
   timestamp: string
+  metadata?: Record<string, unknown>
+  user_id?: number | null
   // user_id not included to avoid looking up user info separately
-  username: string
+  username: string | null
 }
 
 
@@ -313,20 +405,18 @@ export interface MonitoringOverviewResponse { // only for v3
     pending_items: number
     claimed_items: number
     processing_items: number
+    completed_items?: number
     failed_items: number
     abandoned_items: number
+    total_pending?: number
+    total_claimed?: number
+    total_processing?: number
+    total_failed?: number
+    total_abandoned?: number
   }
-  ennumeration: {
-    active_enumerations: [
-      {
-        additionalProp1: {}
-      }
-    ]
-    enumeration_queue_depth: {
-      additionalProp1: number
-      additionalProp2: number
-      additionalProp3: number
-    }
+  enumeration: {
+    active_enumerations: Record<string, unknown>[]
+    enumeration_queue_depth: Record<string, number>
     completed_enumerations_last_24h: number
     avg_enumeration_duration_seconds: number
   }
@@ -335,18 +425,16 @@ export interface MonitoringOverviewResponse { // only for v3
     active_workers: number
     stopping_workers: number
     stopped_workers: number
-    workers: {
-      additionalProp1: {}
-    }
+    workers: Record<string, unknown>[]
   }
   graph_rate_limit: {
     requests_made: number
     requests_remaining: number
-    reset_time: string
+    reset_time: string | null
     rate_limited: boolean
-    backoff_until: string
+    backoff_until: string | null
   }
-  timestamp: string
+  timestamp?: string
 }
 
 export interface MonitoringWorkerResponse { // only for v3
@@ -360,16 +448,8 @@ export interface MonitoringWorkerResponse { // only for v3
 }
 
 export interface MonitoringEnumerationResponse {  // only for v3
-  active_enumerations: [
-    {
-      additionalProp1: {}
-    }
-  ]
-  enumeration_queue_depth: {
-    additionalProp1: number
-    additionalProp2: number
-    additionalProp3: number
-  }
+  active_enumerations: Record<string, unknown>[]
+  enumeration_queue_depth: Record<string, number>
   completed_enumerations_last_24h: number
   avg_enumeration_duration_seconds: number
 }
@@ -377,19 +457,18 @@ export interface MonitoringEnumerationResponse {  // only for v3
 export interface MonitoringWorkersResponse { // only for v3
   total_workers: number
   active_workers: number
+  stale_workers?: number
   stopping_workers: number
   stopped_workers: number
-  workers: {
-    additionalProp1: {}
-  }
+  workers: Record<string, unknown>[]
 }
 
 export interface MonitoringGraphRateLimitResponse { // only for v3
   requests_made: number
   requests_remaining: number
-  reset_time: string
+  reset_time: string | null
   rate_limited: boolean
-  backoff_until: string
+  backoff_until: string | null
 }
 
 export interface MonitoringFailedItemsResponse { // only for v3
@@ -397,35 +476,29 @@ export interface MonitoringFailedItemsResponse { // only for v3
   failed_items: {
     id: string
     share_id: string
-    file_inventory_id: string
-    work_type: string
-    priority: number
-    retry_count: number
-    max_retries: number
-    error_message: string
-    created_at: string
-    started_at: string
-    completed_at: string
-    claimed_by: string
-    file_path: string
-    filename: string
+    file_inventory_id?: string
+    work_type?: string
+    priority?: number
+    retry_count?: number
+    max_retries?: number
+    error_message?: string
+    created_at?: string
+    started_at?: string | null
+    completed_at?: string | null
+    claimed_by?: string | null
+    file_path?: string
+    filename?: string
   }[]
-  failure_summary: {
-    additionalProp1: number
-    additionalProp2: number
-    additionalProp3: number
-  }
-  retry_summary: {
-    additionalProp1: number
-    additionalProp2: number
-    additionalProp3: number
-  }
+  failure_summary?: Record<string, number>
+  retry_summary?: Record<string, number>
+  [key: string]: unknown
 }
 
 export interface TasksResponse { // only for v3
   id: string
   name: string
   status: string
+  task_type?: string | null
   created_at: string
   started_at: string | null
   completed_at: string | null
@@ -448,8 +521,8 @@ export interface TasksResponse { // only for v3
 
 export interface TasksListResponse { // only for v3
   tasks: TasksResponse[]
-  count: number
-  filter: {
+  count?: number
+  filter?: {
     status: string | null
     limit: number
   }
@@ -457,14 +530,8 @@ export interface TasksListResponse { // only for v3
 
 export interface TaskStatisticsResponse { // only for v3
   total_tasks: number
-  by_status: {
-    pending: number
-    running: number
-    completed: number
-    failed: number
-    cancelled: number
-  }
-  running_task_ids: number[]
+  by_status: Record<string, number>
+  running_task_ids: number[] | string[]
 }
 
 export interface AclCacheStatisticsResponse {
@@ -489,6 +556,14 @@ export interface UserResponse {
   is_admin: boolean
   created_at: string
   last_login: string | null
+  entra_object_id?: string | null
+  entra_tenant_id?: string | null
+  entra_display_name?: string | null
+  entra_linked_at?: string | null
+}
+
+export interface MeResponse extends UserResponse {
+  entra_display_name?: string | null
 }
 
 // Content Search Models
@@ -532,19 +607,290 @@ export interface ContentSearchResponse {
   database_type?: string
 }
 
+export interface CreateDatasetRequest {
+  name: string
+  description?: string
+  file_ids: string[]
+  source_query?: Record<string, unknown> | null
+  is_public?: boolean
+  acl_override_enabled?: boolean
+  expires_at?: string | null
+}
+
+export interface DatasetResponse {
+  id: string
+  name: string
+  description?: string | null
+  owner_id?: number
+  owner_username?: string
+  is_public: boolean
+  acl_override_enabled: boolean
+  item_count?: number
+  created_at: string
+  updated_at?: string
+  expires_at?: string | null
+  expires_in_hours?: number | null
+  source_query?: Record<string, unknown> | null
+  user_permission?: string
+  metadata?: Record<string, unknown> | null
+}
+
+export interface DatasetItem {
+  id: string
+  file_id: string
+  filename: string
+  file_path: string
+  unc_path: string
+  share_id: string
+  share_name: string
+  size: number
+  modified_time: string
+  file_type: string
+  added_at: string
+  added_by_username: string | null
+  position: number | null
+  notes: string | null
+}
+
+export interface DatasetItemsResponse {
+  items: DatasetItem[]
+  total_count: number
+  page: number
+  page_size: number
+  total_pages: number
+  has_next: boolean
+  has_previous: boolean
+}
+
+export interface DatasetListItem {
+  id: string
+  name: string
+  description?: string | null
+  owner_id: number
+  owner_username: string
+  is_public: boolean
+  acl_override_enabled: boolean
+  item_count: number
+  created_at: string
+  updated_at: string
+  expires_at: string | null
+  expires_in_hours: number | null
+  source_query: Record<string, unknown> | null
+  user_permission: string
+  metadata?: Record<string, unknown> | null
+}
+
+export interface DatasetListResponse {
+  datasets: DatasetListItem[]
+  total_count: number
+  page: number
+  page_size: number
+  total_pages: number
+  has_next: boolean
+  has_previous: boolean
+}
+
+export interface UpdateDatasetRequest {
+  name?: string | null
+  description?: string | null
+  is_public?: boolean | null
+  acl_override_enabled?: boolean | null
+  expires_at?: string | null
+}
+
+export interface DatasetExpirationResponse {
+  datasets: DatasetResponse[]
+  total_expiring: number
+}
+
+export interface DatasetSearchRequest {
+  query: string
+  file_types?: string[] | null
+  page?: number
+  page_size?: number
+  sort_by?: "relevance" | "modified_time" | "filename" | "size"
+  sort_order?: "asc" | "desc"
+}
+
+export interface DatasetSearchResponse {
+  results: ContentSearchResult[]
+  total_count: number
+  page: number
+  page_size: number
+  total_pages: number
+  has_next: boolean
+  has_previous: boolean
+  query: string
+  search_time_ms: number
+}
+
+export interface DatasetNerSearchRequest {
+  q: string
+  entity_type?: string | null
+  match_mode?: "substring" | "exact" | "prefix"
+  limit?: number
+  cursor?: string | null
+}
+
+export interface DatasetNerSearchResponse {
+  items?: Array<Record<string, unknown>>
+  next_cursor?: string | null
+  [key: string]: unknown
+}
+
+export interface CreateSubsetRequest {
+  name: string
+  description?: string | null
+  file_ids: string[]
+  acl_override_enabled?: boolean
+  expires_at?: string | null
+}
+
+export type DatasetPermission = "read" | "write" | "admin"
+
+export interface ShareDatasetRequest {
+  user_id?: number | null
+  username?: string | null
+  entra_user_id?: string | null
+  entra_user_email?: string | null
+  entra_group_id?: string | null
+  entra_group_name?: string | null
+  permission?: DatasetPermission
+  expires_at?: string | null
+}
+
+export interface DatasetShareResponse {
+  id: string
+  user_id?: number | null
+  username?: string | null
+  entra_user_id?: string | null
+  entra_group_id?: string | null
+  permission: DatasetPermission
+  shared_by_id: number
+  shared_by_username: string
+  shared_at: string
+  expires_at?: string | null
+}
+
 export interface Dataset {
   id: string
   name: string
+  description?: string | null
+  owner_id?: number
+  owner_username?: string
+  is_public: boolean
+  acl_override_enabled: boolean
+  item_count?: number
   files: FileEntry[]
   createdAt: string
+  updatedAt?: string | null
+  expiresAt?: string | null
+  expiresInHours?: number | null
+  userPermission?: string
 }
 
-export interface MeResponse {
-  id: number
-  username: string
-  email: string | null
-  is_active: boolean
-  is_admin: boolean
-  created_at: string
-  last_login: string | null
+export interface Body_configure_oauth_api_v1_setup_oauth_post {
+  tenant_id?: string
+  client_id?: string
+  client_secret?: string
+  audience?: string
+  enabled?: boolean
+}
+
+export interface Body_configure_mcp_oauth_api_v1_setup_mcp_post {
+  tenant_id: string
+  client_id: string
+  client_secret: string
+  audience?: string | null
+}
+
+export interface MCPOAuthSettingsResponse {
+  mcp_oauth_configured: boolean
+  tenant_id: string | null
+  client_id: string | null
+  client_secret_set: boolean
+  audience: string | null
+  message: string
+}
+
+export interface EntraLinkRequest {
+  user_id: number
+}
+
+export interface EntraLinkResponse {
+  success?: boolean
+  message?: string
+  user_id?: number
+  username?: string
+  entra_object_id?: string
+  entra_display_name?: string
+  [key: string]: unknown
+}
+
+export interface EntraUnlinkRequest {
+  user_id: number
+}
+
+export interface EntraUnlinkResponse {
+  success?: boolean
+  message?: string
+  user_id?: number
+  [key: string]: unknown
+}
+
+export interface AuthProviderResponse {
+  [key: string]: unknown
+}
+
+export interface AuthProvidersResponse {
+  providers: AuthProviderResponse[]
+}
+
+export interface GroupsResponse {
+  object_id: string
+  groups: string[]
+  groups_count: number
+}
+
+export interface OAuthConfigResponse {
+  enabled?: boolean
+  provider?: string
+  tenant_id?: string
+  client_id?: string
+  audience?: string
+  authorization_endpoint?: string
+  token_endpoint?: string
+  providers?: AuthProviderResponse[]
+}
+
+export interface SetupOAuthResponse {
+  success?: boolean
+  message?: string
+  [key: string]: unknown
+}
+
+export interface UserInfoResponse {
+  sub?: string
+  object_id?: string
+  tenant_id?: string
+  display_name?: string
+  name?: string
+  email?: string
+  upn?: string
+  preferred_username?: string
+  groups_count?: number
+  [key: string]: unknown
+}
+
+export interface McpInfoResponse {
+  name: string
+  version: string
+  protocol_version: string
+  transport: string
+  oauth_enabled: boolean
+  tools: string[]
+  endpoints: {
+    mcp: string
+    oauth_metadata: string
+  }
 }

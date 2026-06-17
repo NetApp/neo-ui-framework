@@ -29,15 +29,39 @@ import type {
   TokenResponse,
   ContentSearchRequest,
   ContentSearchResponse,
+  CreateDatasetRequest,
+  CreateSubsetRequest,
+  DatasetExpirationResponse,
+  DatasetNerSearchRequest,
+  DatasetNerSearchResponse,
+  DatasetPermission,
+  DatasetResponse,
+  DatasetSearchRequest,
+  DatasetSearchResponse,
+  DatasetShareResponse,
+  DatasetListResponse,
+  ShareDatasetRequest,
   SetupLicenseRequest,
   SetupLicenseResponse,
   SetupStatusResponse,
+  DatasetItemsResponse,
+  UpdateDatasetRequest,
   SetupGraphRequest,
+  SetupGraphConfigResponse,
   SetupGraphResponse,
+  SetupProxyRequest,
+  SetupProxyResponse,  
+  SetupProxyConfigResponse,
+  SetupSslConfigResponse,
   SetupResetResponse,
   SetupFactoryResetRequest,
   SetupCompleteResponse,
   InitialCredentialsResponse,
+  Body_configure_oauth_api_v1_setup_oauth_post,
+  Body_configure_mcp_oauth_api_v1_setup_mcp_post,
+  MCPOAuthSettingsResponse,
+  EntraLinkRequest,
+  EntraUnlinkRequest,
 } from "./models"
 import { BaseApiClient, AuthenticationError, AuthorizationError } from "./api/base"
 import { AuthApiClient } from "./api/auth"
@@ -50,6 +74,8 @@ import { MonitoringApiClient } from "./api/monitoring"
 import { TasksApiClient, type TaskCancelResponse } from "./api/tasks"
 import { AnalyticsApiClient } from "./api/analytics"
 import { HelmApiClient } from "./api/helm"
+import { DatasetsApiClient } from "./api/datasets"
+import { NERApiClient } from "./api/ner"
 import { DataLoader } from "./data-loader"
 
 
@@ -85,16 +111,58 @@ export type {
   TaskCancelResponse,
   ContentSearchRequest,
   ContentSearchResponse,
+  CreateDatasetRequest,
+  CreateSubsetRequest,
+  DatasetExpirationResponse,
+  DatasetNerSearchRequest,
+  DatasetNerSearchResponse,
+  DatasetPermission,
+  DatasetResponse,
+  DatasetSearchRequest,
+  DatasetSearchResponse,
+  DatasetShareResponse,
+  DatasetListResponse,
+  DatasetItemsResponse,
+  ShareDatasetRequest,
+  UpdateDatasetRequest,
   SetupLicenseRequest,
   SetupLicenseResponse,
   SetupGraphRequest,
+  SetupGraphConfigResponse,
   SetupGraphResponse,
+  SetupProxyRequest,
+  SetupProxyResponse,  
+  SetupProxyConfigResponse,
+  SetupSslConfigResponse,
   SetupResetResponse,
   SetupFactoryResetRequest,
   SetupCompleteResponse,
   InitialCredentialsResponse,
+  Body_configure_oauth_api_v1_setup_oauth_post,
+  Body_configure_mcp_oauth_api_v1_setup_mcp_post,
+  MCPOAuthSettingsResponse,
 }
 export { AuthenticationError, AuthorizationError }
+function normalizeCacheKeyValue(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(normalizeCacheKeyValue)
+  }
+
+  if (value && typeof value === "object") {
+    return Object.keys(value)
+      .sort()
+      .reduce<Record<string, unknown>>((result, key) => {
+        result[key] = normalizeCacheKeyValue((value as Record<string, unknown>)[key])
+        return result
+      }, {})
+  }
+
+  return value
+}
+
+function buildNormalizedCacheKey(prefix: string, token: string, value: unknown) {
+  return `${prefix}:${token}:${JSON.stringify(normalizeCacheKeyValue(value))}`
+}
 
 export class NeoApiService extends BaseApiClient {
   private auth: AuthApiClient
@@ -107,6 +175,8 @@ export class NeoApiService extends BaseApiClient {
   private tasks: TasksApiClient
   private analytics: AnalyticsApiClient
   private helm: HelmApiClient
+  private datasetsClient: DatasetsApiClient
+  private nerClient: NERApiClient
   private dataLoader: DataLoader
   private monitoringTtl: number = 10 * 60 * 1000
   private filesTtl: number = 10 * 60 * 1000
@@ -123,6 +193,8 @@ export class NeoApiService extends BaseApiClient {
     this.tasks = new TasksApiClient(baseUrl)
     this.analytics = new AnalyticsApiClient(baseUrl)
     this.helm = new HelmApiClient()
+    this.datasetsClient = new DatasetsApiClient(baseUrl)
+    this.nerClient = new NERApiClient(baseUrl)
     this.dataLoader = new DataLoader(30000) // 30 seconds default TTL
   }
 
@@ -144,9 +216,37 @@ export class NeoApiService extends BaseApiClient {
     return this.system.setupLicense(request)
   }
 
+  async setupOauth(payload: Body_configure_oauth_api_v1_setup_oauth_post) {
+    return this.system.setupOauth(payload)
+  }
+
+  async setupMcpOauth(payload: Body_configure_mcp_oauth_api_v1_setup_mcp_post) {
+    return this.system.setupMcpOauth(payload)
+  }
+
+  async getSetupMcpOauth(): Promise<MCPOAuthSettingsResponse> {
+    return this.system.getSetupMcpOauth()
+  }
+
   async setupGraph(request: SetupGraphRequest): Promise<SetupGraphResponse> {
     return this.system.setupGraph(request)
   }
+
+  async getSetupGraph(): Promise<SetupGraphConfigResponse> {
+    return this.system.getSetupGraph()
+  }  
+
+  async setupProxy(request: SetupProxyRequest): Promise<SetupProxyResponse> {
+    return this.system.setupProxy(request)
+  }
+
+  async getSetupProxy(): Promise<SetupProxyConfigResponse> {
+    return this.system.getSetupProxy()
+  }  
+
+  async getSetupSsl(): Promise<SetupSslConfigResponse> {
+    return this.system.getSetupSsl()
+  }  
 
   resetSetup() {
     return this.system.resetSetup()
@@ -166,6 +266,42 @@ export class NeoApiService extends BaseApiClient {
 
   authenticate(username: string, password: string) {
     return this.auth.authenticate(username, password)
+  }
+
+  async handleOAuthLogin() {
+    return this.auth.initiateOAuthLogin()
+  }
+
+  getOAuthConfig() {
+    return this.auth.getOAuthConfig()
+  }
+
+  getUserInfo(token: string) {
+    return this.auth.getUserInfo(token)
+  }
+
+  getGroups(token: string) {
+    return this.auth.getGroups(token)
+  }
+
+  validateToken(token: string) {
+    return this.auth.validateToken(token)
+  }
+
+  getWhoAmI(token: string) {
+    return this.auth.getWhoAmI(token)
+  }
+
+  linkEntraIdentity(token: string, payload: EntraLinkRequest) {
+    return this.auth.linkEntraIdentity(token, payload)
+  }
+
+  unlinkEntraIdentity(token: string, payload: EntraUnlinkRequest) {
+    return this.auth.unlinkEntraIdentity(token, payload)
+  }
+
+  refreshAccessToken(token: string) {
+    return this.auth.refreshAccessToken(token)
   }
 
   logout(token: string) {
@@ -190,6 +326,10 @@ export class NeoApiService extends BaseApiClient {
 
   getSetupStatus() {
     return this.dataLoader.load("setupStatus", () => this.system.getSetupStatus(), this.monitoringTtl)
+  }
+
+  getMcpInfo(token: string) {
+    return this.dataLoader.load(`mcpInfo:${token}`, () => this.system.getMcpInfo(token), this.monitoringTtl)
   }
 
   getUsers(token: string) {
@@ -242,28 +382,98 @@ export class NeoApiService extends BaseApiClient {
     return this.shares.startShareCrawl(token, shareId)
   }
 
-  getFiles(token: string, shareId: string, page?: number, pageSize?: number) {
-    const key = `files:${token}:${shareId}:${page}:${pageSize}`
-    return this.dataLoader.load(key, () => this.files.getFiles(token, shareId, page, pageSize), this.filesTtl)
+  getFiles(token: string, shareId: string, page?: number, pageSize?: number, includeContent: boolean = false) {
+    const key = `files:${token}:${shareId}:${page}:${pageSize}:${includeContent}`
+    return this.dataLoader.load(key, () => this.files.getFiles(token, shareId, page, pageSize, includeContent), this.filesTtl)
   }
 
-  getFileMetadata(token: string, shareId: string, fileId: string) {
-    return this.dataLoader.load(`fileMetadata:${token}:${shareId}:${fileId}`, () => this.files.getFileMetadata(token, shareId, fileId), this.filesTtl)
+  getFileMetadata(token: string, shareId: string, fileId: string, includeContent: boolean = false) {
+    return this.dataLoader.load(`fileMetadata:${token}:${shareId}:${fileId}:${includeContent}`, () => this.files.getFileMetadata(token, shareId, fileId, includeContent), this.filesTtl)
   }
 
   searchFiles(token: string, params: FileSearchParams) {
-    const key = `searchFiles:${token}:${JSON.stringify(params)}`
+    const key = buildNormalizedCacheKey("searchFiles", token, params)
     return this.dataLoader.load(key, () => this.files.searchFiles(token, params), this.filesTtl)
   }
 
   searchContent(token: string, payload: ContentSearchRequest) {
-    const key = `searchContent:${token}:${JSON.stringify(payload)}`
+    const key = buildNormalizedCacheKey("searchContent", token, payload)
     return this.dataLoader.load(key, () => this.files.searchContent(token, payload), this.filesTtl)
   }
 
-  getMyDocuments(token: string, page: number = 1, pageSize: number = 100) {
-    const key = `myDocuments:${token}:${page}:${pageSize}`
-    return this.dataLoader.load(key, () => this.files.getMyDocuments(token, page, pageSize), this.filesTtl)
+  createDataset(token: string, payload: CreateDatasetRequest): Promise<DatasetResponse> {
+    return this.files.createDataset(token, payload)
+  }
+
+  getDatasets(token: string, page: number = 1, pageSize: number = 50, ownedOnly: boolean = false): Promise<DatasetListResponse> {
+    return this.datasetsClient.getDatasets(token, page, pageSize, ownedOnly)
+  }
+
+  getDatasetItems(token: string, datasetId: string, page: number = 1, pageSize: number = 50): Promise<DatasetItemsResponse> {
+    return this.datasetsClient.getDatasetItems(token, datasetId, page, pageSize)
+  }
+
+  getDataset(token: string, datasetId: string): Promise<DatasetResponse> {
+    return this.datasetsClient.getDataset(token, datasetId)
+  }
+
+  updateDataset(token: string, datasetId: string, payload: UpdateDatasetRequest): Promise<DatasetResponse> {
+    return this.datasetsClient.updateDataset(token, datasetId, payload)
+  }
+
+  getExpiringDatasets(token: string): Promise<DatasetExpirationResponse> {
+    return this.datasetsClient.getExpiringDatasets(token)
+  }
+
+  deleteDataset(token: string, datasetId: string): Promise<void> {
+    return this.datasetsClient.deleteDataset(token, datasetId)
+  }
+
+  deleteDatasetItems(token: string, datasetId: string, fileIds: string[]): Promise<void> {
+    return this.datasetsClient.deleteDatasetItems(token, datasetId, fileIds)
+  }
+
+  addDatasetItems(token: string, datasetId: string, fileIds: string[], notes?: string): Promise<void> {
+    return this.datasetsClient.addDatasetItems(token, datasetId, fileIds, notes)
+  }
+
+  searchDataset(token: string, datasetId: string, payload: DatasetSearchRequest): Promise<DatasetSearchResponse> {
+    return this.datasetsClient.searchDataset(token, datasetId, payload)
+  }
+
+  nerSearchDataset(token: string, datasetId: string, payload: DatasetNerSearchRequest): Promise<DatasetNerSearchResponse> {
+    return this.datasetsClient.nerSearchDataset(token, datasetId, payload)
+  }
+
+  createSubset(token: string, datasetId: string, payload: CreateSubsetRequest): Promise<DatasetResponse> {
+    return this.datasetsClient.createSubset(token, datasetId, payload)
+  }
+
+  shareDataset(token: string, datasetId: string, payload: ShareDatasetRequest): Promise<DatasetShareResponse> {
+    return this.datasetsClient.shareDataset(token, datasetId, payload)
+  }
+
+  listDatasetShares(token: string, datasetId: string): Promise<DatasetShareResponse[]> {
+    return this.datasetsClient.listDatasetShares(token, datasetId)
+  }
+
+  updateDatasetShare(
+    token: string,
+    datasetId: string,
+    shareId: string,
+    permission?: DatasetPermission | null,
+    expiresAt?: string | null
+  ): Promise<DatasetShareResponse> {
+    return this.datasetsClient.updateDatasetShare(token, datasetId, shareId, permission, expiresAt)
+  }
+
+  revokeDatasetShare(token: string, datasetId: string, shareId: string): Promise<void> {
+    return this.datasetsClient.revokeDatasetShare(token, datasetId, shareId)
+  }
+
+  getMyDocuments(token: string, page: number = 1, pageSize: number = 100, includeContent: boolean = false) {
+    const key = `myDocuments:${token}:${page}:${pageSize}:${includeContent}`
+    return this.dataLoader.load(key, () => this.files.getMyDocuments(token, page, pageSize, includeContent), this.filesTtl)
   }
 
   getOperations(token: string) {
@@ -333,9 +543,10 @@ export class NeoApiService extends BaseApiClient {
       try {
         return await promise
       } catch (error) {
-        if (error instanceof AuthorizationError) {
-          appLogger.warn("Access denied for optional resource", undefined, {
+        if (error instanceof AuthorizationError || error instanceof AuthenticationError) {
+          appLogger.warn("Optional resource unavailable", undefined, {
             error: error.message,
+            reason: error instanceof AuthenticationError ? "authentication" : "authorization",
           })
           return defaultValue
         }
@@ -458,6 +669,99 @@ export class NeoApiService extends BaseApiClient {
       )
       throw error
     }
+  }
+
+  // NER API methods
+  async getNERStats(token: string) {
+    return this.nerClient.getNERStats(token)
+  }
+
+  async getShareNERStats(token: string, shareId: string) {
+    return this.nerClient.getShareNERStats(token, shareId)
+  }
+
+  async getNERStatus(token: string) {
+    return this.nerClient.getNERStatus(token)
+  }
+
+  async getNERSchemas(token: string) {
+    return this.nerClient.getNERSchemas(token)
+  }
+
+  async searchEntities(
+    token: string,
+    query: string,
+    options?: {
+      entityType?: string
+      shareId?: string
+      shareIds?: string
+      matchMode?: "substring" | "exact" | "prefix"
+      limit?: number
+      cursor?: string
+    }
+  ) {
+    return this.nerClient.searchEntities(token, query, options)
+  }
+
+  async getEntityAggregates(
+    token: string,
+    options?: {
+      entityType?: string
+      shareId?: string
+      shareIds?: string
+      limit?: number
+    }
+  ) {
+    return this.nerClient.getEntityAggregates(token, options)
+  }
+
+  async countEntityMentions(
+    token: string,
+    query: string,
+    options?: {
+      entityType?: string
+      shareId?: string
+      shareIds?: string
+      matchMode?: "exact" | "prefix" | "substring"
+    }
+  ) {
+    return this.nerClient.countEntityMentions(token, query, options)
+  }
+
+  async getFileNERResults(token: string, fileId: string) {
+    return this.nerClient.getFileNERResults(token, fileId)
+  }
+
+  async getShareNERResults(
+    token: string,
+    shareId: string,
+    page: number = 1,
+    pageSize: number = 100,
+    entityType?: string
+  ) {
+    return this.nerClient.getShareNERResults(token, shareId, page, pageSize, entityType)
+  }
+
+  async getPendingNER(
+    token: string,
+    options?: {
+      shareId?: string
+      limit?: number
+    }
+  ) {
+    return this.nerClient.getPendingNER(token, options)
+  }
+
+  async triggerShareReanalysis(token: string, shareId: string, force: boolean = false) {
+    return this.nerClient.triggerShareReanalysis(token, shareId, force)
+  }
+
+  async getNERSettings(token: string) {
+    return this.nerClient.getNERSettings(token)
+  }
+
+  async updateNERSettings(token: string, settings: any) {
+    return this.nerClient.updateNERSettings(token, settings)
   }
 
 }

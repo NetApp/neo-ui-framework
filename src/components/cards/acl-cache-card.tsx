@@ -1,6 +1,7 @@
 // Copyright 2025 NetApp, Inc. All Rights Reserved.
 "use client"
 
+import { useTranslation } from "react-i18next"
 import {
     Server,
     Database,
@@ -24,6 +25,7 @@ interface AclCacheCardProps {
 }
 
 export function AclCacheCard({ stats, className }: AclCacheCardProps) {
+    const { t } = useTranslation()
     if (!stats) return null
 
     // Determine status color
@@ -42,14 +44,14 @@ export function AclCacheCard({ stats, className }: AclCacheCardProps) {
                 <CardTitle className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         <Server className="h-5 w-5" />
-                        ACL Cache Stats
+                        {t("aclCacheStats", { ns: "monitoring" })}
                     </div>
                     <Badge variant="outline" className={getStatusColor(stats.status)}>
                         {stats.status.toUpperCase()}
                     </Badge>
                 </CardTitle>
                 <CardDescription>
-                    Access Control List cache performance
+                    {t("aclCacheDescription", { ns: "monitoring" })}
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -58,9 +60,9 @@ export function AclCacheCard({ stats, className }: AclCacheCardProps) {
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2 text-muted-foreground">
                             <Database className="h-4 w-4" />
-                            <span className="text-sm font-medium">Capacity Used</span>
+                            <span className="text-sm font-medium">{t("capacityUsed", { ns: "monitoring" })}</span>
                         </div>
-                        <span className="text-sm font-mono">{stats.capacity_used_percent.toFixed(1)}%</span>
+                        <Badge variant="outline" className="font-mono text-xs">{stats.capacity_used_percent.toFixed(1)}%</Badge>
                     </div>
                     {/* Progress bar for capacity */}
                     <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
@@ -70,8 +72,8 @@ export function AclCacheCard({ stats, className }: AclCacheCardProps) {
                         />
                     </div>
                     <div className="flex justify-between text-xs text-muted-foreground">
-                        <span>{stats.size} items</span>
-                        <span>Max: {stats.max_size}</span>
+                        <Badge variant="outline" className="font-mono text-xs">{stats.size} items</Badge>
+                        <Badge variant="outline" className="font-mono text-xs">{t("maxSizeLabel", { ns: "monitoring" })}: {stats.max_size}</Badge>
                     </div>
                 </div>
 
@@ -81,25 +83,33 @@ export function AclCacheCard({ stats, className }: AclCacheCardProps) {
                 <div>
                     <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
                         <Activity className="h-4 w-4" />
-                        Performance
+                        {t("performance", { ns: "monitoring" })}
                     </h4>
 
                     <div className="grid grid-cols-2 gap-4">
                         <div className="bg-muted/50 p-2 rounded border">
-                            <div className="text-xs text-muted-foreground">Hit Rate</div>
-                            <div className="text-xl font-bold">{(stats.hit_rate * 100).toFixed(1)}%</div>
+                            <div className="text-xs text-muted-foreground">{t("hitRate", { ns: "monitoring" })}</div>
+                            <div className="mt-1">
+                                <Badge variant="outline" className="font-mono text-xs">{(stats.hit_rate * 100).toFixed(1)}%</Badge>
+                            </div>
                         </div>
                         <div className="bg-muted/50 p-2 rounded border">
-                            <div className="text-xs text-muted-foreground">Total Requests</div>
-                            <div className="text-xl font-bold">{stats.total_requests.toLocaleString()}</div>
+                            <div className="text-xs text-muted-foreground">{t("totalRequests", { ns: "monitoring" })}</div>
+                            <div className="mt-1">
+                                <Badge variant="outline" className="font-mono text-xs">{stats.total_requests.toLocaleString()}</Badge>
+                            </div>
                         </div>
                         <div className="bg-muted/50 p-2 rounded border">
-                            <div className="text-xs text-muted-foreground">Hits</div>
-                            <div className="text-lg font-mono">{stats.hits.toLocaleString()}</div>
+                            <div className="text-xs text-muted-foreground">{t("hits", { ns: "monitoring" })}</div>
+                            <div className="mt-1">
+                                <Badge variant="outline" className="font-mono text-xs">{stats.hits.toLocaleString()}</Badge>
+                            </div>
                         </div>
                         <div className="bg-muted/50 p-2 rounded border">
-                            <div className="text-xs text-muted-foreground">Misses</div>
-                            <div className="text-lg font-mono">{stats.misses.toLocaleString()}</div>
+                            <div className="text-xs text-muted-foreground">{t("misses", { ns: "monitoring" })}</div>
+                            <div className="mt-1">
+                                <Badge variant="outline" className="font-mono text-xs">{stats.misses.toLocaleString()}</Badge>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -111,7 +121,7 @@ export function AclCacheCard({ stats, className }: AclCacheCardProps) {
                         <div className="bg-yellow-50 dark:bg-yellow-900/10 p-3 rounded-md border border-yellow-200 dark:border-yellow-900/50">
                             <h4 className="text-sm font-medium text-yellow-800 dark:text-yellow-200 mb-2 flex items-center gap-2">
                                 <Info className="h-4 w-4" />
-                                Recommendations
+                                {t("recommendations", { ns: "monitoring" })}
                             </h4>
                             <ul className="list-disc pl-4 text-xs text-yellow-700 dark:text-yellow-300 space-y-1">
                                 {stats.recommendations.map((rec, i) => (

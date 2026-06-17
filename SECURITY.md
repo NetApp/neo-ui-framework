@@ -31,3 +31,5 @@ If we verify a reported security vulnerability, our policy is:
 
 - A security advisory will be released on the project GitHub repository detailing the
   vulnerability, as well as recommendations for end-users to protect themselves.
+  
+- We will work with the reporter to ensure they are credited in the security advisory.

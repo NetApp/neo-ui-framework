@@ -2,10 +2,18 @@
 import {
   useLocation
 } from "react-router-dom"
+import { useTranslation } from "react-i18next"
 
 import {
   Button
 } from "@/components/ui/button"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 import {
   Separator
@@ -40,6 +48,8 @@ import type {
 import {
   ConnectDialog
 } from "@/components/dialogs/connect-dialog"
+import { useSettings } from "@/context/settings-context"
+import { SUPPORTED_LOCALES, type AppLocale } from "@/i18n"
 
 
 
@@ -56,30 +66,38 @@ interface SiteHeaderProps {
 
 export function SiteHeader({ onConnect, onRefresh, isConnected, cacheStats }: SiteHeaderProps) {
   const location = useLocation()
+  const { t } = useTranslation()
+  const { locale, updateSettings } = useSettings()
 
-  let title = "Monitoring"
+  let titleKey = "monitoring"
   if (location.pathname.startsWith("/connector")) {
-    title = "Connector"
+    titleKey = "connector"
   } else if (location.pathname.startsWith("/monitoring")) {
-    title = "Monitoring"
+    titleKey = "monitoring"
   } else if (location.pathname.startsWith("/shares")) {
-    title = "Data Sources"
+    titleKey = "dataSources"
   } else if (location.pathname.startsWith("/my-datasets/data-corpus")) {
-    title = "Data Corpus"
+    titleKey = "dataCorpus"
   } else if (location.pathname.startsWith("/my-datasets/content-search")) {
-    title = "Content Search"
+    titleKey = "contentSearch"
+  } else if (location.pathname.startsWith("/my-datasets/entities")) {
+    titleKey = "nameRecognitionEntities"
   } else if (location.pathname.startsWith("/my-datasets")) {
-    title = "My Datasets"
+    titleKey = "myDatasets"
   } else if (location.pathname.startsWith("/logs")) {
-    title = "Logs"
+    titleKey = "logs"
   } else if (location.pathname.startsWith("/users")) {
-    title = "Users"
+    titleKey = "users"
   } else if (location.pathname.startsWith("/settings")) {
-    title = "Settings"
+    titleKey = "settings"
   } else if (location.pathname.startsWith("/help")) {
-    title = "Help"
+    titleKey = "help"
   } else if (location.pathname.startsWith("/tasks")) {
-    title = "Tasks"
+    titleKey = "tasks"
+  }
+
+  const handleLocaleChange = (nextLocale: string) => {
+    updateSettings({ locale: nextLocale as AppLocale })
   }
 
   return (
@@ -90,7 +108,7 @@ export function SiteHeader({ onConnect, onRefresh, isConnected, cacheStats }: Si
           orientation="vertical"
           className="mx- data-[orientation=vertical]:h-4"
         />
-        <h1 className="text-base font-medium">{title}</h1>
+        <h1 className="text-base font-medium">{t(titleKey, { ns: "nav" })}</h1>
         <div className="ml-auto flex items-center gap-2">
           {isConnected && <CacheStatus stats={cacheStats} />}
           <TooltipProvider>
@@ -101,7 +119,7 @@ export function SiteHeader({ onConnect, onRefresh, isConnected, cacheStats }: Si
                 </div>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Toggle theme</p>
+                <p>{t("themeToggle")}</p>
               </TooltipContent>
             </Tooltip>
 
@@ -120,13 +138,35 @@ export function SiteHeader({ onConnect, onRefresh, isConnected, cacheStats }: Si
                       target="_blank"
                       className="dark:text-foreground"
                     >
-                      <IconBrandGithub /> GitHub
+                      <IconBrandGithub /> {t("github")}
                     </a>
                   </Button>
                 </div>
               </TooltipTrigger>
               <TooltipContent>
-                <p>View source on GitHub</p>
+                <p>{t("viewSourceOnGithub")}</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="hidden sm:flex">
+                  <Select value={locale} onValueChange={handleLocaleChange}>
+                    <SelectTrigger className="w-[140px]">
+                      <SelectValue placeholder={t("language")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SUPPORTED_LOCALES.map((localeOption) => (
+                        <SelectItem key={localeOption} value={localeOption}>
+                          {t(`languageOption_${localeOption}`)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{t("language")}</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
@@ -135,9 +175,9 @@ export function SiteHeader({ onConnect, onRefresh, isConnected, cacheStats }: Si
               variant="default"
               size="default"
               className="hidden sm:flex">
-              {isConnected ? <><IconRefresh /> Refresh</> : <><IconLogin /> Connect</>}
+              {isConnected ? <><IconRefresh /> {t("refresh")}</> : <><IconLogin /> {t("connect")}</>}
               <span className="sr-only">
-                {isConnected ? "Refresh data" : "Connect"}
+                {isConnected ? t("refreshData") : t("connect")}
               </span>
             </Button>
           </ConnectDialog>

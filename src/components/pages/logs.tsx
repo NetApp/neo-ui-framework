@@ -5,6 +5,8 @@ import {
   useState
 } from "react"
 
+import { useTranslation } from "react-i18next"
+
 import {
   IconTrash,
   IconDownload
@@ -39,6 +41,7 @@ import { OverviewCard } from "@/components/cards/overview-card"
 const LEVEL_OPTIONS = ["all", "ERROR", "WARN", "INFO", "DEBUG", "OPERATION"] as const
 
 export default function Logs({ operations, monitoringOverview }: { operations: OperationResponse[] | null; monitoringOverview: MonitoringOverviewResponse | null }) {
+  const { t } = useTranslation()
   const [selectedLevel, setSelectedLevel] = useState<(typeof LEVEL_OPTIONS)[number]>("all")
   const { logs, currentPage, totalPages, totalCount, onPageChange, onClearLogs, onDownloadLogs } = useAppLogs(
     selectedLevel === "all" ? undefined : (selectedLevel as LogLevel),
@@ -68,7 +71,7 @@ export default function Logs({ operations, monitoringOverview }: { operations: O
             <div className="mb-4">
               <OverviewCard
                 overview={monitoringOverview}
-                title="System Logs"
+              title={t("logsOverviewTitle", { ns: "pages" })}
                 showCacheStats={false}
               />
             </div>

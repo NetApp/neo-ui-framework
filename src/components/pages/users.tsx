@@ -28,6 +28,7 @@ import type {
   MonitoringOverviewResponse
 } from "@/services/neo-api"
 import { AuthenticationError } from "@/services/neo-api"
+import { useTranslation } from "react-i18next"
 import { OverviewCard } from "@/components/cards/overview-card"
 
 import {
@@ -75,10 +76,13 @@ interface UsersProps {
   }) => Promise<void>
   onChangePassword: (payload: { current_password: string; new_password: string }) => Promise<void>
   onRefresh: () => Promise<void>
+  onLinkEntra: () => Promise<void>
+  onUnlinkEntra: () => Promise<void>
   monitoringOverview: MonitoringOverviewResponse | null
 }
 
-export default function Users({ users, me, onAddUser, onChangePassword, onRefresh, monitoringOverview }: UsersProps) {
+export default function Users({ users, me, onAddUser, onChangePassword, onRefresh, onLinkEntra, onUnlinkEntra, monitoringOverview }: UsersProps) {
+  const { t } = useTranslation()
   const [alertMessage, setAlertMessage] = useState<string | null>(null)
   const [alertVariant, setAlertVariant] = useState<"success" | "error">("success")
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false)
@@ -166,6 +170,30 @@ export default function Users({ users, me, onAddUser, onChangePassword, onRefres
     [newEmail, newIsActive, newIsAdmin, newUserPassword, newUsername, onAddUser, resetAddForm]
   )
 
+  const handleLinkEntra = useCallback(async () => {
+    try {
+      await onLinkEntra()
+      await onRefresh()
+      setAlertVariant("success")
+      setAlertMessage("Entra ID linked successfully")
+    } catch (err) {
+      setAlertVariant("error")
+      setAlertMessage(err instanceof Error ? err.message : "Failed to link Entra ID")
+    }
+  }, [onLinkEntra, onRefresh])
+
+  const handleUnlinkEntra = useCallback(async () => {
+    try {
+      await onUnlinkEntra()
+      await onRefresh()
+      setAlertVariant("success")
+      setAlertMessage("Entra ID unlinked successfully")
+    } catch (err) {
+      setAlertVariant("error")
+      setAlertMessage(err instanceof Error ? err.message : "Failed to unlink Entra ID")
+    }
+  }, [onUnlinkEntra, onRefresh])
+
 
   useEffect(() => {
     if (users === null) {
@@ -196,7 +224,7 @@ export default function Users({ users, me, onAddUser, onChangePassword, onRefres
             <div className="mb-4">
               <OverviewCard
                 overview={monitoringOverview}
-                title="Users Overview"
+                title={t("usersOverviewTitle", { ns: "pages" })}
                 showCacheStats={false}
               />
             </div>
@@ -234,7 +262,13 @@ export default function Users({ users, me, onAddUser, onChangePassword, onRefres
                 <AlertDescription />
               </Alert>
             ) : null}
-            <UsersTable users={users} me={me} onRequestPasswordChange={openPasswordDialog} />
+            <UsersTable
+              users={users}
+              me={me}
+              onRequestPasswordChange={openPasswordDialog}
+              onLinkEntra={handleLinkEntra}
+              onUnlinkEntra={handleUnlinkEntra}
+            />
           </div>
         </div>
       </div>

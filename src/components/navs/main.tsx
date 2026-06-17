@@ -13,31 +13,42 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
+import { useTranslation } from "react-i18next"
+
+type NavItem = {
+  name?: string
+  nameKey?: string
+  nameNamespace?: "common" | "nav" | "settings"
+  url: string
+  icon: Icon
+}
 
 export function NavMain({
   items,
   label,
+  labelKey,
+  labelNamespace,
   ...props
 }: {
-  items: {
-    name: string
-    url: string
-    icon: Icon
-  }[]
+  items: NavItem[]
   label?: string
+  labelKey?: string
+  labelNamespace?: "common" | "nav" | "settings"
 } & React.ComponentPropsWithoutRef<typeof SidebarGroup>) {
+  const { t } = useTranslation()
+  const resolvedLabel = labelKey ? t(labelKey, { ns: labelNamespace ?? "nav" }) : label
 
   return (
     <SidebarGroup {...props}>
-      {label && <SidebarGroupLabel>{label}</SidebarGroupLabel>}
+      {resolvedLabel && <SidebarGroupLabel>{resolvedLabel}</SidebarGroupLabel>}
       <SidebarGroupContent className="flex flex-col gap-2">
         <SidebarMenu>
           {items.map((item) => (
-            <SidebarMenuItem key={item.name}>
+            <SidebarMenuItem key={`${item.url}-${item.nameKey ?? item.name ?? "item"}`}>
               <SidebarMenuButton asChild>
                 <a href={item.url}>
                   <item.icon />
-                  <span>{item.name}</span>
+                  <span>{item.nameKey ? t(item.nameKey, { ns: item.nameNamespace ?? "nav" }) : item.name ?? ""}</span>
                 </a>
               </SidebarMenuButton>
             </SidebarMenuItem>

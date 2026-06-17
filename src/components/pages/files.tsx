@@ -9,6 +9,8 @@ import {
   useRef
 } from "react"
 
+import { useTranslation } from "react-i18next"
+
 import {
   Check,
   ChevronsUpDown,
@@ -17,7 +19,8 @@ import {
 
 import {
   IconFileSearch,
-  IconPlus
+  IconPlus,
+  IconRefresh
 } from "@tabler/icons-react"
 
 import {
@@ -31,8 +34,10 @@ import type {
   FileSearchParams,
   FileSearchResponse,
   MonitoringOverviewResponse,
-  FileEntry
+  FileEntry,
+  CreateDatasetRequest,
 } from "@/services/neo-api"
+import type { CreateDatasetFormValues } from "@/components/dialogs/create-dataset-dialog"
 import { OverviewCard } from "@/components/cards/overview-card"
 
 import {
@@ -50,6 +55,7 @@ import {
 import {
   cn
 } from "@/lib/utils"
+import { useSettings } from "@/context/settings-context"
 
 import {
   Button
@@ -88,7 +94,7 @@ interface FilesProps {
   onFetchFileMetadata: (shareId: string, fileId: string) => Promise<FileMetadataResponse> // Fix parameter order
   onSearchFiles: (params: FileSearchParams) => Promise<FileSearchResponse>
   onPageChange?: (page: number) => Promise<void>
-  onCreateDataset: (name: string, files: FileEntry[]) => Promise<void>
+  onCreateDataset: (payload: Omit<CreateDatasetRequest, "file_ids">, files: FileEntry[]) => Promise<void>
   onRefresh: () => Promise<void>
   monitoringOverview: MonitoringOverviewResponse | null
   cacheStats?: {
@@ -108,10 +114,12 @@ export default function Files({
   onSearchFiles,
   onPageChange,
   onCreateDataset,
-  // onRefresh, // Unused
+  onRefresh,
   monitoringOverview,
   cacheStats,
 }: FilesProps) {
+  const { t } = useTranslation()
+  const { contentVisibilityEnabled } = useSettings()
   const [open, setOpen] = useState(false)
   const [value, setValue] = useState<string>(NONE_VALUE)
   const [loading, setLoading] = useState(false)
@@ -119,6 +127,7 @@ export default function Files({
   const [createDatasetDialogOpen, setCreateDatasetDialogOpen] = useState(false)
   const [searchResults, setSearchResults] = useState<FileSearchResponse | null>(null)
   const [isSearchMode, setIsSearchMode] = useState(false)
+  const [isRefreshing, setIsRefreshing] = useState(false)
 
   // Sheet state
   const [sheetOpen, setSheetOpen] = useState(false)
@@ -225,10 +234,45 @@ export default function Files({
     setSearchResults(null)
   }
 
-  const handleCreateDataset = async (name: string) => {
+  const handleRefreshTable = async () => {
+    if (isSearchMode) {
+      toast.info("Clear search to refresh the selected share table")
+      return
+    }
+
+    setIsRefreshing(true)
+    setLoading(true)
+
+    try {
+      await onRefresh()
+
+      if (value === NONE_VALUE) {
+        await onSelectShare(null)
+      } else if (value === ALL_VALUE) {
+        await onSelectShare("all")
+      } else {
+        await onSelectShare(value)
+      }
+    } catch {
+      toast.error("Failed to refresh files")
+    } finally {
+      setLoading(false)
+      setIsRefreshing(false)
+    }
+  }
+
+  const handleCreateDataset = async (values: CreateDatasetFormValues) => {
     if (searchResults?.files) {
-      await onCreateDataset(name, searchResults.files)
-      toast.success(`Dataset "${name}" created`)
+      await onCreateDataset(
+        {
+          name: values.name,
+          description: values.description,
+          is_public: values.is_public,
+          acl_override_enabled: values.acl_override_enabled,
+        },
+        searchResults.files
+      )
+      toast.success(`Dataset "${values.name}" created`)
     }
   }
 
@@ -300,6 +344,26 @@ export default function Files({
     }
   }, [selectedShareId, onFetchFileMetadata])
 
+  const metadataWithoutContent = useMemo(() => {
+    if (!metadata) return null
+    const { content, content_chunks, ...rest } = metadata
+    return rest
+  }, [metadata])
+
+  const metadataContent = useMemo(() => {
+    if (!metadata || !contentVisibilityEnabled) return null
+
+    if (metadata.content) {
+      return metadata.content
+    }
+
+    if (metadata.content_chunks?.length) {
+      return metadata.content_chunks.join("")
+    }
+
+    return null
+  }, [metadata, contentVisibilityEnabled])
+
   return (
     <div className="flex flex-1 flex-col">
       <div className="@container/main flex flex-1 flex-col gap-2">
@@ -308,7 +372,7 @@ export default function Files({
             <div className="mb-4">
               <OverviewCard
                 overview={monitoringOverview}
-                title="Data Corpus Overview"
+                title={t("indexOverviewTitle", { ns: "pages" })}
                 variant="files"
                 cacheStats={cacheStats}
                 showCacheStats={false}
@@ -395,10 +459,21 @@ export default function Files({
                 ) : null}
               </div>
 
-              <Button variant="default" onClick={() => setSearchDialogOpen(true)}>
-                <IconFileSearch className="mr-2 size-4" />
-                Search files
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="default" onClick={() => setSearchDialogOpen(true)}>
+                  <IconFileSearch className="mr-2 size-4" />
+                  Search files
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={handleRefreshTable}
+                  disabled={isRefreshing || loading}
+                  aria-label="Refresh files"
+                >
+                  <IconRefresh className={`size-4 ${isRefreshing ? "animate-spin" : ""}`} />
+                </Button>
+              </div>
             </div>
 
             {isSearchMode ? (
@@ -430,6 +505,7 @@ export default function Files({
         open={searchDialogOpen}
         onOpenChange={setSearchDialogOpen}
         onSearch={handleSearch}
+        allowContentVisibility={contentVisibilityEnabled}
       />
 
       <CreateDatasetDialog
@@ -446,7 +522,7 @@ export default function Files({
           setMetadataLoading(false)
         }
       }}>
-        <SheetContent className="w-[90vw] sm:w-[85vw] sm:max-w-[85vw] flex flex-col p-0 gap-0">
+        <SheetContent side="bottom" className="max-h-[95vh] flex flex-col p-0 gap-0">
           <div className="flex-1 overflow-y-auto p-6 flex flex-col">
             <SheetHeader className="mb-4 p-0">
               <SheetTitle>File details</SheetTitle>
@@ -534,27 +610,21 @@ export default function Files({
                       )}
                     </dd>
                   </div>
-                  <div className="sm:col-span-3">
-                    <dt className="font-medium text-foreground">Content</dt>
-                    <dd className="p-1">
-                      {metadata.content ? (
-                        <pre className="mt-1 max-h-200 overflow-auto rounded bg-muted p-2 text-xs">
-                          {metadata.content}
+                  {contentVisibilityEnabled ? (
+                    <div className="sm:col-span-3">
+                      <dt className="font-medium text-foreground">Content</dt>
+                      <dd className="p-1">
+                        <pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs whitespace-pre-wrap break-words">
+                          {metadataContent || "—"}
                         </pre>
-                      ) : metadata.content_chunks && metadata.content_chunks.length > 0 ? (
-                        <pre className="mt-1 max-h-200 overflow-auto rounded bg-muted p-2 text-xs">
-                          {metadata.content_chunks.join("")}
-                        </pre>
-                      ) : (
-                        <pre className="mt-1 max-h-40 overflow-auto rounded bg-muted p-2 text-xs">"—"</pre>
-                      )}
-                    </dd>
-                  </div>
+                      </dd>
+                    </div>
+                  ) : null}
                   <div className="sm:col-span-3">
                     <dt className="font-medium text-foreground">All Fields</dt>
                     <dd className="p-1">
                       <pre className="mt-1 max-h-80 overflow-auto rounded bg-muted p-2 text-xs">
-                        {JSON.stringify(metadata, null, 2)}
+                        {JSON.stringify(contentVisibilityEnabled ? metadata : metadataWithoutContent, null, 2)}
                       </pre>
                     </dd>
                   </div>

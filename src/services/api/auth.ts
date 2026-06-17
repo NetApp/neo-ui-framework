@@ -1,14 +1,24 @@
 // Copyright 2025 NetApp, Inc. All Rights Reserved.
 import { appLogger } from "@/services/app-logger"
 import { AuthenticationError, BaseApiClient } from "./base"
-import type { TokenResponse } from "@/services/models"
+import type {
+  AuthProvidersResponse,
+  TokenResponse,
+  OAuthConfigResponse,
+  UserInfoResponse,
+  GroupsResponse,
+  EntraLinkRequest,
+  EntraLinkResponse,
+  EntraUnlinkRequest,
+  EntraUnlinkResponse,
+} from "@/services/models"
 
 export class AuthApiClient extends BaseApiClient {
   async authenticate(username: string, password: string): Promise<string> {
     appLogger.debug("Attempting authentication", undefined, { username })
 
     try {
-      const response = await fetch(`${this.baseUrl}/token`, {
+      const response = await fetch(this.buildProxyUrl(this.buildBackendPath("/token")), {
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
@@ -70,7 +80,7 @@ export class AuthApiClient extends BaseApiClient {
 
     try {
       await this.requestWithToken<void>(
-        "/logout",
+        this.buildBackendPath("/logout"),
         token,
         { method: "POST" },
         { parseJson: false }
@@ -82,5 +92,65 @@ export class AuthApiClient extends BaseApiClient {
         error instanceof Error ? error.message : "Unknown error"
       )
     }
+  }
+
+  async initiateOAuthLogin() {
+    appLogger.debug("Initiating OAuth login")
+    try {
+      const response = await this.requestBackend<{ authorization_url: string; state?: string }>("/auth/login")
+      if (response && response.authorization_url) {
+        window.location.href = response.authorization_url
+      } else {
+        throw new Error("Authorization URL not found in response")
+      }
+    } catch (error) {
+      appLogger.error("Failed to initiate OAuth login", error instanceof Error ? error.message : "Unknown error")
+      throw error
+    }
+  }
+
+  getOAuthConfig() {
+    return this.requestApiV1<AuthProvidersResponse>("/auth/providers").then((response) => ({
+      enabled: response.providers.length > 0,
+      providers: response.providers,
+    } satisfies OAuthConfigResponse))
+  }
+
+  getUserInfo(token: string) {
+    return this.requestBackendWithToken<UserInfoResponse>("/userinfo", token)
+  }
+
+  getGroups(token: string) {
+    return this.requestBackendWithToken<GroupsResponse>("/auth/groups", token)
+  }
+
+  validateToken(token: string) {
+    return this.getUserInfo(token)
+  }
+
+  getWhoAmI(token: string) {
+    return this.getUserInfo(token)
+  }
+
+  linkEntraIdentity(token: string, payload: EntraLinkRequest) {
+    return this.requestBackendWithToken<EntraLinkResponse>("/auth/link-entra", token, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    })
+  }
+
+  unlinkEntraIdentity(token: string, payload: EntraUnlinkRequest) {
+    return this.requestBackendWithToken<EntraUnlinkResponse>("/auth/unlink-entra", token, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    })
+  }
+
+  refreshAccessToken(token: string) {
+    return this.requestBackendWithToken<TokenResponse>("/auth/refresh", token, {
+      method: "POST"
+    })
   }
 }

@@ -22,7 +22,7 @@ For containerized deployments, configure the Neo API endpoint:
 docker run -e NEO_API=http://neo-backend:8080 neo-ui-framework
 ```
 
-The `entrypoint.sh` script injects this value into nginx configuration at runtime.
+The `entrypoint.sh` script exports this value for Caddy to resolve at runtime.
 
 ## From source
 

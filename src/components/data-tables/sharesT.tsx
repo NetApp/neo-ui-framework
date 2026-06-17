@@ -26,6 +26,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { Button } from "@/components/ui/button"
 
 interface SharesTableProps {
   shares: SharesResponse[] | null
@@ -47,6 +48,7 @@ function getStatusIcon(status: string) {
     case "scheduled":
       return <Clock className="size-4 text-yellow-600" />
     case "warning":
+    case "connection_failed":
       return <AlertCircle className="size-4 text-orange-600" />
     default:
       return null
@@ -67,6 +69,7 @@ function getStatusBadge(status: string) {
     pending: "text-yellow-600 border-yellow-200 dark:text-yellow-400 dark:border-yellow-800",
     scheduled: "text-yellow-600 border-yellow-200 dark:text-yellow-400 dark:border-yellow-800",
     warning: "text-orange-600 border-orange-200 dark:text-orange-400 dark:border-orange-800",
+    connection_failed: "text-orange-600 border-orange-200 dark:text-orange-400 dark:border-orange-800",
   }
 
   return (
@@ -82,9 +85,13 @@ function getStatusBadge(status: string) {
 
 export function SharesTable({ shares, onShareClick }: SharesTableProps) {
   const rows = shares ?? []
+  const rowsPerPage = 100
+  const [currentPage, setCurrentPage] = useState(1)
 
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>({
+    source_id: 110,
     share_path: 300,
+    protocol: 110,
     files: 100,
     username: 150,
     last_crawled: 200,
@@ -155,24 +162,40 @@ export function SharesTable({ shares, onShareClick }: SharesTableProps) {
     }
   }, [handleResizeMove, handleResizeEnd])
 
+  useEffect(() => {
+    const totalPages = Math.max(1, Math.ceil(rows.length / rowsPerPage))
+    setCurrentPage((page) => Math.min(page, totalPages))
+  }, [rows.length])
+
+  const totalPages = Math.max(1, Math.ceil(rows.length / rowsPerPage))
+  const startIndex = (currentPage - 1) * rowsPerPage
+  const paginatedRows = rows.slice(startIndex, startIndex + rowsPerPage)
+
   return (
     <>
       <div className="overflow-hidden rounded-lg border">
         <Table style={{ tableLayout: 'fixed', width: '100%' }}>
           <TableHeader className="sticky top-0 z-10 bg-muted">
             <TableRow>
+              <TableHead style={{ width: columnWidths.source_id, position: 'relative' }}>
+                Id
+                <div
+                  className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-primary/50"
+                  onMouseDown={(e) => handleResizeStart(e, 'source_id')}
+                />
+              </TableHead>
+              <TableHead style={{ width: columnWidths.protocol, position: 'relative' }}>
+                Protocol
+                <div
+                  className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-primary/50"
+                  onMouseDown={(e) => handleResizeStart(e, 'protocol')}
+                />
+              </TableHead>
               <TableHead style={{ width: columnWidths.share_path, position: 'relative' }}>
-                Share Path
+                Path
                 <div
                   className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-primary/50"
                   onMouseDown={(e) => handleResizeStart(e, 'share_path')}
-                />
-              </TableHead>
-              <TableHead style={{ width: columnWidths.files, position: 'relative' }}>
-                Files
-                <div
-                  className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-primary/50"
-                  onMouseDown={(e) => handleResizeStart(e, 'files')}
                 />
               </TableHead>
               <TableHead style={{ width: columnWidths.username, position: 'relative' }}>
@@ -189,6 +212,13 @@ export function SharesTable({ shares, onShareClick }: SharesTableProps) {
                   onMouseDown={(e) => handleResizeStart(e, 'last_crawled')}
                 />
               </TableHead>
+              <TableHead style={{ width: columnWidths.files, position: 'relative' }}>
+                Files
+                <div
+                  className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-primary/50"
+                  onMouseDown={(e) => handleResizeStart(e, 'files')}
+                />
+              </TableHead>
               <TableHead style={{ width: columnWidths.status, position: 'relative' }}>
                 Status
                 <div
@@ -199,26 +229,28 @@ export function SharesTable({ shares, onShareClick }: SharesTableProps) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {rows.length ? (
-              rows.map((share) => (
+            {paginatedRows.length ? (
+              paginatedRows.map((share) => (
                 <TableRow
                   key={share.id}
                   onClick={() => onShareClick(share.id)}
                   className="cursor-pointer hover:bg-muted/50"
                   data-id={share.id}
                 >
+                  <TableCell className="truncate" title={share.id}>{share.id.slice(0, 7)}</TableCell>
+                  <TableCell className="truncate">{(share.protocol ?? "smb").toUpperCase()}</TableCell>
                   <TableCell className="truncate" title={share.share_path}>{share.share_path}</TableCell>
-                  <TableCell className="truncate">{share.last_crawl_file_count}</TableCell>
                   <TableCell className="truncate" title={share.username}>{share.username}</TableCell>
                   <TableCell className="truncate">
                     {share.last_crawled ? new Date(share.last_crawled).toLocaleString() : "—"}
                   </TableCell>
+                  <TableCell className="truncate">{share.last_crawl_file_count}</TableCell>
                   <TableCell className="truncate">{getStatusBadge(share.status)}</TableCell>
                 </TableRow >
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">
+                <TableCell colSpan={7} className="text-center text-sm text-muted-foreground">
                   No shares available.
                 </TableCell>
               </TableRow>
@@ -227,6 +259,31 @@ export function SharesTable({ shares, onShareClick }: SharesTableProps) {
           </TableBody >
         </Table >
       </div >
+      {rows.length > 0 ? (
+        <div className="flex items-center justify-between space-x-2 py-4">
+          <div className="text-muted-foreground flex-1 text-sm">
+            Showing {startIndex + 1}-{Math.min(startIndex + paginatedRows.length, rows.length)} of {rows.length.toLocaleString()} shares · Page {currentPage} of {totalPages}
+          </div>
+          <div className="space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+              disabled={currentPage === 1}
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+              disabled={currentPage === totalPages}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      ) : null}      
     </>
   )
 }

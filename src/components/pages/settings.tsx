@@ -14,10 +14,11 @@ import {
 } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useSettings } from "@/context/settings-context"
+import { useTranslation } from "react-i18next"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
@@ -47,31 +48,41 @@ import {
 import { toast } from "sonner"
 import { Save } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Spinner } from "@/components/ui/spinner"
 import type { LogLevel } from "@/services/app-logger"
 import type { MonitoringOverviewResponse } from "@/services/neo-api"
+import type { McpInfoResponse } from "@/services/models"
 import { OverviewCard } from "@/components/cards/overview-card"
 import { useSearchParams } from "react-router-dom"
 import { useNeoApi } from "@/hooks/useNeoApi"
 import { NeoApiService } from "@/services/neo-api"
 import { Separator } from "@/components/ui/separator"
+import { SUPPORTED_LOCALES, type AppLocale } from "@/i18n"
 
 interface SettingsProps {
     monitoringOverview: MonitoringOverviewResponse | null
-    cacheStats?: {
-        sizeBytes: number
-        items: number
-    }
+    state: ReturnType<typeof useNeoApi>["state"]
+    handlers: ReturnType<typeof useNeoApi>["handlers"]
 }
 
-export default function Settings({ monitoringOverview }: SettingsProps) {
-    const { monitoringTtl, filesTtl, cacheMaxSize, logLevel, updateSettings } = useSettings()
-    const { state, handlers } = useNeoApi()
+export default function Settings({ monitoringOverview, state, handlers }: SettingsProps) {
+    const { monitoringTtl, filesTtl, cacheMaxSize, logLevel, locale, contentVisibilityEnabled, updateSettings } = useSettings()
+    const { t } = useTranslation()
+
+    const getSetupGraph = handlers.getSetupGraph
+    const getSetupProxy = handlers.getSetupProxy
+    const getSetupSsl = handlers.getSetupSsl
+    const getMcpInfo = handlers.getMcpInfo
+    const getSetupMcpOauth = handlers.getSetupMcpOauth
+
     const [searchParams, setSearchParams] = useSearchParams()
 
     const [localMonitoringTtl, setLocalMonitoringTtl] = useState(monitoringTtl)
     const [localFilesTtl, setLocalFilesTtl] = useState(filesTtl)
     const [localCacheMaxSize, setLocalCacheMaxSize] = useState(cacheMaxSize)
     const [localLogLevel, setLocalLogLevel] = useState<LogLevel>(logLevel)
+    const [localLocale, setLocalLocale] = useState<AppLocale>(locale)
+    const [localContentVisibilityEnabled, setLocalContentVisibilityEnabled] = useState(contentVisibilityEnabled)
 
     // Setup Status State
     const [isResetting, setIsResetting] = useState(false)
@@ -93,25 +104,48 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
     const [licenseSaveResult, setLicenseSaveResult] = useState<{ success: boolean; message: string } | null>(null)
 
     // M365 Copilot Graph Setup State
-    const [tenantId, setTenantId] = useState("your-tenant-id")
-    const [clientId, setClientId] = useState("your-client-id")
-    const [clientSecret, setClientSecret] = useState("your-client-secret")
-    const [connectorId, setConnectorId] = useState("netappneo")
-    const [connectorName, setConnectorName] = useState("NetApp NEO Connector")
-    const [connectorDescription, setConnectorDescription] = useState("The connector contains information contained in the on premises or on-prem file share server. This drive is called J drive and this contains documents and files. These are of type DOC, DOCM, DOCX, DOT, DOTX, EML, GIF, HTML, JPEG, JPG, MHT, MHTML, MSG, NWS, OBD, OBT, ODP, ODS, ODT, ONE, PDF, PNG, POT, PPS, PPT, PPTM, PPTX, TXT, XLB, XLC, XLSB, XLS, XLSX, XLT, XLXM, XML, XPS, and ZIP.")
+    const [graphConfigured, setGraphConfigured] = useState(false)
+    const [tenantId, setTenantId] = useState("")
+    const [clientId, setClientId] = useState("")
+    const [clientSecret, setClientSecret] = useState("")
+    const [connectorId, setConnectorId] = useState("")
+    const [connectorName, setConnectorName] = useState("")
+    const [connectorDescription, setConnectorDescription] = useState("")
+    const [clientSecretSet, setClientSecretSet] = useState(false)
     const [graphSaveResult, setGraphSaveResult] = useState<{ success: boolean; message: string } | null>(null)
 
     // Proxy Setup State
+    const [proxyConfigured, setProxyConfigured] = useState(false)
     const [proxyUrl, setProxyUrl] = useState("")
     const [proxyUsername, setProxyUsername] = useState("")
     const [proxyPassword, setProxyPassword] = useState("")
+    const [proxyPasswordSet, setProxyPasswordSet] = useState(false)
     const [proxySaveResult, setProxySaveResult] = useState<{ success: boolean; message: string } | null>(null)
 
     // SSL Setup State
-    const [verifySsl, setVerifySsl] = useState(true)
+    const [sslConfigured, setSslConfigured] = useState(false)
+    const [verifySsl, setVerifySsl] = useState(false)
     const [sslTimeout, setSslTimeout] = useState(30)
     const [caCertificate, setCaCertificate] = useState("")
+    const [allowLegacyCertificates, setAllowLegacyCertificates] = useState(false)
+    const [customCaCertConfigured, setCustomCaCertConfigured] = useState(false)    
     const [sslSaveResult, setSslSaveResult] = useState<{ success: boolean; message: string } | null>(null)
+
+    // NER Settings State
+    const [nerEnabled, setNerEnabled] = useState(false)
+    const [nerModel, setNerModel] = useState("")
+    const [nerBatchSize, setNerBatchSize] = useState(32)
+    const [nerConfidenceThreshold, setNerConfidenceThreshold] = useState(0.7)
+    const [nerDevice, setNerDevice] = useState("")
+    const [nerSaveResult, setNerSaveResult] = useState<{ success: boolean; message: string } | null>(null)
+    const [isLoadingNerSettings, setIsLoadingNerSettings] = useState(true)
+
+    const getErrorMessage = (error: unknown, fallback: string) => {
+        if (error instanceof Error && error.message) {
+            return error.message
+        }
+        return fallback
+    }
 
     // Sync local state with context when context changes (e.g. initial load)
     useEffect(() => {
@@ -119,7 +153,185 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
         setLocalFilesTtl(filesTtl)
         setLocalCacheMaxSize(cacheMaxSize)
         setLocalLogLevel(logLevel)
-    }, [monitoringTtl, filesTtl, cacheMaxSize, logLevel])
+        setLocalLocale(locale)
+        setLocalContentVisibilityEnabled(contentVisibilityEnabled)
+    }, [monitoringTtl, filesTtl, cacheMaxSize, logLevel, locale, contentVisibilityEnabled])
+
+    const [mcpInfo, setMcpInfo] = useState<McpInfoResponse | null>(null)
+    const [mcpOauthConfigured, setMcpOauthConfigured] = useState(false)
+    const [mcpOauthTenantId, setMcpOauthTenantId] = useState("")
+    const [mcpOauthClientId, setMcpOauthClientId] = useState("")
+    const [mcpOauthClientSecret, setMcpOauthClientSecret] = useState("")
+    const [mcpOauthAudience, setMcpOauthAudience] = useState("")
+    const [mcpOauthClientSecretSet, setMcpOauthClientSecretSet] = useState(false)
+    const [isRefreshingMcpOauth, setIsRefreshingMcpOauth] = useState(false)
+    const [mcpOauthSaveResult, setMcpOauthSaveResult] = useState<{ success: boolean; message: string } | null>(null)
+
+    const loadMcpOauthSettings = async () => {
+        setIsRefreshingMcpOauth(true)
+        try {
+            const response = await getSetupMcpOauth()
+
+            setMcpOauthConfigured(Boolean(response.mcp_oauth_configured))
+            setMcpOauthTenantId(response.tenant_id ?? "")
+            setMcpOauthClientId(response.client_id ?? "")
+            setMcpOauthAudience(response.audience ?? "")
+            setMcpOauthClientSecret("")
+            setMcpOauthClientSecretSet(Boolean(response.client_secret_set))
+            return true
+        } catch {
+            setMcpOauthConfigured(false)
+            setMcpOauthClientSecretSet(false)
+            return false
+        } finally {
+            setIsRefreshingMcpOauth(false)
+        }
+    }
+
+    useEffect(() => {
+        let isCancelled = false
+
+        const loadSetupGraphConfig = async () => {
+            try {
+                const response = await getSetupGraph()
+                if (isCancelled) return
+
+                setGraphConfigured(Boolean(response.graph_configured))
+                setTenantId(response.tenant_id ?? "")
+                setClientId(response.client_id ?? "")
+                setConnectorId(response.connector_id ?? "")
+                setConnectorName(response.connector_name ?? "")
+                setConnectorDescription(response.connector_description ?? "")
+                setClientSecret("")
+                setClientSecretSet(Boolean(response.client_secret_set))
+            } catch {
+                if (isCancelled) return
+                setGraphConfigured(false)
+                setClientSecretSet(false)
+            }
+        }
+
+        loadSetupGraphConfig()
+
+        return () => {
+            isCancelled = true
+        }
+    }, [getSetupGraph])
+
+    useEffect(() => {
+        let isCancelled = false
+
+        const loadSetupProxyConfig = async () => {
+            try {
+                const response = await getSetupProxy()
+                if (isCancelled) return
+
+                setProxyConfigured(Boolean(response.proxy_configured))
+                setProxyUrl(response.proxy_url ?? "")
+                setProxyUsername(response.proxy_username ?? "")
+                setProxyPassword("")
+                setProxyPasswordSet(Boolean(response.proxy_password_set))
+            } catch {
+                if (isCancelled) return
+                setProxyConfigured(false)
+                setProxyPasswordSet(false)
+            }
+        }
+
+        loadSetupProxyConfig()
+
+        return () => {
+            isCancelled = true
+        }
+    }, [getSetupProxy])
+
+    useEffect(() => {
+        let isCancelled = false
+
+        const loadSetupSslConfig = async () => {
+            try {
+                const response = await getSetupSsl()
+                if (isCancelled) return
+
+                setSslConfigured(Boolean(response.custom_ca_certificate_configured))
+                setVerifySsl(response.verify_ssl)
+                setSslTimeout(response.timeout)
+                setAllowLegacyCertificates(response.allow_legacy_certificates)
+                setCustomCaCertConfigured(response.custom_ca_certificate_configured)
+                setCaCertificate("")
+            } catch {
+                // keep defaults if endpoint unavailable
+            }
+        }
+
+        loadSetupSslConfig()
+
+        return () => {
+            isCancelled = true
+        }
+    }, [getSetupSsl])
+
+    useEffect(() => {
+        let isCancelled = false
+
+        const loadNERSettings = async () => {
+            if (!state.token) return
+            try {
+                setIsLoadingNerSettings(true)
+                const api = new NeoApiService()
+                const settings = await api.getNERSettings(state.token)
+                if (isCancelled) return
+
+                setNerEnabled(settings.enabled ?? false)
+                setNerModel(settings.model ?? "")
+                setNerBatchSize(settings.batch_size ?? 32)
+                setNerConfidenceThreshold(settings.confidence_threshold ?? 0.7)
+                setNerDevice(settings.device ?? "")
+            } catch (error) {
+                if (isCancelled) return
+                console.error("Failed to load NER settings:", error)
+            } finally {
+                setIsLoadingNerSettings(false)
+            }
+        }
+
+        loadNERSettings()
+
+        return () => {
+            isCancelled = true
+        }
+    }, [state.token])
+
+    useEffect(() => {
+        const fetchMcpInfo = async () => {
+            try {
+                const info = await getMcpInfo()
+                setMcpInfo(info)
+            } catch (error) {
+                console.error("Failed to fetch MCP Info. Error:", error)
+            }
+        }
+        if (state.token) {
+            fetchMcpInfo()
+        }
+    }, [state.token, getMcpInfo])
+
+    useEffect(() => {
+        let isCancelled = false
+
+        const loadInitialMcpOauthSettings = async () => {
+            const loaded = await loadMcpOauthSettings()
+            if (isCancelled || loaded) return
+            setMcpOauthConfigured(false)
+            setMcpOauthClientSecretSet(false)
+        }
+
+        loadInitialMcpOauthSettings()
+
+        return () => {
+            isCancelled = true
+        }
+    }, [getSetupMcpOauth])
 
     const handleSave = () => {
         updateSettings({
@@ -127,8 +339,16 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
             filesTtl: Number(localFilesTtl),
             cacheMaxSize: Number(localCacheMaxSize),
             logLevel: localLogLevel,
+            locale: localLocale,
+            contentVisibilityEnabled: localContentVisibilityEnabled,
         })
-        toast.success("Settings saved successfully")
+        toast.success(t("settingsSaved", { ns: "settings" }))
+    }
+
+    const handleLocaleChange = (nextLocale: string) => {
+        const resolvedLocale = nextLocale as AppLocale
+        setLocalLocale(resolvedLocale)
+        updateSettings({ locale: resolvedLocale })
     }
 
     // Setup Handlers
@@ -152,8 +372,8 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
                     window.location.reload()
                 }, 1500)
             }
-        } catch (error) {
-            setResetResult({ success: false, message: "Failed to reset setup." })
+        } catch {
+            setResetResult({ success: false, message: t("failedResetSetup", { ns: "settings" }) })
         } finally {
             setIsResetting(false)
         }
@@ -166,15 +386,15 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
         try {
             const response = await handlers.completeSetup()
             if (response.success) {
-                setCompleteResult({ success: true, message: "Setup completed successfully. Application will restart automatically in 30 seconds." })
+                setCompleteResult({ success: true, message: t("setupCompletedSuccessRestart", { ns: "settings" }) })
                 setTimeout(() => {
                     window.location.reload()
                 }, 30000)
             } else {
-                setCompleteResult({ success: false, message: response.message || "Failed to complete setup." })
+                setCompleteResult({ success: false, message: response.message || t("failedCompleteSetup", { ns: "settings" }) })
             }
-        } catch (error) {
-            setCompleteResult({ success: false, message: "Failed to complete setup." })
+        } catch  {
+            setCompleteResult({ success: false, message: t("failedCompleteSetup", { ns: "settings" }) })
         } finally {
             setIsCompleting(false)
         }
@@ -186,10 +406,11 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
             const response = await handlers.getInitialCredentials()
             setCredentialsInit(response)
             setIsCredentialsDialogOpen(true)
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Failed to fetch initial credentials", error)
             // Check for 403 Forbidden which indicates credentials have been used
-            if (error?.status === 403 || error?.response?.status === 403 || error?.message?.includes("403")) {
+            const errorLike = error as { status?: number; response?: { status?: number }; message?: string }            
+            if (errorLike.status === 403 || errorLike.response?.status === 403 || errorLike.message?.includes("403")) {
                 setIsExpiredDialogOpen(true)
             }
         } finally {
@@ -200,15 +421,15 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
     const handleUpdatePassword = async () => {
         setPasswordError(null)
         if (!newPassword || !confirmPassword) {
-            setPasswordError("Please enter both password fields.")
+            setPasswordError(t("pleaseEnterBothPasswordFields", { ns: "settings" }))
             return
         }
         if (newPassword !== confirmPassword) {
-            setPasswordError("Passwords do not match.")
+            setPasswordError(t("passwordsDoNotMatch", { ns: "settings" }))
             return
         }
         if (!credentialsInit?.username || !credentialsInit?.password) {
-            setPasswordError("Initial credentials not found.")
+            setPasswordError(t("initialCredentialsNotFound", { ns: "settings" }))
             return
         }
 
@@ -227,9 +448,9 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
             setIsCredentialsDialogOpen(false)
             setNewPassword("")
             setConfirmPassword("")
-            toast.success("Password updated successfully. You can now log in.")
-        } catch (error: any) {
-            setPasswordError(error.message || "Failed to update password.")
+            toast.success(t("passwordUpdatedLogin", { ns: "settings" }))
+        } catch (error: unknown) {
+            setPasswordError(getErrorMessage(error, t("failedUpdatePassword", { ns: "settings" })))
         } finally {
             setIsUpdatingPassword(false)
         }
@@ -242,7 +463,7 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
     const handleSaveLicense = async () => {
         setLicenseSaveResult(null)
         if (!licenseKey) {
-            setLicenseSaveResult({ success: false, message: "Please enter a license key." })
+            setLicenseSaveResult({ success: false, message: t("pleaseEnterLicenseKey", { ns: "settings" }) })
             return
         }
 
@@ -255,15 +476,19 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
                     window.location.reload()
                 }, 1500)
             } else {
-                setLicenseSaveResult({ success: false, message: response.message || "License setup failed." })
+                setLicenseSaveResult({ success: false, message: response.message || t("licenseSetupFailed", { ns: "settings" }) })
             }
-        } catch (error) {
-            setLicenseSaveResult({ success: false, message: "Failed to configure license." })
+        } catch {
+            setLicenseSaveResult({ success: false, message: t("failedConfigureLicense", { ns: "settings" }) })
         }
     }
 
     const handleSaveGraph = async () => {
         setGraphSaveResult(null)
+        if (!clientSecret.trim()) {
+            setGraphSaveResult({ success: false, message: t("clientSecretRequired", { ns: "settings" }) })
+            return
+        }        
         const payload = {
             tenant_id: tenantId,
             client_id: clientId,
@@ -276,34 +501,116 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
         try {
             const response = await handlers.setupGraph(payload)
             if (response.success) {
-                setGraphSaveResult({ success: true, message: response.message || "Graph configured successfully." })
+                setGraphSaveResult({ success: true, message: response.message || t("graphConfiguredSuccessfully", { ns: "settings" }) })
                 setTimeout(() => {
                     window.location.reload()
                 }, 1500)
             } else {
-                setGraphSaveResult({ success: false, message: response.message || "Graph setup failed." })
+                setGraphSaveResult({ success: false, message: response.message || t("graphSetupFailed", { ns: "settings" }) })
             }
-        } catch (error) {
-            setGraphSaveResult({ success: false, message: "Failed to configure Graph." })
+        } catch {
+            setGraphSaveResult({ success: false, message: t("failedConfigureGraph", { ns: "settings" }) })
         }
     }
 
     const handleSaveProxy = async () => {
         setProxySaveResult(null)
-        // Placeholder implementation
-        setProxySaveResult({ success: true, message: "Proxy settings saved (placeholder)." })
+        const payload: { proxy_url: string; proxy_username?: string; proxy_password?: string } = {
+            proxy_url: proxyUrl,
+        }
+        if (proxyUsername) payload.proxy_username = proxyUsername
+        if (proxyPassword) payload.proxy_password = proxyPassword
+
+        try {
+            const response = await handlers.setupProxy(payload)
+            if (response.success) {
+                setProxySaveResult({ success: true, message: response.message || t("proxySettingsSavedSuccessfully", { ns: "settings" }) })
+                setTimeout(() => {
+                    window.location.reload()
+                }, 1500)
+            } else {
+                setProxySaveResult({ success: false, message: response.message || t("proxySetupFailed", { ns: "settings" }) })
+            }
+        } catch {
+            setProxySaveResult({ success: false, message: t("failedConfigureProxySettings", { ns: "settings" }) })
+        }
+    }
+
+    const handleSaveSSL = async () => {
+        setSslSaveResult(null)
+        // POST /api/v1/setup/ssl endpoint to be implemented when backend supports it.
+        setSslSaveResult({ success: true, message: t("sslSettingsSavedPlaceholder", { ns: "settings" }) })
         setTimeout(() => {
             window.location.reload()
         }, 1500)
     }
 
-    const handleSaveSSL = async () => {
-        setSslSaveResult(null)
-        // Placeholder implementation
-        setSslSaveResult({ success: true, message: "SSL settings saved (placeholder)." })
-        setTimeout(() => {
-            window.location.reload()
-        }, 1500)
+    const handleSaveNERSettings = async () => {
+        if (!state.token) {
+            setNerSaveResult({ success: false, message: "Authentication token not available" })
+            return
+        }
+        setNerSaveResult(null)
+        try {
+            const api = new NeoApiService()
+            // Only include fields with actual values, send null for empty strings
+            const settings = {
+                enabled: nerEnabled,
+                model: nerModel.trim() || null,
+                batch_size: nerBatchSize,
+                confidence_threshold: nerConfidenceThreshold,
+                device: nerDevice.trim() || null,
+            }
+            await api.updateNERSettings(state.token, settings)
+            setNerSaveResult({ success: true, message: t("nerSettingsSaved", { ns: "settings" }) })
+        } catch (error) {
+            const message = getErrorMessage(error, t("failedSaveNERSettings", { ns: "settings" }))
+            setNerSaveResult({ success: false, message })
+        }
+    }
+
+    const handleSaveMcpOauth = async () => {
+        setMcpOauthSaveResult(null)
+
+        if (!mcpOauthTenantId.trim() || !mcpOauthClientId.trim() || !mcpOauthClientSecret.trim()) {
+            setMcpOauthSaveResult({
+                success: false,
+                message: "Tenant ID, Client ID, and Client Secret are required.",
+            })
+            return
+        }
+
+        const payload = {
+            tenant_id: mcpOauthTenantId.trim(),
+            client_id: mcpOauthClientId.trim(),
+            client_secret: mcpOauthClientSecret,
+            audience: mcpOauthAudience.trim() || null,
+        }
+
+        try {
+            const response = await handlers.setupMcpOauth(payload)
+            if (response.success) {
+                setMcpOauthSaveResult({
+                    success: true,
+                    message: response.message || "MCP OAuth configured successfully.",
+                })
+                const refreshed = await loadMcpOauthSettings()
+                if (!refreshed) {
+                    setMcpOauthClientSecret("")
+                    setMcpOauthClientSecretSet(true)
+                }
+            } else {
+                setMcpOauthSaveResult({
+                    success: false,
+                    message: response.message || "Failed to configure MCP OAuth.",
+                })
+            }
+        } catch (error) {
+            setMcpOauthSaveResult({
+                success: false,
+                message: getErrorMessage(error, "Failed to configure MCP OAuth."),
+            })
+        }
     }
 
     const currentTab = searchParams.get("tab") || "neo-core"
@@ -321,7 +628,7 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
                         <div className="space-y-6">
                             <OverviewCard
                                 overview={monitoringOverview}
-                                title="Settings"
+                                title={t("pageTitle", { ns: "settings" })}
                                 showCacheStats={false}
                             />
 
@@ -331,9 +638,13 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
                                 className="w-full"
                             >
                                 <TabsList>
-                                    <TabsTrigger value="neo-core">Neo Core Setup</TabsTrigger>
-                                    <TabsTrigger value="cache">Cache Configuration</TabsTrigger>
-                                    <TabsTrigger value="logging">Logging Configuration</TabsTrigger>
+                                    <TabsTrigger value="neo-core">Core</TabsTrigger>
+                                    <TabsTrigger value="neo-mcp">MCP</TabsTrigger>
+                                    <TabsTrigger value="ner">NER</TabsTrigger>
+                                    <TabsTrigger value="content-visibility">Privacy</TabsTrigger>
+                                    <TabsTrigger value="cache">Cache</TabsTrigger>
+                                    <TabsTrigger value="languages">{t("languagesTab", { ns: "settings" })}</TabsTrigger>
+                                    <TabsTrigger value="logging">Logs</TabsTrigger>
                                 </TabsList>
                                 <TabsContent value="neo-core">
                                     <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
@@ -342,10 +653,10 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
                                             <CardHeader>
                                                 <CardTitle className="flex items-center gap-2">
                                                     <Activity className="h-5 w-5" />
-                                                    Neo Core Setup
+                                                    {t("neoCoreTitle", { ns: "settings" })}
                                                 </CardTitle>
                                                 <CardDescription>
-                                                    Configure and monitor the status of the Neo Core connector.
+                                                    {t("neoCoreDescription", { ns: "settings" })}
                                                 </CardDescription>
                                             </CardHeader>
                                             <CardContent className="space-y-6">
@@ -356,7 +667,7 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
                                                         <div className="space-y-2">
                                                             <div className="flex items-center gap-2">
                                                                 <Activity className="h-4 w-4 text-muted-foreground" />
-                                                                <span className="text-sm font-medium">Status</span>
+                                                                <span className="text-sm font-medium">{t("statusLabel", { ns: "settings" })}</span>
                                                             </div>
                                                             <div>
                                                                 <Badge
@@ -366,7 +677,7 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
                                                                         : "text-orange-600 border-orange-200 dark:text-orange-400 dark:border-orange-800"
                                                                         } px-3 py-1`}
                                                                 >
-                                                                    {setupStatus.setup_complete ? "Complete" : "In Progress"}
+                                                                    {setupStatus.setup_complete ? t("completeStatus", { ns: "settings" }) : t("inProgressStatus", { ns: "settings" })}
                                                                 </Badge>
                                                             </div>
                                                         </div>
@@ -375,20 +686,20 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
                                                         <div className="space-y-2">
                                                             <div className="flex items-center gap-2">
                                                                 <ListChecks className="h-4 w-4 text-muted-foreground" />
-                                                                <span className="text-sm font-medium">Steps</span>
+                                                                <span className="text-sm font-medium">{t("stepsLabel", { ns: "settings" })}</span>
                                                             </div>
                                                             <div className="flex items-center gap-2">
                                                                 <span className="text-xl font-bold">
                                                                     {stepsCompletedCount} / {requiredStepsCount}
                                                                 </span>
-                                                                <span className="text-sm text-muted-foreground">Required</span>
+                                                                <span className="text-sm text-muted-foreground">{t("requiredLabel", { ns: "settings" })}</span>
                                                             </div>
                                                         </div>
 
                                                         {/* Database Status */}
                                                         <div className="space-y-2">
                                                             <div className="flex items-center gap-2">
-                                                                <span className="text-sm font-medium">Infrastructure</span>
+                                                                <span className="text-sm font-medium">{t("infrastructureLabel", { ns: "settings" })}</span>
                                                             </div>
                                                             <div className="flex items-center gap-2 text-sm">
                                                                 <div className={`h-2.5 w-2.5 rounded-full ${setupStatus.database_configured
@@ -396,7 +707,7 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
                                                                     : "bg-red-500"
                                                                     }`} />
                                                                 <span className={setupStatus.database_configured ? "text-foreground font-medium" : "text-muted-foreground"}>
-                                                                    Database Configured
+                                                                    {t("databaseConfigured", { ns: "settings" })}
                                                                 </span>
                                                             </div>
                                                         </div>
@@ -414,13 +725,13 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
                                                             ? "bg-green-500"
                                                             : "bg-red-500"
                                                             }`} />
-                                                        <h4 className="text-sm font-medium">License Key</h4>
+                                                        <h4 className="text-sm font-medium">{t("licenseKeyHeading", { ns: "settings" })}</h4>
                                                     </div>
 
                                                     {licenseSaveResult && (
                                                         <Alert variant={licenseSaveResult.success ? "default" : "destructive"} className={licenseSaveResult.success ? "border-green-500 text-green-600 dark:border-green-500 dark:text-green-500" : ""}>
                                                             {licenseSaveResult.success ? <IconCheck className="h-4 w-4" /> : <IconAlertTriangle className="h-4 w-4" />}
-                                                            <AlertTitle>{licenseSaveResult.success ? "Success" : "Error"}</AlertTitle>
+                                                            <AlertTitle>{licenseSaveResult.success ? t("successTitle", { ns: "settings" }) : t("errorTitle", { ns: "settings" })}</AlertTitle>
                                                             <AlertDescription>
                                                                 {licenseSaveResult.message}
                                                             </AlertDescription>
@@ -432,10 +743,10 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
                                                                 id="license-key"
                                                                 value={licenseKey}
                                                                 onChange={(e) => setLicenseKey(e.target.value)}
-                                                                placeholder="Enter license key..."
+                                                                placeholder={t("licenseKeyPlaceholder", { ns: "settings" })}
                                                                 type="password"
                                                             />
-                                                            <Button onClick={handleSaveLicense}>Save</Button>
+                                                            <Button onClick={handleSaveLicense}>{t("saveButton", { ns: "settings" })}</Button>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -447,14 +758,11 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
                                                     <AccordionItem value="m365">
                                                         <AccordionTrigger>
                                                             <div className="flex items-center gap-2">
-                                                                <div className={`h-2.5 w-2.5 rounded-full ${setupStatus?.steps_completed.includes("graph") || setupStatus?.steps_completed.includes("m365")
-                                                                    ? "bg-green-500"
-                                                                    : "bg-red-500"
-                                                                    }`} />
+                                                                <div className={`h-2.5 w-2.5 rounded-full ${graphConfigured ? "bg-green-500" : "bg-red-500"}`} />
                                                                 <div className="flex flex-col items-start text-left">
-                                                                    <h4 className="text-sm font-medium">M365 Copilot Graph Setup (optional)</h4>
+                                                                    <h4 className="text-sm font-medium">{t("m365Heading", { ns: "settings" })}</h4>
                                                                     <p className="text-xs text-muted-foreground font-normal">
-                                                                        Configure settings for Microsoft 365 Copilot Graph integration.
+                                                                        {t("m365Description", { ns: "settings" })}
                                                                     </p>
                                                                 </div>
                                                             </div>
@@ -464,14 +772,14 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
                                                                 {graphSaveResult && (
                                                                     <Alert variant={graphSaveResult.success ? "default" : "destructive"} className={graphSaveResult.success ? "border-green-500 text-green-600 dark:border-green-500 dark:text-green-500" : ""}>
                                                                         {graphSaveResult.success ? <IconCheck className="h-4 w-4" /> : <IconAlertTriangle className="h-4 w-4" />}
-                                                                        <AlertTitle>{graphSaveResult.success ? "Success" : "Error"}</AlertTitle>
+                                                                        <AlertTitle>{graphSaveResult.success ? t("successTitle", { ns: "settings" }) : t("errorTitle", { ns: "settings" })}</AlertTitle>
                                                                         <AlertDescription>
                                                                             {graphSaveResult.message}
                                                                         </AlertDescription>
                                                                     </Alert>
                                                                 )}
                                                                 <div className="space-y-4">
-                                                                    <h4 className="text-xs font-medium uppercase text-muted-foreground">Required Fields</h4>
+                                                                    <h4 className="text-xs font-medium uppercase text-muted-foreground">{t("requiredFields", { ns: "settings" })}</h4>
                                                                     <div className="grid gap-4 md:grid-cols-3">
                                                                         <div className="grid gap-2">
                                                                             <Label htmlFor="tenant-id">Tenant ID</Label>
@@ -490,20 +798,21 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
                                                                             />
                                                                         </div>
                                                                         <div className="grid gap-2">
-                                                                            <Label htmlFor="client-secret">Client Secret</Label>
+                                                                            <Label htmlFor="client-secret">Client Secret (Enter again to Save)</Label>
                                                                             <Input
                                                                                 id="client-secret"
                                                                                 type="password"
                                                                                 value={clientSecret}
                                                                                 onChange={(e) => setClientSecret(e.target.value)}
                                                                             />
+                                                                            {clientSecretSet}          
                                                                         </div>
                                                                     </div>
                                                                 </div>
 
                                                                 <div className="space-y-4">
-                                                                    <h4 className="text-xs font-medium uppercase text-muted-foreground">Optional Fields</h4>
-                                                                    <div className="grid gap-4 md:grid-cols-3">
+                                                                    <h4 className="text-xs font-medium uppercase text-muted-foreground">{t("optionalFields", { ns: "settings" })}</h4>
+                                                                    <div className="grid gap-4 md:grid-cols-2">
                                                                         <div className="grid gap-2">
                                                                             <Label htmlFor="connector-id">Connector ID</Label>
                                                                             <Input
@@ -522,16 +831,17 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
                                                                         </div>
                                                                         <div className="grid gap-2">
                                                                             <Label htmlFor="connector-description">Connector Description</Label>
-                                                                            <Input
+                                                                            <Textarea
                                                                                 id="connector-description"
                                                                                 value={connectorDescription}
                                                                                 onChange={(e) => setConnectorDescription(e.target.value)}
+                                                                                className="min-h-[140px] resize-y"
                                                                             />
                                                                         </div>
                                                                     </div>
                                                                 </div>
                                                                 <div className="flex justify-end">
-                                                                    <Button onClick={handleSaveGraph}>Save M365 Settings</Button>
+                                                                    <Button onClick={handleSaveGraph}>{t("saveM365Settings", { ns: "settings" })}</Button>
                                                                 </div>
                                                             </div>
                                                         </AccordionContent>
@@ -541,14 +851,11 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
                                                     <AccordionItem value="proxy">
                                                         <AccordionTrigger>
                                                             <div className="flex items-center gap-2">
-                                                                <div className={`h-2.5 w-2.5 rounded-full ${setupStatus?.steps_completed.includes("proxy")
-                                                                    ? "bg-green-500"
-                                                                    : "bg-red-500"
-                                                                    }`} />
+                                                                <div className={`h-2.5 w-2.5 rounded-full ${proxyConfigured ? "bg-green-500" : "bg-red-500"}`} />
                                                                 <div className="flex flex-col items-start text-left">
-                                                                    <h4 className="text-sm font-medium">Proxy Setup (optional)</h4>
+                                                                    <h4 className="text-sm font-medium">{t("proxyHeading", { ns: "settings" })}</h4>
                                                                     <p className="text-xs text-muted-foreground font-normal">
-                                                                        Configure proxy settings for outbound connections.
+                                                                        {t("proxyDescription", { ns: "settings" })}
                                                                     </p>
                                                                 </div>
                                                             </div>
@@ -558,7 +865,7 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
                                                                 {proxySaveResult && (
                                                                     <Alert variant={proxySaveResult.success ? "default" : "destructive"} className={proxySaveResult.success ? "border-green-500 text-green-600 dark:border-green-500 dark:text-green-500" : ""}>
                                                                         {proxySaveResult.success ? <IconCheck className="h-4 w-4" /> : <IconAlertTriangle className="h-4 w-4" />}
-                                                                        <AlertTitle>{proxySaveResult.success ? "Success" : "Error"}</AlertTitle>
+                                                                        <AlertTitle>{proxySaveResult.success ? t("successTitle", { ns: "settings" }) : t("errorTitle", { ns: "settings" })}</AlertTitle>
                                                                         <AlertDescription>
                                                                             {proxySaveResult.message}
                                                                         </AlertDescription>
@@ -590,10 +897,15 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
                                                                             value={proxyPassword}
                                                                             onChange={(e) => setProxyPassword(e.target.value)}
                                                                         />
+                                                                        {proxyPasswordSet && (
+                                                                            <p className="text-xs text-muted-foreground">
+                                                                                Existing password is already configured. Leave blank to keep current password.
+                                                                            </p>
+                                                                        )}                                                                        
                                                                     </div>
                                                                 </div>
                                                                 <div className="flex justify-end">
-                                                                    <Button onClick={handleSaveProxy}>Save Proxy Settings</Button>
+                                                                    <Button onClick={handleSaveProxy}>{t("saveProxySettings", { ns: "settings" })}</Button>
                                                                 </div>
                                                             </div>
                                                         </AccordionContent>
@@ -603,14 +915,11 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
                                                     <AccordionItem value="ssl">
                                                         <AccordionTrigger>
                                                             <div className="flex items-center gap-2">
-                                                                <div className={`h-2.5 w-2.5 rounded-full ${setupStatus?.steps_completed.includes("ssl") || setupStatus?.steps_completed.includes("certificate")
-                                                                    ? "bg-green-500"
-                                                                    : "bg-red-500"
-                                                                    }`} />
+                                                                   <div className={`h-2.5 w-2.5 rounded-full ${sslConfigured ? "bg-green-500" : "bg-red-500"}`} />
                                                                 <div className="flex flex-col items-start text-left">
-                                                                    <h4 className="text-sm font-medium">SSL Setup (optional)</h4>
+                                                                    <h4 className="text-sm font-medium">{t("sslHeading", { ns: "settings" })}</h4>
                                                                     <p className="text-xs text-muted-foreground font-normal">
-                                                                        Configure SSL/TLS settings for secure connections.
+                                                                        {t("sslDescription", { ns: "settings" })}
                                                                     </p>
                                                                 </div>
                                                             </div>
@@ -620,7 +929,7 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
                                                                 {sslSaveResult && (
                                                                     <Alert variant={sslSaveResult.success ? "default" : "destructive"} className={sslSaveResult.success ? "border-green-500 text-green-600 dark:border-green-500 dark:text-green-500" : ""}>
                                                                         {sslSaveResult.success ? <IconCheck className="h-4 w-4" /> : <IconAlertTriangle className="h-4 w-4" />}
-                                                                        <AlertTitle>{sslSaveResult.success ? "Success" : "Error"}</AlertTitle>
+                                                                        <AlertTitle>{sslSaveResult.success ? t("successTitle", { ns: "settings" }) : t("errorTitle", { ns: "settings" })}</AlertTitle>
                                                                         <AlertDescription>
                                                                             {sslSaveResult.message}
                                                                         </AlertDescription>
@@ -634,7 +943,14 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
                                                                     />
                                                                     <Label htmlFor="verify-ssl">Verify SSL Certificates</Label>
                                                                 </div>
-
+                                                                <div className="flex items-center space-x-2">
+                                                                    <Switch
+                                                                        id="allow-legacy-certificates"
+                                                                        checked={allowLegacyCertificates}
+                                                                        onCheckedChange={setAllowLegacyCertificates}
+                                                                    />
+                                                                    <Label htmlFor="allow-legacy-certificates">Allow Legacy Certificates</Label>
+                                                                </div>
                                                                 <div className="grid gap-2">
                                                                     <Label htmlFor="ssl-timeout">Timeout (seconds)</Label>
                                                                     <Input
@@ -655,24 +971,29 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
                                                                         placeholder="-----BEGIN CERTIFICATE-----..."
                                                                         className="min-h-[100px] font-mono text-xs"
                                                                     />
+                                                                    {customCaCertConfigured && (
+                                                                        <p className="text-xs text-muted-foreground">
+                                                                            A custom CA certificate is already configured. Paste a new certificate above to replace it.
+                                                                        </p>
+                                                                    )}               
                                                                 </div>
                                                                 <div className="flex justify-end">
-                                                                    <Button onClick={handleSaveSSL}>Save SSL Settings</Button>
+                                                                    <Button onClick={handleSaveSSL}>{t("saveSslSettings", { ns: "settings" })}</Button>
                                                                 </div>
                                                             </div>
                                                         </AccordionContent>
                                                     </AccordionItem>
                                                 </Accordion>
 
-                                                <Separator />
+                                                {/* <Separator /> */}
 
                                                 {/* Reset and Complete Section */}
-                                                {(setupStatus && (
+                                                {setupStatus && (
                                                     <div className="pt-4 space-y-4">
                                                         {resetResult && (
                                                             <Alert variant={resetResult.success ? "default" : "destructive"} className={resetResult.success ? "border-green-500 text-green-600 dark:border-green-500 dark:text-green-500" : ""}>
                                                                 {resetResult.success ? <CheckCircle2 className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
-                                                                <AlertTitle>{resetResult.success ? "Success" : "Error"}</AlertTitle>
+                                                                <AlertTitle>{resetResult.success ? t("successTitle", { ns: "settings" }) : t("errorTitle", { ns: "settings" })}</AlertTitle>
                                                                 <AlertDescription>
                                                                     {resetResult.message}
                                                                 </AlertDescription>
@@ -681,151 +1002,363 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
                                                         {completeResult && (
                                                             <Alert variant={completeResult.success ? "default" : "destructive"} className={completeResult.success ? "border-green-500 text-green-600 dark:border-green-500 dark:text-green-500" : ""}>
                                                                 {completeResult.success ? <CheckCircle2 className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
-                                                                <AlertTitle>{completeResult.success ? "Success" : "Error"}</AlertTitle>
+                                                                <AlertTitle>{completeResult.success ? t("successTitle", { ns: "settings" }) : t("errorTitle", { ns: "settings" })}</AlertTitle>
                                                                 <AlertDescription>
                                                                     {completeResult.message}
                                                                 </AlertDescription>
                                                             </Alert>
                                                         )}
-                                                        <div className="flex gap-2">
-                                                            {setupStatus.setup_complete ? (
-                                                                <>
-                                                                    <Button
-                                                                        className="flex-1"
-                                                                        onClick={handleGetCredentials}
-                                                                        disabled={isFetchingCredentials}
-                                                                    >
-                                                                        {isFetchingCredentials ? "Fetching Credentials..." : "Admin Credentials"}
-                                                                    </Button>
+                                                    </div>
+                                                )}
+                                            </CardContent>
 
-                                                                    <Dialog open={isCredentialsDialogOpen} onOpenChange={setIsCredentialsDialogOpen}>
-                                                                        <DialogContent>
-                                                                            <DialogHeader>
-                                                                                <DialogTitle>Initial Admin Credentials</DialogTitle>
-                                                                                <DialogDescription className="text-red-500 font-medium">
-                                                                                    Please change this password immediately after logging in. This endpoint will be disabled after first login.
-                                                                                </DialogDescription>
-                                                                            </DialogHeader>
-                                                                            <div className="bg-slate-950 p-4 rounded-md font-mono text-sm space-y-2">
-                                                                                <div className="flex justify-between items-center">
-                                                                                    <span className="text-slate-400">Username:</span>
-                                                                                    <span className="text-white">{credentialsInit?.username}</span>
-                                                                                </div>
-                                                                                <div className="flex justify-between items-center">
-                                                                                    <span className="text-slate-400">Password:</span>
-                                                                                    <div className="flex items-center gap-2">
-                                                                                        <span className="text-white">{credentialsInit?.password}</span>
-                                                                                        <button onClick={() => credentialsInit?.password && copyToClipboard(credentialsInit.password)} className="text-slate-400 hover:text-white transition-colors">
-                                                                                            <IconCopy size={16} />
-                                                                                        </button>
-                                                                                    </div>
-                                                                                </div>
+                                            {setupStatus && (
+                                                <CardFooter className="flex justify-end gap-2 border-t p-6">
+                                                    {setupStatus.setup_complete ? (
+                                                        <>
+                                                            <Button
+                                                                onClick={handleGetCredentials}
+                                                                disabled={isFetchingCredentials}
+                                                            >
+                                                                {isFetchingCredentials ? t("fetchingCredentials", { ns: "settings" }) : t("adminCredentials", { ns: "settings" })}
+                                                            </Button>
+
+                                                            <Dialog open={isCredentialsDialogOpen} onOpenChange={setIsCredentialsDialogOpen}>
+                                                                <DialogContent>
+                                                                    <DialogHeader>
+                                                                        <DialogTitle>{t("initialAdminCredentials", { ns: "settings" })}</DialogTitle>
+                                                                        <DialogDescription className="text-red-500 font-medium">
+                                                                            {t("initialAdminCredentialsWarning", { ns: "settings" })}
+                                                                        </DialogDescription>
+                                                                    </DialogHeader>
+                                                                    <div className="bg-slate-950 p-4 rounded-md font-mono text-sm space-y-2">
+                                                                        <div className="flex justify-between items-center">
+                                                                            <span className="text-slate-400">{t("usernameLabel", { ns: "settings" })}</span>
+                                                                            <span className="text-white">{credentialsInit?.username}</span>
+                                                                        </div>
+                                                                        <div className="flex justify-between items-center">
+                                                                            <span className="text-slate-400">{t("passwordLabel", { ns: "settings" })}</span>
+                                                                            <div className="flex items-center gap-2">
+                                                                                <span className="text-white">{credentialsInit?.password}</span>
+                                                                                <button onClick={() => credentialsInit?.password && copyToClipboard(credentialsInit.password)} className="text-slate-400 hover:text-white transition-colors">
+                                                                                    <IconCopy size={16} />
+                                                                                </button>
                                                                             </div>
+                                                                        </div>
+                                                                    </div>
 
-                                                                            <Separator className="my-4" />
+                                                                    <Separator className="my-4" />
 
-                                                                            <div className="space-y-4">
-                                                                                <div className="space-y-2">
-                                                                                    <Label htmlFor="new-password">New Password</Label>
-                                                                                    <Input
-                                                                                        id="new-password"
-                                                                                        type="password"
-                                                                                        value={newPassword}
-                                                                                        onChange={(e) => setNewPassword(e.target.value)}
-                                                                                        placeholder="Enter new password"
-                                                                                    />
-                                                                                </div>
-                                                                                <div className="space-y-2">
-                                                                                    <Label htmlFor="confirm-password">Confirm Password</Label>
-                                                                                    <Input
-                                                                                        id="confirm-password"
-                                                                                        type="password"
-                                                                                        value={confirmPassword}
-                                                                                        onChange={(e) => setConfirmPassword(e.target.value)}
-                                                                                        placeholder="Confirm new password"
-                                                                                    />
-                                                                                </div>
-                                                                                {passwordError && (
-                                                                                    <p className="text-sm text-destructive font-medium">{passwordError}</p>
-                                                                                )}
-                                                                                <Button
-                                                                                    className="w-full bg-green-600 hover:bg-green-700"
-                                                                                    onClick={handleUpdatePassword}
-                                                                                    disabled={isUpdatingPassword}
-                                                                                >
-                                                                                    {isUpdatingPassword ? "Updating Password..." : "Update Password"}
-                                                                                </Button>
-                                                                            </div>
-                                                                            <DialogFooter>
-                                                                                <Button onClick={() => setIsCredentialsDialogOpen(false)} variant="outline">Close</Button>
-                                                                            </DialogFooter>
-                                                                        </DialogContent>
-                                                                    </Dialog>
+                                                                    <div className="space-y-4">
+                                                                        <div className="space-y-2">
+                                                                            <Label htmlFor="new-password">{t("newPasswordLabel", { ns: "settings" })}</Label>
+                                                                            <Input
+                                                                                id="new-password"
+                                                                                type="password"
+                                                                                value={newPassword}
+                                                                                onChange={(e) => setNewPassword(e.target.value)}
+                                                                                placeholder={t("newPasswordPlaceholder", { ns: "settings" })}
+                                                                            />
+                                                                        </div>
+                                                                        <div className="space-y-2">
+                                                                            <Label htmlFor="confirm-password">{t("confirmPasswordLabel", { ns: "settings" })}</Label>
+                                                                            <Input
+                                                                                id="confirm-password"
+                                                                                type="password"
+                                                                                value={confirmPassword}
+                                                                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                                                                placeholder={t("confirmPasswordPlaceholder", { ns: "settings" })}
+                                                                            />
+                                                                        </div>
+                                                                        {passwordError && (
+                                                                            <p className="text-sm text-destructive font-medium">{passwordError}</p>
+                                                                        )}
+                                                                        <Button
+                                                                            className="w-full bg-green-600 hover:bg-green-700"
+                                                                            onClick={handleUpdatePassword}
+                                                                            disabled={isUpdatingPassword}
+                                                                        >
+                                                                            {isUpdatingPassword ? t("updatingPassword", { ns: "settings" }) : t("updatePassword", { ns: "settings" })}
+                                                                        </Button>
+                                                                    </div>
+                                                                    <DialogFooter>
+                                                                        <Button onClick={() => setIsCredentialsDialogOpen(false)} variant="outline">{t("closeButton", { ns: "settings" })}</Button>
+                                                                    </DialogFooter>
+                                                                </DialogContent>
+                                                            </Dialog>
 
-                                                                    <Dialog open={isExpiredDialogOpen} onOpenChange={setIsExpiredDialogOpen}>
-                                                                        <DialogContent>
-                                                                            <DialogHeader>
-                                                                                <DialogTitle className="flex items-center gap-2 text-destructive">
-                                                                                    <AlertTriangle className="h-5 w-5" />
-                                                                                    Credentials Expired
-                                                                                </DialogTitle>
-                                                                                <DialogDescription>
-                                                                                    The initial admin credentials have already been used and cannot be recovered.
-                                                                                    <br /><br />
-                                                                                    If you have lost your password, you will need to perform a factory reset to restore access.
-                                                                                </DialogDescription>
-                                                                            </DialogHeader>
-                                                                            <DialogFooter>
-                                                                                <Button variant="outline" onClick={() => setIsExpiredDialogOpen(false)}>Close</Button>
-                                                                            </DialogFooter>
-                                                                        </DialogContent>
-                                                                    </Dialog>
-                                                                </>
-                                                            ) : (
-                                                                <>
-                                                                    <Button
-                                                                        variant="destructive"
-                                                                        size="sm"
-                                                                        onClick={handleReset}
-                                                                        className="flex-1"
-                                                                        disabled={isResetting || isCompleting}
-                                                                    >
-                                                                        {isResetting ? "Resetting..." : "Reset Setup"}
-                                                                    </Button>
+                                                            <Dialog open={isExpiredDialogOpen} onOpenChange={setIsExpiredDialogOpen}>
+                                                                <DialogContent>
+                                                                    <DialogHeader>
+                                                                        <DialogTitle className="flex items-center gap-2 text-destructive">
+                                                                            <AlertTriangle className="h-5 w-5" />
+                                                                            {t("credentialsExpiredTitle", { ns: "settings" })}
+                                                                        </DialogTitle>
+                                                                        <DialogDescription>
+                                                                            {t("credentialsExpiredDescription", { ns: "settings" })}
+                                                                            <br /><br />
+                                                                            {t("credentialsExpiredResetHint", { ns: "settings" })}
+                                                                        </DialogDescription>
+                                                                    </DialogHeader>
+                                                                    <DialogFooter>
+                                                                        <Button variant="outline" onClick={() => setIsExpiredDialogOpen(false)}>{t("closeButton", { ns: "settings" })}</Button>
+                                                                    </DialogFooter>
+                                                                </DialogContent>
+                                                            </Dialog>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Button
+                                                                variant="destructive"
+                                                                size="sm"
+                                                                onClick={handleReset}
+                                                                disabled={isResetting || isCompleting}
+                                                            >
+                                                                {isResetting ? t("resetting", { ns: "settings" }) : t("resetSetup", { ns: "settings" })}
+                                                            </Button>
 
-                                                                    {setupStatus.steps_completed.includes("license") && (
-                                                                        <Dialog open={isCompleteDialogOpen} onOpenChange={setIsCompleteDialogOpen}>
-                                                                            <DialogTrigger asChild>
-                                                                                <Button
-                                                                                    variant="default"
-                                                                                    size="sm"
-                                                                                    className="flex-1 bg-green-600 hover:bg-green-700"
-                                                                                    disabled={isResetting || isCompleting}
-                                                                                >
-                                                                                    {isCompleting ? "Completing..." : "Setup Completed"}
-                                                                                </Button>
-                                                                            </DialogTrigger>
-                                                                            <DialogContent>
-                                                                                <DialogHeader>
-                                                                                    <DialogTitle>Complete Setup & Restart?</DialogTitle>
-                                                                                    <DialogDescription>
-                                                                                        This will conclude the setup of Neo Core and trigger a restart of the container with the current configuration.
-                                                                                    </DialogDescription>
-                                                                                </DialogHeader>
-                                                                                <DialogFooter>
-                                                                                    <Button variant="outline" onClick={() => setIsCompleteDialogOpen(false)}>Cancel</Button>
-                                                                                    <Button onClick={handleCompleteSetup} className="bg-green-600 hover:bg-green-700">Confirm & Restart</Button>
-                                                                                </DialogFooter>
-                                                                            </DialogContent>
-                                                                        </Dialog>
-                                                                    )}
-                                                                </>
+                                                            {setupStatus.steps_completed.includes("license") && (
+                                                                <Dialog open={isCompleteDialogOpen} onOpenChange={setIsCompleteDialogOpen}>
+                                                                    <DialogTrigger asChild>
+                                                                        <Button
+                                                                            variant="default"
+                                                                            size="sm"
+                                                                            className="bg-green-600 hover:bg-green-700"
+                                                                            disabled={isResetting || isCompleting}
+                                                                        >
+                                                                            {isCompleting ? t("completing", { ns: "settings" }) : t("setupCompleted", { ns: "settings" })}
+                                                                        </Button>
+                                                                    </DialogTrigger>
+                                                                    <DialogContent>
+                                                                        <DialogHeader>
+                                                                            <DialogTitle>{t("completeSetupRestartTitle", { ns: "settings" })}</DialogTitle>
+                                                                            <DialogDescription>
+                                                                                {t("completeSetupRestartDescription", { ns: "settings" })}
+                                                                            </DialogDescription>
+                                                                        </DialogHeader>
+                                                                        <DialogFooter>
+                                                                            <Button variant="outline" onClick={() => setIsCompleteDialogOpen(false)}>{t("cancelButton", { ns: "settings" })}</Button>
+                                                                            <Button onClick={handleCompleteSetup} className="bg-green-600 hover:bg-green-700">{t("confirmRestart", { ns: "settings" })}</Button>
+                                                                        </DialogFooter>
+                                                                    </DialogContent>
+                                                                </Dialog>
+                                                            )}
+                                                        </>
+                                                    )}
+                                                </CardFooter>
+                                            )}
+                                        </Card>
+                                    </div>
+                                </TabsContent>
+                                <TabsContent value="neo-mcp">
+                                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
+                                        <Card className="col-span-1 lg:col-span-3">
+                                            <CardHeader>
+                                                <CardTitle className="flex items-center gap-2">
+                                                    <Activity className="h-5 w-5" />
+                                                    {t("mcpTitle", { ns: "settings" })}
+                                                </CardTitle>
+                                                <CardDescription>
+                                                    {t("mcpDescription", { ns: "settings" })}
+                                                </CardDescription>
+                                            </CardHeader>
+                                            <CardContent className="space-y-6">
+                                                <div className="space-y-4 rounded-lg border p-4">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className={`h-2.5 w-2.5 rounded-full ${mcpOauthConfigured ? "bg-green-500" : "bg-red-500"}`} />
+                                                        <h4 className="text-sm font-medium">MCP OAuth Configuration</h4>
+                                                    </div>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        Configure OAuth credentials for MCP clients. This uses the setup endpoint /api/v1/setup/mcp.
+                                                    </p>
+
+                                                    {mcpOauthSaveResult && (
+                                                        <Alert
+                                                            variant={mcpOauthSaveResult.success ? "default" : "destructive"}
+                                                            className={mcpOauthSaveResult.success ? "border-green-500 text-green-600 dark:border-green-500 dark:text-green-500" : ""}
+                                                        >
+                                                            {mcpOauthSaveResult.success ? <IconCheck className="h-4 w-4" /> : <IconAlertTriangle className="h-4 w-4" />}
+                                                            <AlertTitle>{mcpOauthSaveResult.success ? t("successTitle", { ns: "settings" }) : t("errorTitle", { ns: "settings" })}</AlertTitle>
+                                                            <AlertDescription>{mcpOauthSaveResult.message}</AlertDescription>
+                                                        </Alert>
+                                                    )}
+
+                                                    <div className="grid gap-4 md:grid-cols-2">
+                                                        <div className="grid gap-2">
+                                                            <Label htmlFor="mcp-oauth-tenant-id">Tenant ID</Label>
+                                                            <Input
+                                                                id="mcp-oauth-tenant-id"
+                                                                value={mcpOauthTenantId}
+                                                                onChange={(e) => setMcpOauthTenantId(e.target.value)}
+                                                                placeholder="your-tenant-id"
+                                                            />
+                                                        </div>
+                                                        <div className="grid gap-2">
+                                                            <Label htmlFor="mcp-oauth-client-id">Client ID</Label>
+                                                            <Input
+                                                                id="mcp-oauth-client-id"
+                                                                value={mcpOauthClientId}
+                                                                onChange={(e) => setMcpOauthClientId(e.target.value)}
+                                                                placeholder="your-mcp-client-id"
+                                                            />
+                                                        </div>
+                                                        <div className="grid gap-2">
+                                                            <Label htmlFor="mcp-oauth-client-secret">Client Secret</Label>
+                                                            <Input
+                                                                id="mcp-oauth-client-secret"
+                                                                type="password"
+                                                                value={mcpOauthClientSecret}
+                                                                onChange={(e) => setMcpOauthClientSecret(e.target.value)}
+                                                                placeholder="Enter client secret"
+                                                            />
+                                                            {mcpOauthClientSecretSet && (
+                                                                <p className="text-xs text-muted-foreground">
+                                                                    A client secret is already configured. Enter a new one only if you want to rotate it.
+                                                                </p>
                                                             )}
                                                         </div>
+                                                        <div className="grid gap-2">
+                                                            <Label htmlFor="mcp-oauth-audience">Audience (Optional)</Label>
+                                                            <Input
+                                                                id="mcp-oauth-audience"
+                                                                value={mcpOauthAudience}
+                                                                onChange={(e) => setMcpOauthAudience(e.target.value)}
+                                                                placeholder="api://your-mcp-client-id"
+                                                            />
+                                                        </div>
                                                     </div>
-                                                ))}
 
+                                                    <div className="flex justify-end">
+                                                        <div className="flex items-center gap-2">
+                                                            <Button
+                                                                type="button"
+                                                                variant="outline"
+                                                                onClick={() => {
+                                                                    void loadMcpOauthSettings()
+                                                                }}
+                                                                disabled={isRefreshingMcpOauth}
+                                                            >
+                                                                {isRefreshingMcpOauth ? "Refreshing..." : "Refresh"}
+                                                            </Button>
+                                                            <Button onClick={handleSaveMcpOauth}>Save MCP OAuth Settings</Button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <Separator />
+
+                                                {mcpInfo ? (
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                        <div className="space-y-4">
+                                                            <div>
+                                                                <h4 className="text-sm font-medium text-muted-foreground">{t("nameLabel", { ns: "settings" })}</h4>
+                                                                <p className="text-sm">{mcpInfo.name}</p>
+                                                            </div>
+                                                            <div>
+                                                                <h4 className="text-sm font-medium text-muted-foreground">{t("versionLabel", { ns: "settings" })}</h4>
+                                                                <p className="text-sm">{mcpInfo.version}</p>
+                                                            </div>
+                                                            <div>
+                                                                <h4 className="text-sm font-medium text-muted-foreground">{t("protocolVersionLabel", { ns: "settings" })}</h4>
+                                                                <p className="text-sm">{mcpInfo.protocol_version}</p>
+                                                            </div>
+                                                            <div>
+                                                                <h4 className="text-sm font-medium text-muted-foreground">{t("transportLabel", { ns: "settings" })}</h4>
+                                                                <p className="text-sm capitalize">{mcpInfo.transport.replace('-', ' ')}</p>
+                                                            </div>
+                                                            <div className="flex items-center gap-2 pt-2">
+                                                                <h4 className="text-sm font-medium text-muted-foreground">{t("oauthEnabledLabel", { ns: "settings" })}</h4>
+                                                                <Badge variant={mcpInfo.oauth_enabled ? "default" : "secondary"}>
+                                                                    {mcpInfo.oauth_enabled ? t("yesLabel", { ns: "settings" }) : t("noLabel", { ns: "settings" })}
+                                                                </Badge>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="space-y-4">
+                                                            <div>
+                                                                <h4 className="text-sm font-medium text-muted-foreground mb-2">{t("availableTools", { ns: "settings" })}</h4>
+                                                                <div className="flex flex-wrap gap-2">
+                                                                    {mcpInfo.tools.map((tool) => (
+                                                                        <Badge key={tool} variant="outline" className="bg-muted/50">
+                                                                            {tool}
+                                                                        </Badge>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                            <div>
+                                                                <h4 className="text-sm font-medium text-muted-foreground mb-2">{t("endpointsLabel", { ns: "settings" })}</h4>
+                                                                <div className="space-y-2">
+                                                                    {Object.entries(mcpInfo.endpoints).map(([key, url]) => (
+                                                                        <div key={key} className="flex flex-col gap-1">
+                                                                            <span className="text-xs uppercase text-muted-foreground">{key.replace('_', ' ')}</span>
+                                                                            <div className="flex items-center justify-between rounded-md border bg-muted p-2">
+                                                                                <code className="text-xs truncate max-w-[80%]">{url as string}</code>
+                                                                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => copyToClipboard(url as string)}>
+                                                                                    <IconCopy className="h-3 w-3" />
+                                                                                </Button>
+                                                                            </div>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex items-center justify-center p-8 text-muted-foreground">
+                                                        {t("fetchingMcpInformation", { ns: "settings" })}
+                                                    </div>
+                                                )}
                                             </CardContent>
+                                            {mcpInfo?.oauth_enabled && (
+                                                <CardFooter className="flex justify-end border-t p-6">
+                                                    <Button onClick={handlers.handleOAuthLogin}>
+                                                        {t("retrieveMcpToken", { ns: "settings" })}
+                                                    </Button>
+                                                </CardFooter>
+                                            )}
+                                        </Card>
+                                    </div>
+                                </TabsContent>
+                                <TabsContent value="content-visibility">
+                                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
+                                        <Card className="col-span-1 lg:col-span-3">
+                                            <CardHeader>
+                                                <CardTitle>{t("contentVisibilityTitle", { ns: "settings" })}</CardTitle>
+                                                <CardDescription>
+                                                    {t("contentVisibilityDescription", { ns: "settings" })}
+                                                </CardDescription>
+                                            </CardHeader>
+                                            <CardContent className="space-y-5">
+                                                <Alert variant="destructive">
+                                                    <IconAlertTriangle className="h-4 w-4" />
+                                                    <AlertTitle>{t("contentVisibilityWarningTitle", { ns: "settings" })}</AlertTitle>
+                                                    <AlertDescription>
+                                                        {t("contentVisibilityWarningDescription", { ns: "settings" })}
+                                                    </AlertDescription>
+                                                </Alert>
+
+                                                <div className="flex flex-row items-center justify-between rounded-lg border p-4">
+                                                    <div className="space-y-1 pr-6">
+                                                        <Label htmlFor="content-visibility-toggle" className="text-sm font-medium">
+                                                            {t("contentVisibilityToggleLabel", { ns: "settings" })}
+                                                        </Label>
+                                                        <p className="text-sm text-muted-foreground">
+                                                            {t("contentVisibilityToggleHint", { ns: "settings" })}
+                                                        </p>
+                                                    </div>
+                                                    <Switch
+                                                        id="content-visibility-toggle"
+                                                        checked={localContentVisibilityEnabled}
+                                                        onCheckedChange={setLocalContentVisibilityEnabled}
+                                                    />
+                                                </div>
+                                            </CardContent>
+                                            <div className="border-t p-6 flex justify-end">
+                                                <Button onClick={handleSave}>
+                                                    <Save className="mr-2 size-4" />
+                                                    {t("saveChanges", { ns: "settings" })}
+                                                </Button>
+                                            </div>
                                         </Card>
                                     </div>
                                 </TabsContent>
@@ -833,9 +1366,9 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
                                     <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
                                         <Card className="col-span-1 lg:col-span-3">
                                             <CardHeader>
-                                                <CardTitle>Cache Configuration</CardTitle>
+                                                <CardTitle>{t("cacheTitle", { ns: "settings" })}</CardTitle>
                                                 <CardDescription>
-                                                    Manage the performance and memory usage of the application cache.
+                                                    {t("cacheDescription", { ns: "settings" })}
                                                 </CardDescription>
                                             </CardHeader>
                                             <CardContent className="space-y-4">
@@ -884,7 +1417,7 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
                                             <div className="border-t p-6 flex justify-end">
                                                 <Button onClick={handleSave}>
                                                     <Save className="mr-2 size-4" />
-                                                    Save Changes
+                                                    {t("saveChanges", { ns: "settings" })}
                                                 </Button>
                                             </div>
                                         </Card>
@@ -894,9 +1427,9 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
                                     <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
                                         <Card className="col-span-1 lg:col-span-3">
                                             <CardHeader>
-                                                <CardTitle>Logging Configuration</CardTitle>
+                                                <CardTitle>{t("loggingTitle", { ns: "settings" })}</CardTitle>
                                                 <CardDescription>
-                                                    Control the verbosity of application logs.
+                                                    {t("loggingDescription", { ns: "settings" })}
                                                 </CardDescription>
                                             </CardHeader>
                                             <CardContent className="space-y-4">
@@ -926,6 +1459,156 @@ export default function Settings({ monitoringOverview }: SettingsProps) {
                                                 <Button onClick={handleSave}>
                                                     <Save className="mr-2 size-4" />
                                                     Save Changes
+                                                </Button>
+                                            </div>
+                                        </Card>
+                                    </div>
+                                </TabsContent>
+                                <TabsContent value="languages">
+                                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
+                                        <Card className="col-span-1 lg:col-span-3">
+                                            <CardHeader>
+                                                <CardTitle>{t("languagesTab", { ns: "settings" })}</CardTitle>
+                                                <CardDescription>
+                                                    {t("languageDescription", { ns: "settings" })}
+                                                </CardDescription>
+                                            </CardHeader>
+                                            <CardContent className="space-y-4">
+                                                <div className="grid gap-2">
+                                                    <Label htmlFor="display-language">{t("languageLabel", { ns: "settings" })}</Label>
+                                                    <Select value={localLocale} onValueChange={handleLocaleChange}>
+                                                        <SelectTrigger id="display-language">
+                                                            <SelectValue placeholder={t("language")} />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            {SUPPORTED_LOCALES.map((localeOption) => (
+                                                                <SelectItem key={localeOption} value={localeOption}>
+                                                                    {t(`languageOption_${localeOption}`)}
+                                                                </SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <p className="text-sm text-muted-foreground">
+                                                        {t("languageSaveHint", { ns: "settings" })}
+                                                    </p>
+                                                </div>
+                                            </CardContent>
+                                            <div className="border-t p-6 flex justify-end">
+                                                <Button onClick={handleSave}>
+                                                    <Save className="mr-2 size-4" />
+                                                    {t("saveChanges", { ns: "settings" })}
+                                                </Button>
+                                            </div>
+                                        </Card>
+                                    </div>
+                                </TabsContent>
+                                <TabsContent value="ner">
+                                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
+                                        <Card className="col-span-1 lg:col-span-3">
+                                            <CardHeader>
+                                                <CardTitle>{t("nerSettingsTitle", { ns: "settings" })}</CardTitle>
+                                                <CardDescription>
+                                                    {t("nerSettingsDescription", { ns: "settings" })}
+                                                </CardDescription>
+                                            </CardHeader>
+                                            {nerSaveResult && (
+                                                <CardContent className="pt-4">
+                                                    <Alert variant={nerSaveResult.success ? "default" : "destructive"}>
+                                                        {nerSaveResult.success ? (
+                                                            <CheckCircle2 className="h-4 w-4" />
+                                                        ) : (
+                                                            <AlertTriangle className="h-4 w-4" />
+                                                        )}
+                                                        <AlertTitle>
+                                                            {nerSaveResult.success ? t("success", { ns: "settings" }) : t("error", { ns: "settings" })}
+                                                        </AlertTitle>
+                                                        <AlertDescription>{nerSaveResult.message}</AlertDescription>
+                                                    </Alert>
+                                                </CardContent>
+                                            )}
+                                            <CardContent className="space-y-6">
+                                                {isLoadingNerSettings ? (
+                                                    <div className="flex items-center justify-center py-8">
+                                                        <Spinner className="h-5 w-5" />
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        <div className="flex items-center gap-4">
+                                                            <Label htmlFor="ner-enabled">{t("nerEnabled", { ns: "settings" })}</Label>
+                                                            <Switch
+                                                                id="ner-enabled"
+                                                                checked={nerEnabled}
+                                                                onCheckedChange={setNerEnabled}
+                                                            />
+                                                        </div>
+
+                                                        <div className="space-y-2">
+                                                            <Label htmlFor="ner-model">{t("nerModel", { ns: "settings" })}</Label>
+                                                            <Input
+                                                                id="ner-model"
+                                                                placeholder="e.g., en_core_web_sm"
+                                                                value={nerModel}
+                                                                onChange={(e) => setNerModel(e.target.value)}
+                                                            />
+                                                            <p className="text-sm text-muted-foreground">
+                                                                {t("nerModelDescription", { ns: "settings" })}
+                                                            </p>
+                                                        </div>
+
+                                                        <div className="space-y-2">
+                                                            <Label htmlFor="ner-batch-size">{t("nerBatchSize", { ns: "settings" })}</Label>
+                                                            <Input
+                                                                id="ner-batch-size"
+                                                                type="number"
+                                                                min="1"
+                                                                max="512"
+                                                                value={nerBatchSize}
+                                                                onChange={(e) => setNerBatchSize(Number(e.target.value))}
+                                                            />
+                                                            <p className="text-sm text-muted-foreground">
+                                                                {t("nerBatchSizeDescription", { ns: "settings" })}
+                                                            </p>
+                                                        </div>
+
+                                                        <div className="space-y-2">
+                                                            <Label htmlFor="ner-confidence">{t("nerConfidenceThreshold", { ns: "settings" })}</Label>
+                                                            <Input
+                                                                id="ner-confidence"
+                                                                type="number"
+                                                                min="0"
+                                                                max="1"
+                                                                step="0.01"
+                                                                value={nerConfidenceThreshold}
+                                                                onChange={(e) => setNerConfidenceThreshold(Number(e.target.value))}
+                                                            />
+                                                            <p className="text-sm text-muted-foreground">
+                                                                {t("nerConfidenceDescription", { ns: "settings" })}
+                                                            </p>
+                                                        </div>
+
+                                                        <div className="space-y-2">
+                                                            <Label htmlFor="ner-device">{t("nerDevice", { ns: "settings" })}</Label>
+                                                            <Select value={nerDevice} onValueChange={setNerDevice}>
+                                                                <SelectTrigger id="ner-device">
+                                                                    <SelectValue placeholder={t("selectDevice", { ns: "settings" })} />
+                                                                </SelectTrigger>
+                                                                <SelectContent>
+                                                                    <SelectItem value="auto">Auto</SelectItem>
+                                                                    <SelectItem value="cpu">CPU</SelectItem>
+                                                                    <SelectItem value="cuda">CUDA (NVIDIA GPU)</SelectItem>
+                                                                </SelectContent>
+                                                            </Select>
+                                                            <p className="text-sm text-muted-foreground">
+                                                                {t("nerDeviceDescription", { ns: "settings" })}
+                                                            </p>
+                                                        </div>
+                                                    </>
+                                                )}
+                                            </CardContent>
+                                            <div className="border-t p-6 flex justify-end">
+                                                <Button onClick={handleSaveNERSettings} disabled={isLoadingNerSettings}>
+                                                    <Save className="mr-2 size-4" />
+                                                    {t("saveChanges", { ns: "settings" })}
                                                 </Button>
                                             </div>
                                         </Card>

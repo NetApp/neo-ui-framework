@@ -2,6 +2,7 @@
 "use client"
 
 import * as React from "react"
+import { useTranslation } from "react-i18next"
 import { 
     TrendingUp, 
     // File 
@@ -63,6 +64,7 @@ const chartConfig = {
 } satisfies ChartConfig
 
 export function FileTypeChart({ fileAnalytics }: FileTypeChartProps) {
+  const { t } = useTranslation()
   const chartData = React.useMemo(() => {
     if (!fileAnalytics || fileAnalytics.length === 0) {
       return []
@@ -89,10 +91,10 @@ export function FileTypeChart({ fileAnalytics }: FileTypeChartProps) {
     return (
       <Card className="md:col-span-1 lg:col-span-1 flex flex-col">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle>Document Types</CardTitle>
+          <CardTitle>{t("documentTypes", { ns: "monitoring" })}</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-sm text-muted-foreground">No document data available</div>
+          <div className="text-sm text-muted-foreground">{t("noDocumentDataAvailable", { ns: "monitoring" })}</div>
         </CardContent>
       </Card>
     )
@@ -101,8 +103,8 @@ export function FileTypeChart({ fileAnalytics }: FileTypeChartProps) {
   return (
     <Card className="md:col-span-2 lg:col-span-2 flex flex-col">
       <CardHeader className="items-center pb-0">
-        <CardTitle>Document Types Distribution</CardTitle>
-        <CardDescription>Breakdown by document type (PDF, DOC, PPT, TXT)</CardDescription>
+        <CardTitle>{t("documentTypesDistribution", { ns: "monitoring" })}</CardTitle>
+        <CardDescription>{t("breakdownByDocumentType", { ns: "monitoring" })}</CardDescription>
       </CardHeader>
       <CardContent className="flex-1 pb-0">
         <ChartContainer
@@ -143,7 +145,7 @@ export function FileTypeChart({ fileAnalytics }: FileTypeChartProps) {
                           y={(viewBox.cy || 0) + 24}
                           className="fill-muted-foreground"
                         >
-                          Documents
+                          {t("documents", { ns: "monitoring" })}
                         </tspan>
                       </text>
                     )
@@ -157,12 +159,12 @@ export function FileTypeChart({ fileAnalytics }: FileTypeChartProps) {
       <CardFooter className="flex-col gap-2 text-sm">
         {mostCommonType && (
           <div className="flex items-center gap-2 leading-none font-medium">
-            Most common: {mostCommonType.fileType.toUpperCase()} ({mostCommonType.count.toLocaleString()} files)
+            {t("mostCommon", { ns: "monitoring" })}: {mostCommonType.fileType.toUpperCase()} ({mostCommonType.count.toLocaleString()} {t("fileCountSuffix", { ns: "monitoring" })})
             <TrendingUp className="h-4 w-4" />
           </div>
         )}
         <div className="text-muted-foreground leading-none">
-          Document type distribution across all indexed shares
+          {t("documentTypeDistributionFooter", { ns: "monitoring" })}
         </div>
       </CardFooter>
     </Card>

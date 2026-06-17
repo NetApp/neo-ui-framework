@@ -1,11 +1,14 @@
 {
   "name": "neo-ui-framework",
   "private": true,
-  "version": "3.2.1",
+  "version": "4.1.0",
   "type": "module",
+  "engines": {
+    "node": "22.x"
+  },
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build --mode production",
+    "build": "./scripts/build-with-node22.sh",
     "lint": "eslint .",
     "preview": "vite preview"
   },
@@ -39,6 +42,8 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "cookie": "^1.0.2",
+    "i18next": "^26.0.8",
+    "i18next-icu": "^2.4.3",
     "js-yaml": "^4.1.1",
     "lucide-react": "^0.548.0",
     "next-themes": "^0.4.6",
@@ -46,6 +51,7 @@
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-hook-form": "^7.65.0",
+    "react-i18next": "^17.0.6",
     "react-markdown": "^10.1.0",
     "react-router-dom": "^7.9.4",
     "recharts": "^2.15.4",

@@ -1,14 +1,13 @@
 // Copyright 2025 NetApp, Inc. All Rights Reserved.
-import { useEffect, useState, useCallback } from "react"
-import {
-    MonitoringChart
-} from "@/components/data-tables/monitoringT"
+import { lazy, Suspense, useEffect, useState, useCallback } from "react"
+import { useTranslation } from "react-i18next"
 import { OverviewCard } from "@/components/cards/overview-card"
 import {
     Alert,
     AlertDescription,
     AlertTitle
 } from "@/components/ui/alert"
+import { Spinner } from "@/components/ui/spinner"
 import {
     CheckCircle2Icon,
     AlertCircleIcon
@@ -30,6 +29,12 @@ import type {
     HelmChartVersionResponse,
 } from "@/services/neo-api"
 import { AuthenticationError } from "@/services/neo-api"
+
+const MonitoringChart = lazy(() =>
+    import("@/components/data-tables/monitoringT").then((module) => ({
+        default: module.MonitoringChart,
+    }))
+)
 
 interface MonitoringProps {
     databaseSize: DatabaseSizeResponse | null
@@ -68,6 +73,7 @@ export default function Monitoring({
     version,
     helmChartVersion,
 }: MonitoringProps) {
+    const { t } = useTranslation()
     // const { state } = useNeoApi()
     const [alertMessage, setAlertMessage] = useState<string | null>(null)
     const [alertVariant, setAlertVariant] = useState<"success" | "error">("success")
@@ -80,7 +86,7 @@ export default function Monitoring({
             if (error instanceof AuthenticationError) return
 
             setAlertVariant("error")
-            setAlertMessage(error instanceof Error ? error.message : "Failed to refresh monitoring data")
+            setAlertMessage(error instanceof Error ? error.message : t("refreshFailed", { ns: "monitoring" }))
         }
     }, [onFetchMonitoring])
 
@@ -117,22 +123,30 @@ export default function Monitoring({
                         <div className="mb-4">
                             <OverviewCard
                                 overview={monitoring.overview}
-                                title="Monitoring Overview"
+                                title={t("overviewTitle", { ns: "monitoring" })}
                                 showCacheStats={false}
                                 cacheStats={cacheStats}
                             />
                         </div>
-                        <MonitoringChart
-                            databaseSize={databaseSize}
-                            monitoring={monitoring}
-                            onRefreshMonitoring={onFetchMonitoring}
-                            onRetryWorkItems={onRetryWorkItems}
-                            health={health}
-                            license={license}
-                            version={version}
-                            helmChartVersion={helmChartVersion}
-                            cacheStats={cacheStats}
-                        />
+                        <Suspense
+                            fallback={
+                                <div className="flex min-h-[240px] items-center justify-center">
+                                    <Spinner className="size-6" />
+                                </div>
+                            }
+                        >
+                            <MonitoringChart
+                                databaseSize={databaseSize}
+                                monitoring={monitoring}
+                                onRefreshMonitoring={onFetchMonitoring}
+                                onRetryWorkItems={onRetryWorkItems}
+                                health={health}
+                                license={license}
+                                version={version}
+                                helmChartVersion={helmChartVersion}
+                                cacheStats={cacheStats}
+                            />
+                        </Suspense>
                     </div>
                 </div>
             </div>
